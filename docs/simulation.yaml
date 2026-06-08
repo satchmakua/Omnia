@@ -1,0 +1,64 @@
+# Omnia simulation tunables. Edit values here to change behavior without touching logic.
+# All randomness derives from `seed`, so a given seed replays identically.
+
+world:
+  gridWidth: 64
+  gridHeight: 64
+  initialPopulation: 50      # Milestone 0 may start lower (~20); raise as systems mature.
+  seed: 1                    # change for a different town; same seed => same run.
+
+time:
+  ticksPerDay: 240           # simulation granularity within a day.
+  daysPerSeason: 30
+  simSpeedTicksPerSecond: 10 # real-time playback speed; decoupled from sim time (pause/FF freely).
+
+# Need decay per in-sim day (0..1 scale; higher = depletes faster). Action utility rises as a need drops.
+needs:
+  hungerDecayPerDay: 0.8
+  energyDecayPerDay: 0.7
+  hygieneDecayPerDay: 0.3
+  socialDecayPerDay: 0.4
+  funDecayPerDay: 0.3
+  actionThreshold: 0.4       # below this, satisfying the need dominates action choice.
+
+performance:
+  maxActiveAgents: 500       # design target for smooth simulation on a typical laptop.
+  tickBudgetMs: 4            # soft budget for non-LLM systems per tick; profile if exceeded.
+  offscreenTickInterval: 4   # off-screen/indoor agents may update every N ticks (light optimization only).
+
+# History compression (see docs/SIMULATION_MODEL.md). Balances "rich" against "cheap".
+history:
+  workingMemorySize: 40      # K: raw recent events kept per agent before rollup.
+  rolloverEveryDays: 7       # how often older memories are summarized and pruned.
+  chronicleImportanceThreshold: 0.7   # events at/above this become town "legends".
+  beliefRetention: lifetime  # reflections (beliefs) persist for the agent's life.
+  ancientChronicleCompressAfterYears: 50  # old chronicle entries collapse to one-liners.
+
+# Authored content (see docs/CONTENT_AND_DATA.md). Paths are relative to repo root.
+content:
+  root: "./content"          # loader discovers and validates every file under here at startup.
+  failOnInvalid: true        # a malformed content file aborts startup with a clear error.
+
+# Unified capability system (see docs/MAGIC_AND_TECHNOLOGY.md).
+capabilities:
+  baseMagicAptitudeChance: 0.03   # global base rate; species multipliers in content override/scale this.
+  manaRegenPerDay: 10             # for agents with aptitude.
+  allowLostArts: true             # an art with no living practitioner becomes "lost" until rediscovered.
+
+# Culture & language evolution (see docs/CULTURE_AND_LANGUAGE.md). Tuned for "deep but tenable".
+culture_language:
+  evolveEveryYears: 5        # evolution runs on this generational schedule, never per tick.
+  soundChangeRate: 0.15      # probability weighting for phoneme shifts per evolution step.
+  lexicalDriftRate: 0.1      # rate of word coinage/loss/meaning shift per step.
+  valueDriftRate: 0.08       # cultural value movement per step.
+  maxTrackedLanguages: 24    # soft cap; beyond this, merge/retire the least-used (tenability guard).
+  maxTrackedCultures: 24
+  llmFlavor: true            # let the LLM occasionally gloss a word or name a value (recorded to event log).
+
+llm:
+  provider: ollama
+  baseUrl: http://localhost:11434
+  model: llama3.1:8b         # swap freely (e.g. qwen, gemma); access is behind AIProvider.
+  maxConcurrentCalls: 2      # keep low so the local model never becomes a bottleneck.
+  perAgentCooldownDays: 1    # minimum sim-days between "soul" calls for one agent.
+  recordResponses: true      # log LLM outputs into the event log for deterministic replay.
