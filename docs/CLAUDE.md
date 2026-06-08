@@ -68,11 +68,11 @@ Never break these, regardless of the task:
 > Fill these in during Milestone 0, then keep them accurate.
 
 ```
-install:  <tbd>
-run:      <tbd>   # launch the sim + renderer
-test:     <tbd>   # full unit + invariant suite
-soak:     <tbd>   # long headless run with world-health checks
-lint:     <tbd>
+install:  npm install
+run:      npm run dev      # browser renderer at http://localhost:5173 (Space = pause)
+test:     npm test         # full unit + seed + soak suite (vitest)
+soak:     npm run soak     # 10,000-tick headless run with world-health metrics
+lint:     npm run lint     # TypeScript type-check (tsc --noEmit)
 ```
 
 ## When to ask the human vs. proceed

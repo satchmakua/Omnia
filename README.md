@@ -32,7 +32,17 @@ This repository is built to be developed **incrementally by an AI agent over man
 
 ## Running it
 
-> Not yet runnable — code begins at Milestone 0. The agent will fill in install/run/test commands in `CLAUDE.md` and this section as part of M0.
+```
+npm install       # install dependencies
+npm run dev       # open http://localhost:5173 — moving dots + click inspector
+npm test          # 33 unit / seed / soak tests (vitest)
+npm run soak      # 10,000-tick headless run with health metrics (~40 ms)
+npm run lint      # TypeScript type-check
+```
+
+**Controls:** click any dot to open the inspector panel; Space to pause/resume.
+
+**Legend:** white = wandering, orange = seeking food, blue = sleeping.
 
 ## Stack at a glance
 

@@ -8,24 +8,24 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 ---
 
-## ▶ Milestone 0 — Foundation & Heartbeat  *(current)*
+## ✅ Milestone 0 — Foundation & Heartbeat  *(done — 2026-06-08)*
 
 **Goal:** a running, tested skeleton that proves the whole loop end to end.
 
-- [ ] Scaffold the TypeScript project; choose and wire an ECS implementation (hand-rolled is fine).
-- [ ] Single **seeded RNG**; ban `Math.random()` in sim code.
-- [ ] Headless fixed-timestep **tick loop** with deterministic system ordering.
-- [ ] Test runner + first **unit**, **seed**, and **soak** tests; GitHub Actions CI.
-- [ ] Tiny world: a grid, ~20 agents (one hardcoded "human" type for now) with `Position`, `Needs` (hunger, energy), `Wallet`; `MovementSystem`, `HungerSystem`, a day/night clock.
-- [ ] **Utility action selector** (no LLM): seek food when hungry, sleep when tired, else wander. Agents die if hunger bottoms out.
-- [ ] Minimal renderer: dots on a grid + click-to-open inspector panel.
-- [ ] Fill in the command list in `CLAUDE.md` and the Run section in `README.md`.
+- [x] Scaffold the TypeScript project; choose and wire an ECS implementation (hand-rolled is fine).
+- [x] Single **seeded RNG**; ban `Math.random()` in sim code.
+- [x] Headless fixed-timestep **tick loop** with deterministic system ordering.
+- [x] Test runner + first **unit**, **seed**, and **soak** tests; GitHub Actions CI.
+- [x] Tiny world: a grid, ~20 agents (one hardcoded "human" type for now) with `Position`, `Needs` (hunger, energy), `Wallet`; `MovementSystem`, `HungerSystem`, a day/night clock.
+- [x] **Utility action selector** (no LLM): seek food when hungry, sleep when tired, else wander. Agents die if hunger bottoms out.
+- [x] Minimal renderer: dots on a grid + click-to-open inspector panel.
+- [x] Fill in the command list in `CLAUDE.md` and the Run section in `README.md`.
 
-**DoD:** `test` green; a 10,000-tick headless `soak` runs without crashing or impossible states; the renderer shows moving dots and the inspector opens on click. **Stop and report after M0.**
+**DoD:** `test` green (33 tests); 10,000-tick headless `soak` passes (37 ms, 0 violations); renderer shows moving dots and inspector opens on click.
 
 ---
 
-## Milestone 1 — Content Framework & Species
+## ▶ Milestone 1 — Content Framework & Species  *(current)*
 
 **Goal:** stand up the data-driven content layer; make agents data, not code.
 
