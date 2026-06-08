@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Omnia</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0d0d1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+    #canvas { cursor: crosshair; display: block; }
+    #hud { position: fixed; bottom: 12px; left: 12px; color: #aaa; font: 11px/1.6 monospace; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="640" height="640"></canvas>
+  <div id="hud">Space = pause/resume</div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
