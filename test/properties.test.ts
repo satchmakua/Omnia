@@ -8,8 +8,10 @@ import { World } from '../src/sim/ecs.ts';
 import { createSimulation } from '../src/sim/world.ts';
 import { runTicks } from '../src/sim/loop.ts';
 import { defaultConfig } from '../src/sim/config.ts';
-import { C_AGENT, C_NEEDS, C_POSITION } from '../src/sim/components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_TILEMAP } from '../src/sim/components.ts';
 import type { Needs, Position } from '../src/sim/components.ts';
+import { isPassable } from '../src/world/tilemap.ts';
+import type { TileMapData } from '../src/world/tilemap.ts';
 import { testContent } from './helpers.ts';
 
 const content = testContent();
@@ -73,6 +75,7 @@ describe('Simulation properties', () => {
     fc.assert(fc.property(fc.integer({ min: 1, max: 1_000_000 }), (seed) => {
       const cfg = { ...defaultConfig, seed, initialPopulation: 12 };
       const { world, rng, clockEntity } = createSimulation(cfg, content);
+      const map = world.getComponent<TileMapData>(world.query(C_TILEMAP)[0], C_TILEMAP)!;
       runTicks(world, rng, cfg, clockEntity, content, 200);
 
       for (const e of world.query(C_AGENT, C_NEEDS, C_POSITION)) {
@@ -86,6 +89,7 @@ describe('Simulation properties', () => {
         expect(p.x).toBeLessThan(cfg.gridWidth);
         expect(p.y).toBeGreaterThanOrEqual(0);
         expect(p.y).toBeLessThan(cfg.gridHeight);
+        expect(isPassable(map, p.x, p.y)).toBe(true);  // any seed: never on water
       }
     }), { numRuns: 40 });
   });

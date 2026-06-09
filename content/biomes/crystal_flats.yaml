@@ -1,0 +1,8 @@
+# Psychedelic salt-flats studded with humming crystal. Open and passable.
+id: "crystal_flats"
+name: "Crystal Flats"
+climate: "arid"
+terrain: "flats"
+color: "#7d6f9c"        # amethyst haze
+passable: true
+genWeight: 3

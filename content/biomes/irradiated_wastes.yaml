@@ -1,0 +1,8 @@
+# Sickly glowing badlands, a scar of whatever fell long ago. Harsh but crossable.
+id: "irradiated_wastes"
+name: "Irradiated Wastes"
+climate: "arid"
+terrain: "wastes"
+color: "#94793f"        # jaundiced ochre
+passable: true
+genWeight: 3

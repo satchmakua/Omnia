@@ -1,7 +1,9 @@
 import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
-import { C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES } from '../sim/components.ts';
+import { C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_TILEMAP } from '../sim/components.ts';
 import type { Agent, Needs, Wallet, Position, SpeciesComp } from '../sim/components.ts';
+import { biomeNameAt, inBounds } from '../world/tilemap.ts';
+import type { TileMapData } from '../world/tilemap.ts';
 
 function bar(v: number): string {
   const filled = Math.round(v * 10);
@@ -69,10 +71,17 @@ export class Inspector {
       ? `<div><b>Species</b> <span style="color:${species.color}">${species.name}</span> (${species.size})</div>`
       : '';
 
+    const mapEnts = world.query(C_TILEMAP);
+    const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
+    const terrainLine = (map && inBounds(map, pos.x, pos.y))
+      ? `<div><b>Terrain</b> ${biomeNameAt(map, pos.x, pos.y)}</div>`
+      : '';
+
     this.panel.innerHTML = `
       <button id="ii-close" style="float:right;background:transparent;color:#888;border:none;cursor:pointer;font-size:16px">✕</button>
       <div style="font-size:14px;font-weight:bold;margin-bottom:8px;color:#fff">${agent.name}</div>
       ${speciesLine}
+      ${terrainLine}
       <div><b>Action</b> ${agent.action}</div>
       <div><b>Age</b> ${agent.ticksAlive} ticks</div>
       <div><b>Pos</b> (${pos.x}, ${pos.y})</div>

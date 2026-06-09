@@ -5,9 +5,11 @@ import { createSimulation } from './world.ts';
 import { tick } from './loop.ts';
 import { defaultConfig } from './config.ts';
 import { loadContentFromDisk } from '../content/fsSource.ts';
-import { C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_CLOCK } from './components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_TILEMAP, C_CLOCK } from './components.ts';
 import type { Needs, Position, SpeciesComp, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
+import { isPassable } from '../world/tilemap.ts';
+import type { TileMapData } from '../world/tilemap.ts';
 
 const SOAK_TICKS = 10_000;
 const cfg: SimConfig = { ...defaultConfig, seed: 42 };
@@ -17,6 +19,7 @@ const t0 = Date.now();
 
 const content = loadContentFromDisk();
 const { world, rng, clockEntity } = createSimulation(cfg, content);
+const tileMap = world.getComponent<TileMapData>(world.query(C_TILEMAP)[0], C_TILEMAP)!;
 let violations = 0;
 
 for (let t = 0; t < SOAK_TICKS; t++) {
@@ -35,6 +38,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       if (sp) bySpecies[sp.id] = (bySpecies[sp.id] ?? 0) + 1;
       if (n.hunger < 0 || n.hunger > 1 || n.energy < 0 || n.energy > 1) inv++;
       if (p.x < 0 || p.x >= cfg.gridWidth || p.y < 0 || p.y >= cfg.gridHeight) inv++;
+      if (!isPassable(tileMap, p.x, p.y)) inv++;  // M2 invariant: never on water/blocked
     }
 
     violations += inv;

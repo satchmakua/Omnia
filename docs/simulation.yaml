@@ -6,6 +6,7 @@ world:
   gridHeight: 64
   initialPopulation: 50      # Milestone 0 may start lower (~20); raise as systems mature.
   seed: 1                    # change for a different town; same seed => same run.
+  biomeSeedCount: 14         # number of Voronoi biome seeds at world generation (M2).
 
 time:
   ticksPerDay: 240           # simulation granularity within a day.

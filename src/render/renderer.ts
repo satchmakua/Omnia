@@ -1,8 +1,9 @@
 import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
-import { C_POSITION, C_AGENT, C_SPECIES, C_FOOD, C_CLOCK } from '../sim/components.ts';
+import { C_POSITION, C_AGENT, C_SPECIES, C_FOOD, C_CLOCK, C_TILEMAP } from '../sim/components.ts';
 import type { Position, Agent, SpeciesComp, Food, Clock } from '../sim/components.ts';
+import type { TileMapData } from '../world/tilemap.ts';
 
 const ACTION_COLOR: Record<string, string> = {
   wander:    '#e0e0ff',
@@ -51,23 +52,28 @@ export class Renderer {
     ctx.fillStyle = '#10101e';
     ctx.fillRect(0, 0, W, H);
 
-    // Food sources
+    // Biome terrain background (one fill per tile).
+    const mapEnts = world.query(C_TILEMAP);
+    const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
+    if (map) {
+      for (let y = 0; y < map.height; y++) {
+        for (let x = 0; x < map.width; x++) {
+          ctx.fillStyle = map.colors[map.biomeIndex[y * map.width + x]];
+          ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    // Food sources — bright inset marker so they read over any biome colour.
     for (const e of world.query(C_FOOD, C_POSITION)) {
       const food = world.getComponent<Food>(e, C_FOOD)!;
       const pos  = world.getComponent<Position>(e, C_POSITION)!;
-      const a = 0.15 + food.amount * 0.6;
-      ctx.fillStyle = `rgba(40,200,90,${a.toFixed(2)})`;
-      ctx.fillRect(pos.x * cellSize, pos.y * cellSize, cellSize, cellSize);
-    }
-
-    // Grid lines (subtle)
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    ctx.lineWidth = 0.5;
-    for (let x = 0; x <= cfg.gridWidth; x++) {
-      ctx.beginPath(); ctx.moveTo(x * cellSize, 0); ctx.lineTo(x * cellSize, H); ctx.stroke();
-    }
-    for (let y = 0; y <= cfg.gridHeight; y++) {
-      ctx.beginPath(); ctx.moveTo(0, y * cellSize); ctx.lineTo(W, y * cellSize); ctx.stroke();
+      const inset = cellSize * (0.5 - food.amount * 0.18); // fuller = bigger marker
+      ctx.fillStyle = `rgba(180,255,120,${(0.35 + food.amount * 0.55).toFixed(2)})`;
+      ctx.fillRect(
+        pos.x * cellSize + inset, pos.y * cellSize + inset,
+        cellSize - inset * 2, cellSize - inset * 2,
+      );
     }
 
     // Agents: fill colour = current action, ring colour + radius = species.

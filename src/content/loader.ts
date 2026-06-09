@@ -5,13 +5,14 @@
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { FOLDER_SCHEMAS } from './schema.ts';
-import type { Species, Capability, ContentFolder } from './schema.ts';
+import type { Species, Capability, Biome, ContentFolder } from './schema.ts';
 import { Registry } from './registry.ts';
 import { isKnownEffectTag } from '../capability/effects.ts';
 
 export interface Content {
   species: Registry<Species>;
   capabilities: Registry<Capability>;
+  biomes: Registry<Biome>;
 }
 
 // Relative path like "species/human.yaml" -> "species".
@@ -34,7 +35,7 @@ function formatZodError(relPath: string, err: z.ZodError): string {
  * Fail loud, early, helpful (CONTENT_AND_DATA Rule 1).
  */
 export function loadContent(files: Map<string, string>): Content {
-  const buckets: Record<ContentFolder, unknown[]> = { species: [], capabilities: [] };
+  const buckets: Record<ContentFolder, unknown[]> = { species: [], capabilities: [], biomes: [] };
   const errors: string[] = [];
 
   // Deterministic processing order regardless of filesystem/glob ordering.
@@ -87,9 +88,11 @@ export function loadContent(files: Map<string, string>): Content {
 
   let species: Registry<Species>;
   let capabilities: Registry<Capability>;
+  let biomes: Registry<Biome>;
   try {
     species = new Registry(buckets.species as Species[]);
     capabilities = new Registry(buckets.capabilities as Capability[]);
+    biomes = new Registry(buckets.biomes as Biome[]);
   } catch (e) {
     throw new Error(`Content failed to load: ${(e as Error).message}`);
   }
@@ -98,5 +101,5 @@ export function loadContent(files: Map<string, string>): Content {
     throw new Error('Content failed to load: no species defined under content/species');
   }
 
-  return { species, capabilities };
+  return { species, capabilities, biomes };
 }
