@@ -1,7 +1,7 @@
 import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
-  C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_FOOD, C_CLOCK,
+  C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_FOOD, C_CLOCK, C_TILEMAP,
 } from './components.ts';
 import type { Position, Needs, Wallet, Agent, SpeciesComp, Food, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -10,6 +10,9 @@ import type { RNG } from './rng.ts';
 import type { Content } from '../content/loader.ts';
 import type { Species } from '../content/schema.ts';
 import { generateName } from '../content/names.ts';
+import { generateTileMap } from '../world/worldgen.ts';
+import { isPassable } from '../world/tilemap.ts';
+import type { TileMapData } from '../world/tilemap.ts';
 
 export interface Simulation {
   world: World;
@@ -28,6 +31,22 @@ function rollSpecies(rng: RNG, species: Species[], totalWeight: number): Species
   return species[species.length - 1]; // float-safety fallback
 }
 
+// Find a passable tile by rejection sampling, falling back to a deterministic
+// scan if the random draws keep landing on water (keeps spawns off impassable tiles).
+function findPassableTile(rng: RNG, map: TileMapData): { x: number; y: number } {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const x = rngInt(rng, 0, map.width - 1);
+    const y = rngInt(rng, 0, map.height - 1);
+    if (isPassable(map, x, y)) return { x, y };
+  }
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      if (isPassable(map, x, y)) return { x, y };
+    }
+  }
+  throw new Error('World generation produced no passable tiles');
+}
+
 export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const world = new World();
   const rng = createRNG(cfg.seed);
@@ -37,13 +56,16 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const clock: Clock = { tick: 0, day: 0, hour: 0, isDay: true };
   world.addComponent(clockEntity, C_CLOCK, clock);
 
-  // Scatter food sources
+  // Generate terrain first (consumes RNG), store as a singleton component.
+  const tileMap = generateTileMap(rng, cfg.gridWidth, cfg.gridHeight, content.biomes, cfg.biomeSeedCount);
+  const mapEntity = world.createEntity();
+  world.addComponent<TileMapData>(mapEntity, C_TILEMAP, tileMap);
+
+  // Scatter food sources on passable tiles.
   for (let i = 0; i < cfg.foodSourceCount; i++) {
+    const { x, y } = findPassableTile(rng, tileMap);
     const e = world.createEntity();
-    world.addComponent<Position>(e, C_POSITION, {
-      x: rngInt(rng, 0, cfg.gridWidth - 1),
-      y: rngInt(rng, 0, cfg.gridHeight - 1),
-    });
+    world.addComponent<Position>(e, C_POSITION, { x, y });
     world.addComponent<Food>(e, C_FOOD, {
       amount: rngFloat(rng, 0.5, 1.0),
       regenPerTick: cfg.foodRegenPerTick,
@@ -57,12 +79,10 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   for (let i = 0; i < cfg.initialPopulation; i++) {
     const species = rollSpecies(rng, speciesList, totalWeight);
     const name = generateName(rng, species);
+    const { x, y } = findPassableTile(rng, tileMap);
 
     const e = world.createEntity();
-    world.addComponent<Position>(e, C_POSITION, {
-      x: rngInt(rng, 0, cfg.gridWidth - 1),
-      y: rngInt(rng, 0, cfg.gridHeight - 1),
-    });
+    world.addComponent<Position>(e, C_POSITION, { x, y });
     world.addComponent<Needs>(e, C_NEEDS, {
       hunger: rngFloat(rng, 0.5, 1.0),
       energy: rngFloat(rng, 0.5, 1.0),

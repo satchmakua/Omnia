@@ -1,0 +1,8 @@
+# The common ground — dusty open plains where most of the town's life plays out.
+id: "ashen_plains"
+name: "Ashen Plains"
+climate: "temperate"
+terrain: "plains"
+color: "#6b7250"        # muted ash-green; renderer tints the tile background
+passable: true
+genWeight: 6            # most common biome at world generation

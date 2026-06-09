@@ -5,6 +5,7 @@ export const C_AGENT    = 'Agent';
 export const C_SPECIES  = 'Species';
 export const C_FOOD     = 'Food';
 export const C_CLOCK    = 'Clock';
+export const C_TILEMAP  = 'TileMap';  // singleton: the terrain grid (see src/world/tilemap.ts)
 
 export interface Position {
   x: number;

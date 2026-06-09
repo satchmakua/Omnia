@@ -1,0 +1,8 @@
+# Flooded remnants of the old world. Water: agents cannot enter (impassable).
+id: "drowned_ruins"
+name: "Drowned Ruins"
+climate: "humid"
+terrain: "water"
+color: "#2f4f6b"        # deep tidal blue
+passable: false
+genWeight: 2            # kept a minority so the map stays mostly traversable

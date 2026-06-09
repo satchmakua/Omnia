@@ -41,12 +41,13 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **Goal:** the world agents live in, and the entity/brain tiers.
 
-- [ ] Biomes, terrain, the tile grid (from content).
+- [x] Biomes, terrain, the tile grid (from content). *(Session 4: 5 biomes as YAML; seeded Voronoi tile-grid generation; passability wired into movement + spawning; biome backgrounds + terrain in the inspector.)*
 - [ ] **Flora** (grow/spread/harvest), **fauna** (instinct-only light agents), **resources** (renewable + finite).
 - [ ] Formalize the **brain tiers**: sapient (full), fauna (instinct, no LLM), flora/resources (no brain).
-- [ ] Seeded **world generation**; invent the post-apocalyptic backstory as the first Chronicle entries.
+- [x] Seeded **world generation** (terrain layer). *(Session 4: deterministic biome map. Flora/fauna/resource placement + the backstory Chronicle still pending.)*
+- [ ] Invent the post-apocalyptic backstory as the first Chronicle entries.
 
-**DoD:** a generated world with biomes, growing flora, roaming fauna, and harvestable resources runs stably for many sim-years; tested (e.g. an overhunted species can crash — and that's detectable in metrics).
+**DoD:** a generated world with biomes, growing flora, roaming fauna, and harvestable resources runs stably for many sim-years; tested (e.g. an overhunted species can crash — and that's detectable in metrics). *(Terrain substrate done; flora/fauna/resources/brain-tiers/Chronicle remain.)*
 
 ## Milestone 3 — Economy, Work & Capabilities
 
