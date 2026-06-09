@@ -10,8 +10,10 @@ import { runClockSystem }    from '../src/sim/systems/ClockSystem.ts';
 import { runHungerSystem }   from '../src/sim/systems/HungerSystem.ts';
 import { runActionSystem }   from '../src/sim/systems/ActionSystem.ts';
 import { runMovementSystem } from '../src/sim/systems/MovementSystem.ts';
+import { testContent } from './helpers.ts';
 
 const cfg = defaultConfig;
+const content = testContent();
 
 // ── ClockSystem ──────────────────────────────────────────────────────────────
 
@@ -137,7 +139,7 @@ describe('MovementSystem', () => {
       w.addComponent<Agent>(e, C_AGENT, { name: `A${i}`, action: 'wander', ticksAlive: 0 });
     }
 
-    for (let t = 0; t < 200; t++) runMovementSystem(w, small, rng);
+    for (let t = 0; t < 200; t++) runMovementSystem(w, small, rng, content);
 
     for (const e of w.query(C_POSITION)) {
       const p = w.getComponent<Position>(e, C_POSITION)!;
@@ -157,7 +159,7 @@ describe('MovementSystem', () => {
     w.addComponent<Needs>(e, C_NEEDS, needs);
     w.addComponent<Agent>(e, C_AGENT, { name: 'Napper', action: 'sleep', ticksAlive: 0 });
 
-    runMovementSystem(w, cfg, rng);
+    runMovementSystem(w, cfg, rng, content);
     expect(needs.energy).toBeGreaterThan(0.5);
   });
 
@@ -177,7 +179,7 @@ describe('MovementSystem', () => {
     w.addComponent<Agent>(ae, C_AGENT, { name: 'Hungry', action: 'seek_food', ticksAlive: 0 });
 
     const before = needs.hunger;
-    runMovementSystem(w, cfg, rng);
+    runMovementSystem(w, cfg, rng, content);
     expect(needs.hunger).toBeGreaterThan(before);
   });
 });

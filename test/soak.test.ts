@@ -4,14 +4,16 @@ import { tick } from '../src/sim/loop.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import { C_AGENT, C_NEEDS, C_POSITION } from '../src/sim/components.ts';
 import type { Needs, Position } from '../src/sim/components.ts';
+import { testContent } from './helpers.ts';
 
 describe('Soak: 10,000-tick headless run', () => {
   it('completes without crash and holds all invariants', { timeout: 30_000 }, () => {
     const cfg = { ...defaultConfig, seed: 42 };
-    const { world, rng, clockEntity } = createSimulation(cfg);
+    const content = testContent();
+    const { world, rng, clockEntity } = createSimulation(cfg, content);
 
     for (let t = 0; t < 10_000; t++) {
-      tick(world, rng, cfg, clockEntity);
+      tick(world, rng, cfg, clockEntity, content);
     }
 
     // Every surviving agent must be in a valid state.

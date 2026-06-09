@@ -8,7 +8,6 @@ export interface SimConfig {
   energyDecayPerDay: number;
   actionThreshold: number;
   foodSourceCount: number;
-  foodRestoreAmount: number;
   foodRegenPerTick: number;
   sleepRestorePerTick: number;
 }
@@ -24,7 +23,6 @@ export const defaultConfig: SimConfig = {
   energyDecayPerDay: 0.7,
   actionThreshold: 0.4,
   foodSourceCount: 25,
-  foodRestoreAmount: 0.4,
   foodRegenPerTick: 0.005,
   sleepRestorePerTick: 0.008,
 };

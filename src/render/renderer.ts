@@ -1,13 +1,20 @@
 import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
-import { C_POSITION, C_AGENT, C_FOOD, C_CLOCK } from '../sim/components.ts';
-import type { Position, Agent, Food, Clock } from '../sim/components.ts';
+import { C_POSITION, C_AGENT, C_SPECIES, C_FOOD, C_CLOCK } from '../sim/components.ts';
+import type { Position, Agent, SpeciesComp, Food, Clock } from '../sim/components.ts';
 
 const ACTION_COLOR: Record<string, string> = {
   wander:    '#e0e0ff',
   seek_food: '#ff9944',
   sleep:     '#7799ff',
+};
+
+// Species are visibly distinct by dot radius (size) plus a species-coloured ring.
+const SIZE_RADIUS: Record<string, number> = {
+  small:  0.30,
+  medium: 0.42,
+  large:  0.54,
 };
 
 export class Renderer {
@@ -63,15 +70,26 @@ export class Renderer {
       ctx.beginPath(); ctx.moveTo(0, y * cellSize); ctx.lineTo(W, y * cellSize); ctx.stroke();
     }
 
-    // Agents
-    const r = Math.max(2, cellSize / 2 - 1);
+    // Agents: fill colour = current action, ring colour + radius = species.
     for (const e of world.query(C_AGENT, C_POSITION)) {
-      const agent = world.getComponent<Agent>(e, C_AGENT)!;
-      const pos   = world.getComponent<Position>(e, C_POSITION)!;
+      const agent   = world.getComponent<Agent>(e, C_AGENT)!;
+      const pos     = world.getComponent<Position>(e, C_POSITION)!;
+      const species = world.getComponent<SpeciesComp>(e, C_SPECIES);
+
+      const cx = pos.x * cellSize + cellSize / 2;
+      const cy = pos.y * cellSize + cellSize / 2;
+      const r  = Math.max(2, cellSize * (SIZE_RADIUS[species?.size ?? 'medium'] ?? 0.42));
+
       ctx.fillStyle = ACTION_COLOR[agent.action] ?? '#fff';
       ctx.beginPath();
-      ctx.arc(pos.x * cellSize + cellSize / 2, pos.y * cellSize + cellSize / 2, r, 0, Math.PI * 2);
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
+
+      if (species) {
+        ctx.strokeStyle = species.color;
+        ctx.lineWidth = Math.max(1, cellSize * 0.12);
+        ctx.stroke();
+      }
     }
 
     // HUD overlay

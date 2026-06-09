@@ -1,19 +1,24 @@
 import type { World } from '../ecs.ts';
-import { C_NEEDS, C_AGENT, C_FOOD } from '../components.ts';
-import type { Needs, Food } from '../components.ts';
+import { C_NEEDS, C_AGENT, C_SPECIES, C_FOOD } from '../components.ts';
+import type { Needs, SpeciesComp, Food } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 
 export function runHungerSystem(world: World, cfg: SimConfig): void {
-  const hungerDecay = cfg.hungerDecayPerDay / cfg.ticksPerDay;
-  const energyDecay = cfg.energyDecayPerDay / cfg.ticksPerDay;
+  const baseHunger = cfg.hungerDecayPerDay / cfg.ticksPerDay;
+  const baseEnergy = cfg.energyDecayPerDay / cfg.ticksPerDay;
 
   const agents = world.query(C_AGENT, C_NEEDS);
   const toKill: number[] = [];
 
   for (const entity of agents) {
     const needs = world.getComponent<Needs>(entity, C_NEEDS)!;
-    needs.hunger = Math.max(0, needs.hunger - hungerDecay);
-    needs.energy = Math.max(0, needs.energy - energyDecay);
+    // Per-species decay multipliers (default 1 if no species component).
+    const species = world.getComponent<SpeciesComp>(entity, C_SPECIES);
+    const hMult = species?.hungerMult ?? 1;
+    const eMult = species?.energyMult ?? 1;
+
+    needs.hunger = Math.max(0, needs.hunger - baseHunger * hMult);
+    needs.energy = Math.max(0, needs.energy - baseEnergy * eMult);
 
     if (needs.hunger <= 0) toKill.push(entity);
   }

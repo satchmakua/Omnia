@@ -10,6 +10,9 @@ import { runTicks } from '../src/sim/loop.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import { C_AGENT, C_NEEDS, C_POSITION } from '../src/sim/components.ts';
 import type { Needs, Position } from '../src/sim/components.ts';
+import { testContent } from './helpers.ts';
+
+const content = testContent();
 
 describe('RNG properties', () => {
   it('any seed yields values strictly in [0, 1)', () => {
@@ -69,8 +72,8 @@ describe('Simulation properties', () => {
   it('for any seed, agents stay in-bounds and needs stay in [0,1] after 200 ticks', () => {
     fc.assert(fc.property(fc.integer({ min: 1, max: 1_000_000 }), (seed) => {
       const cfg = { ...defaultConfig, seed, initialPopulation: 12 };
-      const { world, rng, clockEntity } = createSimulation(cfg);
-      runTicks(world, rng, cfg, clockEntity, 200);
+      const { world, rng, clockEntity } = createSimulation(cfg, content);
+      runTicks(world, rng, cfg, clockEntity, content, 200);
 
       for (const e of world.query(C_AGENT, C_NEEDS, C_POSITION)) {
         const n = world.getComponent<Needs>(e, C_NEEDS)!;
@@ -91,8 +94,8 @@ describe('Simulation properties', () => {
     fc.assert(fc.property(fc.integer({ min: 1, max: 1_000_000 }), (seed) => {
       const cfg = { ...defaultConfig, seed, initialPopulation: 12 };
       const run = () => {
-        const sim = createSimulation(cfg);
-        runTicks(sim.world, sim.rng, cfg, sim.clockEntity, 300);
+        const sim = createSimulation(cfg, content);
+        runTicks(sim.world, sim.rng, cfg, sim.clockEntity, content, 300);
         return sim.world.query(C_AGENT).length;
       };
       expect(run()).toBe(run());
