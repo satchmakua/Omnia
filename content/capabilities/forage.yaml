@@ -1,0 +1,8 @@
+# The first capability — a proof of the data/behaviour boundary (CONTENT_AND_DATA Rule 2).
+# Data declares WHICH effect tags fire and how strong; code in src/capability/effects.ts
+# implements WHAT each tag does. The loader fails loud if an effect tag has no code.
+id: "forage"
+name: "Forage"
+tradition: "technology"   # common, knowledge-gated (vs. rare aptitude-gated magic)
+effects: ["restore_hunger"]
+power: 0.4                # max hunger restored per bite (also caps food consumed)

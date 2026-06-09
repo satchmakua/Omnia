@@ -2,6 +2,7 @@ export const C_POSITION = 'Position';
 export const C_NEEDS    = 'Needs';
 export const C_WALLET   = 'Wallet';
 export const C_AGENT    = 'Agent';
+export const C_SPECIES  = 'Species';
 export const C_FOOD     = 'Food';
 export const C_CLOCK    = 'Clock';
 
@@ -25,6 +26,17 @@ export interface Agent {
   name: string;
   action: AgentAction;
   ticksAlive: number;
+}
+
+// Resolved, per-agent species facts baked in at spawn so hot systems don't
+// need the content registry every tick. Sourced from a Species archetype.
+export interface SpeciesComp {
+  id: string;          // e.g. "human", "dwarf"
+  name: string;        // display name, e.g. "Human"
+  color: string;       // #rrggbb, for the renderer
+  size: 'small' | 'medium' | 'large';
+  hungerMult: number;  // multiplier on base hunger decay
+  energyMult: number;  // multiplier on base energy decay
 }
 
 export interface Food {

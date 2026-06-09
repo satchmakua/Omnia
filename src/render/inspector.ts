@@ -1,7 +1,7 @@
 import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
-import { C_AGENT, C_NEEDS, C_WALLET, C_POSITION } from '../sim/components.ts';
-import type { Agent, Needs, Wallet, Position } from '../sim/components.ts';
+import { C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES } from '../sim/components.ts';
+import type { Agent, Needs, Wallet, Position, SpeciesComp } from '../sim/components.ts';
 
 function bar(v: number): string {
   const filled = Math.round(v * 10);
@@ -59,14 +59,20 @@ export class Inspector {
   }
 
   private _render(entity: EntityId, world: World): void {
-    const agent  = world.getComponent<Agent>(entity, C_AGENT)!;
-    const needs  = world.getComponent<Needs>(entity, C_NEEDS)!;
-    const wallet = world.getComponent<Wallet>(entity, C_WALLET)!;
-    const pos    = world.getComponent<Position>(entity, C_POSITION)!;
+    const agent   = world.getComponent<Agent>(entity, C_AGENT)!;
+    const needs   = world.getComponent<Needs>(entity, C_NEEDS)!;
+    const wallet  = world.getComponent<Wallet>(entity, C_WALLET)!;
+    const pos     = world.getComponent<Position>(entity, C_POSITION)!;
+    const species = world.getComponent<SpeciesComp>(entity, C_SPECIES);
+
+    const speciesLine = species
+      ? `<div><b>Species</b> <span style="color:${species.color}">${species.name}</span> (${species.size})</div>`
+      : '';
 
     this.panel.innerHTML = `
       <button id="ii-close" style="float:right;background:transparent;color:#888;border:none;cursor:pointer;font-size:16px">✕</button>
       <div style="font-size:14px;font-weight:bold;margin-bottom:8px;color:#fff">${agent.name}</div>
+      ${speciesLine}
       <div><b>Action</b> ${agent.action}</div>
       <div><b>Age</b> ${agent.ticksAlive} ticks</div>
       <div><b>Pos</b> (${pos.x}, ${pos.y})</div>

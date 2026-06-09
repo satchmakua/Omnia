@@ -69,11 +69,15 @@ Never break these, regardless of the task:
 
 ```
 install:  npm install
-run:      npm run dev      # browser renderer at http://localhost:5173 (Space = pause)
-test:     npm test         # full unit + seed + soak suite (vitest)
-soak:     npm run soak     # 10,000-tick headless run with world-health metrics
-lint:     npm run lint     # TypeScript type-check (tsc --noEmit)
+run:      npm run dev            # browser renderer at http://localhost:5173 (Space = pause)
+test:     npm test              # full unit + content + seed + property + soak suite (vitest)
+coverage: npm run test:coverage # same, with a coverage report (gated 90%/85% in CI)
+soak:     npm run soak          # 10,000-tick headless run with world-health metrics
+lint:     npm run lint          # TypeScript type-check (tsc --noEmit)
 ```
+
+Content (authored YAML) lives in `/content`; the loader + Zod schemas are in
+`src/content`. A malformed content file aborts startup with a file-named error.
 
 ## When to ask the human vs. proceed
 
