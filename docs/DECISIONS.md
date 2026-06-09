@@ -44,3 +44,6 @@ Depth lives in rules and process (sound change, lexical/semantic drift, divergen
 
 **D13 — Aesthetic: pastel/lo-fi visuals + lo-fi ambient audio, deferred.** · accepted
 The look is soft, muted, calm; eventually a lo-fi music layer. This is presentation and the lowest priority — the interface stays minimal (dots + inspector) until the simulation is deep. Lives in the final roadmap milestone. Recorded so eventual UI work has direction.
+
+**D14 — Tooling: Vite + Vitest; Zod for content validation; `yaml` for parsing.** · accepted (M0–M1)
+Vite is the dev server/bundler and Vitest the test runner (the conventional TS/Vite pair; Jest-compatible API). Content validation uses **Zod** with `.strict()`, deriving the TS type from the schema (the "schema-as-type" Rule 1 of `CONTENT_AND_DATA.md`); YAML is parsed with the `yaml` package. The content loader is a **pure** `loadContent(Map<path,text>)` with two thin file-discovery sources — Node `fs` (tests/soak) and Vite `import.meta.glob` (browser) — so it runs identically in both. Test quality bar: coverage gated at 90%/85% in CI, plus `fast-check` property tests for determinism-critical invariants. Conventional choices, recorded so they aren't relitigated.

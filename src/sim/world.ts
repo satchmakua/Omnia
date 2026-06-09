@@ -1,27 +1,34 @@
 import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
-  C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_FOOD, C_CLOCK,
+  C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_FOOD, C_CLOCK,
 } from './components.ts';
-import type { Position, Needs, Wallet, Agent, Food, Clock } from './components.ts';
+import type { Position, Needs, Wallet, Agent, SpeciesComp, Food, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
 import type { EntityId } from './ecs.ts';
 import type { RNG } from './rng.ts';
-
-// Hardcoded name pool for M0; content-driven names arrive in M1.
-const NAME_POOL = [
-  'Aldric', 'Bera', 'Cael', 'Duna', 'Erol', 'Faye', 'Gort', 'Hala',
-  'Ivar', 'Jess', 'Kell', 'Lyra', 'Mord', 'Nira', 'Oswin', 'Petra',
-  'Quen', 'Roan', 'Sera', 'Tor', 'Ula', 'Vex', 'Wren', 'Xara', 'Yoss', 'Zara',
-] as const;
+import type { Content } from '../content/loader.ts';
+import type { Species } from '../content/schema.ts';
+import { generateName } from '../content/names.ts';
 
 export interface Simulation {
   world: World;
   rng: RNG;
   clockEntity: EntityId;
+  content: Content;
 }
 
-export function createSimulation(cfg: SimConfig): Simulation {
+// Weighted pick of a species archetype using the seeded RNG.
+function rollSpecies(rng: RNG, species: Species[], totalWeight: number): Species {
+  let r = rng() * totalWeight;
+  for (const s of species) {
+    r -= s.spawnWeight;
+    if (r < 0) return s;
+  }
+  return species[species.length - 1]; // float-safety fallback
+}
+
+export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const world = new World();
   const rng = createRNG(cfg.seed);
 
@@ -43,16 +50,13 @@ export function createSimulation(cfg: SimConfig): Simulation {
     });
   }
 
-  // Spawn agents
-  const usedNames = new Set<string>();
+  // Spawn agents from species archetypes (weighted), with rolled values.
+  const speciesList = content.species.all();             // deterministic (sorted by id)
+  const totalWeight = speciesList.reduce((sum, s) => sum + s.spawnWeight, 0);
+
   for (let i = 0; i < cfg.initialPopulation; i++) {
-    let name: string;
-    let attempts = 0;
-    do {
-      name = NAME_POOL[rngInt(rng, 0, NAME_POOL.length - 1)];
-      attempts++;
-    } while (usedNames.has(name) && attempts < NAME_POOL.length * 2);
-    usedNames.add(name);
+    const species = rollSpecies(rng, speciesList, totalWeight);
+    const name = generateName(rng, species);
 
     const e = world.createEntity();
     world.addComponent<Position>(e, C_POSITION, {
@@ -66,6 +70,14 @@ export function createSimulation(cfg: SimConfig): Simulation {
     world.addComponent<Wallet>(e, C_WALLET, {
       gold: rngFloat(rng, 10, 50),
     });
+    world.addComponent<SpeciesComp>(e, C_SPECIES, {
+      id: species.id,
+      name: species.name,
+      color: species.color,
+      size: species.size,
+      hungerMult: species.needs.hunger,
+      energyMult: species.needs.energy,
+    });
     world.addComponent<Agent>(e, C_AGENT, {
       name,
       action: 'wander',
@@ -73,5 +85,5 @@ export function createSimulation(cfg: SimConfig): Simulation {
     });
   }
 
-  return { world, rng, clockEntity };
+  return { world, rng, clockEntity, content };
 }

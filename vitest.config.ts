@@ -12,7 +12,7 @@ export default defineConfig({
       // the soak entry-point are excluded: the renderer is DOM/Canvas glue that
       // needs a browser harness (deferred), and soak.ts is a CLI wrapper around
       // already-tested code.
-      include: ['src/sim/**/*.ts'],
+      include: ['src/sim/**/*.ts', 'src/content/**/*.ts', 'src/capability/**/*.ts'],
       exclude: ['src/sim/soak.ts'],
       thresholds: {
         statements: 90,

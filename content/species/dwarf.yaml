@@ -1,0 +1,17 @@
+# Stocky, subterranean, hardy. Eats slowly (low hunger multiplier), rarely magical.
+id: "dwarf"
+name: "Dwarf"
+lifespanYears: { min: 180, max: 260 }
+size: "small"
+spawnWeight: 2
+color: "#9fb8c8"        # cold slate blue
+tags: ["sapient", "subterranean"]
+needs:
+  hunger: 0.7           # dwarves get hungry more slowly than humans
+  energy: 1.1           # but tire a little faster
+magicAptitudeChance: 0.01   # rarer than humans (reserved for M3)
+nameSounds:             # harder, gutturally-clustered sounds — distinct from humans
+  onsets: ["br", "dr", "gr", "kr", "thr", "dur", "bal", "th", "kh", "vr"]
+  nuclei: ["a", "o", "u", "ur", "or", "ai"]
+  codas: ["", "n", "r", "k", "g", "in", "li", "rim", "dur"]
+  syllables: { min: 2, max: 2 }

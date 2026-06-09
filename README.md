@@ -51,9 +51,12 @@ RNG, ECS, every system, seed-determinism, and a 10,000-tick soak.
 - It prints a line every 1,000 ticks and ends with **`PASS`**.
 - Every line shows **`invalid=0`** — no agent is ever out of bounds or has an
   impossible need value. A `*** VIOLATION ***` marker would mean a real bug.
-- `pop` drifts *downward* over the run (20 → a handful). That is **expected** in
-  Milestone 0: agents starve and there is no reproduction yet. A sudden jump to
-  0 early, or a population *explosion*, would be the thing to flag.
+- Each line shows the species mix, e.g. `[human=4 dwarf=7]`. Dwarves get hungry
+  more slowly (a data-driven need multiplier), so they visibly outlast humans —
+  a good sign the species archetypes affect behaviour, not just looks.
+- `pop` drifts *downward* over the run (20 → a handful). That is **expected**:
+  agents starve and there is no reproduction yet (that arrives in Milestone 4).
+  A sudden jump to 0 early, or a population *explosion*, would be the thing to flag.
 
 **3. Watch it live** — `npm run dev`, open http://localhost:5173.
 - **Dots move.** Most drift randomly (white); some head purposefully toward the
@@ -72,7 +75,9 @@ RNG, ECS, every system, seed-determinism, and a 10,000-tick soak.
 
 **Controls:** click any dot to open the inspector; Space to pause/resume.
 
-**Legend:** white = wandering, orange = seeking food, blue = sleeping; green squares = food.
+**Legend:** dot *fill* = action (white = wandering, orange = seeking food, blue =
+sleeping); dot *ring colour + size* = species (sand/larger = human, slate/smaller =
+dwarf); green squares = food. Click a dot to see its species in the inspector.
 
 ## Stack at a glance
 

@@ -25,19 +25,19 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 ---
 
-## ▶ Milestone 1 — Content Framework & Species  *(current)*
+## ✅ Milestone 1 — Content Framework & Species  *(done — 2026-06-08)*
 
 **Goal:** stand up the data-driven content layer; make agents data, not code.
 
-- [ ] YAML loader + **schema validation** (Zod-style, schema-as-type), building typed **registries**. Bad content fails loud at startup (per `CONTENT_AND_DATA.md`).
-- [ ] Convert the hardcoded human into a data-driven `human` **species archetype**; add ≥1 more (e.g. `dwarf`) as content.
-- [ ] Spawn agents from archetypes (fixed + rolled-from-range values, species tags).
-- [ ] A *simple* per-species **name generator** (curated sound pools) — placeholder until M7.
-- [ ] First capability **effect tag** wired end to end as a proof of the data/behavior boundary.
+- [x] YAML loader + **schema validation** (Zod, schema-as-type), building typed **registries**. Bad content fails loud at startup (per `CONTENT_AND_DATA.md`).
+- [x] Convert the hardcoded human into a data-driven `human` **species archetype**; add `dwarf` as content.
+- [x] Spawn agents from archetypes (weighted species roll + rolled values, species tags).
+- [x] A *simple* per-species **name generator** (curated sound pools) — placeholder until M7.
+- [x] First capability **effect tag** (`forage` → `restore_hunger`) wired end to end as a proof of the data/behavior boundary.
 
-**DoD:** content loads and validates; a deliberately broken file aborts startup with a clear message; ≥2 species defined purely in YAML produce visibly distinct agents; tested.
+**DoD:** content loads and validates (Zod `.strict()`); a deliberately broken file aborts startup with a clear, file-named message (8 fail-loud tests); 2 species defined purely in YAML produce visibly distinct agents (verified: dwarves' lower hunger multiplier lets them outlast humans in soak; distinct ring colour + dot size in the renderer). 66 tests green.
 
-## Milestone 2 — World & Environment
+## ▶ Milestone 2 — World & Environment  *(current)*
 
 **Goal:** the world agents live in, and the entity/brain tiers.
 

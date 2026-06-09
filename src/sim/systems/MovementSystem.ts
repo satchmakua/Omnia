@@ -3,14 +3,17 @@ import { C_AGENT, C_NEEDS, C_POSITION, C_FOOD } from '../components.ts';
 import type { Agent, Needs, Position, Food } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
+import type { Content } from '../../content/loader.ts';
+import { invokeCapability } from '../../capability/invoke.ts';
 
 const DIRS = [
   { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
   { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
 ] as const;
 
-export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG): void {
+export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const foodEntities = world.query(C_FOOD, C_POSITION);
+  const forage = content.capabilities.require('forage');
 
   for (const entity of world.query(C_AGENT, C_NEEDS, C_POSITION)) {
     const agent = world.getComponent<Agent>(entity, C_AGENT)!;
@@ -36,11 +39,12 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG): void 
 
       if (nearestId >= 0) {
         if (minDist === 0) {
-          // Eat
+          // Eat by invoking the forage capability: data declares the effect
+          // (restore_hunger) and its power; the bite is capped by available food.
           const food = world.getComponent<Food>(nearestId, C_FOOD)!;
-          const bite = Math.min(food.amount, cfg.foodRestoreAmount);
+          const bite = Math.min(food.amount, forage.power);
           food.amount -= bite;
-          needs.hunger = Math.min(1.0, needs.hunger + bite);
+          invokeCapability(forage, { needs }, bite);
         } else {
           // Step one cell toward the food source.
           const fp = world.getComponent<Position>(nearestId, C_POSITION)!;
