@@ -1,0 +1,8 @@
+# Damp groves of glowing fungus. Lush and walkable, good foraging later.
+id: "fungal_forest"
+name: "Fungal Forest"
+climate: "humid"
+terrain: "forest"
+color: "#4f7d63"        # phosphor green
+passable: true
+genWeight: 4

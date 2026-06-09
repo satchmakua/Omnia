@@ -40,11 +40,27 @@ export const CapabilitySchema = z.object({
 
 export type Capability = z.infer<typeof CapabilitySchema>;
 
+// ── Biome ─────────────────────────────────────────────────────────────────────
+// Spawn tables (flora/fauna/resources) are deliberately omitted until those
+// content types exist (a later M2 task), so we never reference unloadable ids.
+export const BiomeSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  climate: z.string().min(1),
+  terrain: z.string().min(1),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour'),
+  passable: z.boolean().default(true),
+  genWeight: z.number().positive().default(1),  // relative frequency at world-gen
+}).strict();
+
+export type Biome = z.infer<typeof BiomeSchema>;
+
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
 export const FOLDER_SCHEMAS = {
   species: SpeciesSchema,
   capabilities: CapabilitySchema,
+  biomes: BiomeSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

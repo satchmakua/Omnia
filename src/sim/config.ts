@@ -10,6 +10,7 @@ export interface SimConfig {
   foodSourceCount: number;
   foodRegenPerTick: number;
   sleepRestorePerTick: number;
+  biomeSeedCount: number;   // number of Voronoi biome seeds at world generation
 }
 
 // Mirrors config/simulation.yaml; the YAML loader wires this in M1.
@@ -25,4 +26,5 @@ export const defaultConfig: SimConfig = {
   foodSourceCount: 25,
   foodRegenPerTick: 0.005,
   sleepRestorePerTick: 0.008,
+  biomeSeedCount: 14,
 };

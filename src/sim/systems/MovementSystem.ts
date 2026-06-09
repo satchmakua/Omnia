@@ -1,10 +1,12 @@
 import type { World } from '../ecs.ts';
-import { C_AGENT, C_NEEDS, C_POSITION, C_FOOD } from '../components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_FOOD, C_TILEMAP } from '../components.ts';
 import type { Agent, Needs, Position, Food } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
 import { invokeCapability } from '../../capability/invoke.ts';
+import { isPassable } from '../../world/tilemap.ts';
+import type { TileMapData } from '../../world/tilemap.ts';
 
 const DIRS = [
   { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
@@ -14,6 +16,17 @@ const DIRS = [
 export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const foodEntities = world.query(C_FOOD, C_POSITION);
   const forage = content.capabilities.require('forage');
+
+  // Singleton terrain grid (optional: systems still work if absent, treating
+  // the whole grid as passable).
+  const mapEnts = world.query(C_TILEMAP);
+  const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
+
+  // A tile is enterable if it's in bounds and (no map, or the map says passable).
+  const enterable = (x: number, y: number): boolean => {
+    if (x < 0 || x >= cfg.gridWidth || y < 0 || y >= cfg.gridHeight) return false;
+    return map ? isPassable(map, x, y) : true;
+  };
 
   for (const entity of world.query(C_AGENT, C_NEEDS, C_POSITION)) {
     const agent = world.getComponent<Agent>(entity, C_AGENT)!;
@@ -46,28 +59,41 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
           food.amount -= bite;
           invokeCapability(forage, { needs }, bite);
         } else {
-          // Step one cell toward the food source.
+          // Step toward the food. Build candidate steps on each axis with a
+          // nonzero delta, preferring the larger axis. Take the first enterable
+          // one; if terrain blocks all of them, wander to unstick.
           const fp = world.getComponent<Position>(nearestId, C_POSITION)!;
           const dx = fp.x - pos.x;
           const dy = fp.y - pos.y;
+          const stepX = { x: pos.x + Math.sign(dx), y: pos.y };
+          const stepY = { x: pos.x, y: pos.y + Math.sign(dy) };
+
+          const candidates: Position[] = [];
           if (Math.abs(dx) >= Math.abs(dy)) {
-            pos.x = clampAxis(pos.x + Math.sign(dx), cfg.gridWidth);
+            if (dx !== 0) candidates.push(stepX);
+            if (dy !== 0) candidates.push(stepY);
           } else {
-            pos.y = clampAxis(pos.y + Math.sign(dy), cfg.gridHeight);
+            if (dy !== 0) candidates.push(stepY);
+            if (dx !== 0) candidates.push(stepX);
           }
+
+          const step = candidates.find(c => enterable(c.x, c.y));
+          if (step) { pos.x = step.x; pos.y = step.y; }
+          else wander(pos, rng, enterable);
         }
         continue;
       }
       // No food available — fall through to wander.
     }
 
-    // wander: random step
-    const dir = DIRS[Math.floor(rng() * DIRS.length)];
-    pos.x = clampAxis(pos.x + dir.dx, cfg.gridWidth);
-    pos.y = clampAxis(pos.y + dir.dy, cfg.gridHeight);
+    wander(pos, rng, enterable);
   }
 }
 
-function clampAxis(v: number, max: number): number {
-  return Math.max(0, Math.min(max - 1, v));
+// Random one-cell step onto an enterable neighbour; stays put if hemmed in.
+function wander(pos: Position, rng: RNG, enterable: (x: number, y: number) => boolean): void {
+  const dir = DIRS[Math.floor(rng() * DIRS.length)];
+  const nx = pos.x + dir.dx;
+  const ny = pos.y + dir.dy;
+  if (enterable(nx, ny)) { pos.x = nx; pos.y = ny; }
 }

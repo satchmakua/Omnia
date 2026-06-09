@@ -157,6 +157,13 @@ describe('authored /content', () => {
     expect(content.capabilities.has('forage')).toBe(true);
   });
 
+  it('defines biomes including impassable water', () => {
+    const content = loadContentFromDisk('./content');
+    expect(content.biomes.size).toBeGreaterThanOrEqual(2);
+    expect(content.biomes.has('ashen_plains')).toBe(true);
+    expect(content.biomes.require('drowned_ruins').passable).toBe(false);
+  });
+
   it('species schema parses the on-disk human archetype', () => {
     const content = loadContentFromDisk('./content');
     const parsed = SpeciesSchema.safeParse({ ...content.species.require('human') });

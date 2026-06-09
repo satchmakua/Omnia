@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { createSimulation } from '../src/sim/world.ts';
 import { tick } from '../src/sim/loop.ts';
 import { defaultConfig } from '../src/sim/config.ts';
-import { C_AGENT, C_NEEDS, C_POSITION } from '../src/sim/components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_TILEMAP } from '../src/sim/components.ts';
 import type { Needs, Position } from '../src/sim/components.ts';
+import { isPassable } from '../src/world/tilemap.ts';
+import type { TileMapData } from '../src/world/tilemap.ts';
 import { testContent } from './helpers.ts';
 
 describe('Soak: 10,000-tick headless run', () => {
@@ -11,6 +13,7 @@ describe('Soak: 10,000-tick headless run', () => {
     const cfg = { ...defaultConfig, seed: 42 };
     const content = testContent();
     const { world, rng, clockEntity } = createSimulation(cfg, content);
+    const map = world.getComponent<TileMapData>(world.query(C_TILEMAP)[0], C_TILEMAP)!;
 
     for (let t = 0; t < 10_000; t++) {
       tick(world, rng, cfg, clockEntity, content);
@@ -31,6 +34,8 @@ describe('Soak: 10,000-tick headless run', () => {
       expect(p.x, `entity ${e} x out of bounds`).toBeLessThan(cfg.gridWidth);
       expect(p.y, `entity ${e} y out of bounds`).toBeGreaterThanOrEqual(0);
       expect(p.y, `entity ${e} y out of bounds`).toBeLessThan(cfg.gridHeight);
+
+      expect(isPassable(map, p.x, p.y), `entity ${e} on impassable tile`).toBe(true);
     }
   });
 });

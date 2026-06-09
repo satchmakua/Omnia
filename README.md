@@ -59,13 +59,17 @@ RNG, ECS, every system, seed-determinism, and a 10,000-tick soak.
   A sudden jump to 0 early, or a population *explosion*, would be the thing to flag.
 
 **3. Watch it live** — `npm run dev`, open http://localhost:5173.
+- **The map has coloured biome regions** (ash-green plains, phosphor-green fungal
+  forest, amethyst crystal flats, ochre wastes, deep-blue drowned ruins). The
+  blue water is impassable — agents and food never sit on it, and agents route
+  around it.
 - **Dots move.** Most drift randomly (white); some head purposefully toward the
-  green food squares (orange); some sit still recovering energy (blue).
+  bright food markers (orange); some sit still recovering energy (blue).
 - **The HUD** (top-left) shows the day counter and a ☀/☾ that flips each
   half-day — proof the clock is ticking.
-- **Click a dot.** A panel opens on the right showing that agent's name, current
-  action, age, position, hunger/energy bars, and gold. The bars should update
-  live as you watch.
+- **Click a dot.** A panel opens on the right showing that agent's name, species,
+  the terrain it's standing on, current action, age, position, hunger/energy
+  bars, and gold. The bars should update live as you watch.
 - **Press Space** to pause/resume — useful for clicking a specific dot.
 - Over a minute or two, some dots will **vanish** (those are starvation deaths);
   the inspector shows "Agent died" if you were watching one.
@@ -75,9 +79,10 @@ RNG, ECS, every system, seed-determinism, and a 10,000-tick soak.
 
 **Controls:** click any dot to open the inspector; Space to pause/resume.
 
-**Legend:** dot *fill* = action (white = wandering, orange = seeking food, blue =
+**Legend:** coloured tiles = biomes (blue = impassable water); bright green markers
+= food; dot *fill* = action (white = wandering, orange = seeking food, blue =
 sleeping); dot *ring colour + size* = species (sand/larger = human, slate/smaller =
-dwarf); green squares = food. Click a dot to see its species in the inspector.
+dwarf). Click a dot to see its species and terrain in the inspector.
 
 ## Stack at a glance
 
