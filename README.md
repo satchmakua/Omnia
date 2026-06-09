@@ -33,16 +33,46 @@ This repository is built to be developed **incrementally by an AI agent over man
 ## Running it
 
 ```
-npm install       # install dependencies
-npm run dev       # open http://localhost:5173 — moving dots + click inspector
-npm test          # 33 unit / seed / soak tests (vitest)
-npm run soak      # 10,000-tick headless run with health metrics (~40 ms)
-npm run lint      # TypeScript type-check
+npm install            # install dependencies (first time only)
+npm run dev            # open http://localhost:5173 — moving dots + click inspector
+npm test               # full test suite (vitest)
+npm run test:coverage  # same, plus a coverage report (gated at 90% in CI)
+npm run soak           # 10,000-tick headless run with health metrics (~40 ms)
+npm run lint           # TypeScript type-check (tsc --noEmit)
 ```
 
-**Controls:** click any dot to open the inspector panel; Space to pause/resume.
+### Sanity-checking it yourself
 
-**Legend:** white = wandering, orange = seeking food, blue = sleeping.
+**1. Run the tests** — `npm test`. You should see all test files pass
+(`Test Files  N passed`). This is the fastest confidence check: it covers the
+RNG, ECS, every system, seed-determinism, and a 10,000-tick soak.
+
+**2. Run the soak** — `npm run soak`. Watch for:
+- It prints a line every 1,000 ticks and ends with **`PASS`**.
+- Every line shows **`invalid=0`** — no agent is ever out of bounds or has an
+  impossible need value. A `*** VIOLATION ***` marker would mean a real bug.
+- `pop` drifts *downward* over the run (20 → a handful). That is **expected** in
+  Milestone 0: agents starve and there is no reproduction yet. A sudden jump to
+  0 early, or a population *explosion*, would be the thing to flag.
+
+**3. Watch it live** — `npm run dev`, open http://localhost:5173.
+- **Dots move.** Most drift randomly (white); some head purposefully toward the
+  green food squares (orange); some sit still recovering energy (blue).
+- **The HUD** (top-left) shows the day counter and a ☀/☾ that flips each
+  half-day — proof the clock is ticking.
+- **Click a dot.** A panel opens on the right showing that agent's name, current
+  action, age, position, hunger/energy bars, and gold. The bars should update
+  live as you watch.
+- **Press Space** to pause/resume — useful for clicking a specific dot.
+- Over a minute or two, some dots will **vanish** (those are starvation deaths);
+  the inspector shows "Agent died" if you were watching one.
+
+> The same instructions, plus what each command does, are mirrored in
+> `CLAUDE.md` (the agent's operating manual) under **Commands**.
+
+**Controls:** click any dot to open the inspector; Space to pause/resume.
+
+**Legend:** white = wandering, orange = seeking food, blue = sleeping; green squares = food.
 
 ## Stack at a glance
 
