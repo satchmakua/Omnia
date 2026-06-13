@@ -192,6 +192,13 @@ describe('authored /content', () => {
     expect(content.resources.require('ore').renewable).toBe(false);
   });
 
+  it('defines professions with positive wages', () => {
+    const content = loadContentFromDisk('./content');
+    expect(content.professions.size).toBeGreaterThanOrEqual(2);
+    for (const p of content.professions.all()) expect(p.dailyWage).toBeGreaterThan(0);
+    expect(content.professions.has('laborer')).toBe(true);
+  });
+
   it('every biome spawn-table id resolves to real content', () => {
     const content = loadContentFromDisk('./content');
     for (const biome of content.biomes.all()) {

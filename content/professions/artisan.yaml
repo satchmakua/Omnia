@@ -1,0 +1,6 @@
+# Skilled crafter. Well paid; few positions per workshop.
+id: "artisan"
+name: "Artisan"
+dailyWage: 14
+color: "#c08040"
+maxEmployeesPerBusiness: 3

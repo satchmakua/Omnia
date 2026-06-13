@@ -111,8 +111,10 @@ When the page loads you're looking at a small living world ticking in real time.
 - **Soft circles = flora** (plants/fungi). They start small and grow; a brighter,
   larger circle is riper and edible. Folk and fauna forage them.
 - **Small squares = resource nodes** (timber, ore, reactive crystal).
-- **The HUD** (top bar) shows the day, a ☀/☾ that flips each half-day, and live
-  counts of **Folk / Fauna / Flora**.
+- **Bordered coloured squares = businesses** — employers (laborer, farmer, miner,
+  artisan, merchant houses). Folk take jobs there and gather to work (amber dot).
+- **The HUD** (top bar) shows the day, a ☀/☾ that flips each half-day, live counts
+  of **Folk / Fauna / Flora**, and the town's **median wealth + Gini** (inequality).
 
 **Things worth trying**
 
@@ -122,6 +124,9 @@ When the page loads you're looking at a small living world ticking in real time.
   bar. Click a **plant** to see its maturity and food yield.
 - Watch the HUD **Fauna** count climb as animals breed, then settle as the land
   reaches its carrying capacity.
+- **Click a person** to see their job, gold, and (if any) debt; click a **business**
+  to see its trade, staff, and balance. Watch the HUD **median wealth / Gini** —
+  the town stratifies into richer and poorer folk over the first few days.
 
 > Want a different world? Edit `seed` under `world:` in `config/simulation.yaml`
 > (mirrored in `src/sim/config.ts`) and restart. The same seed always produces the
@@ -182,6 +187,7 @@ is simply "keep going," and the agent should know what to do.
 | Diamond | Fauna (animal, instinct-only) |
 | Soft circle | Flora (plant; bigger/brighter = riper) |
 | Small square | Resource node (timber / ore / crystal) |
+| Bordered square | Business (employer; colour = profession) |
 
 ## Stack at a glance
 
