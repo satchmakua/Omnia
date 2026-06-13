@@ -3,9 +3,9 @@ import { World } from '../src/sim/ecs.ts';
 import { createRNG } from '../src/sim/rng.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_NEEDS, C_POSITION, C_FOOD, C_CLOCK,
+  C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_CLOCK,
 } from '../src/sim/components.ts';
-import type { Agent, Needs, Position, Food, Clock } from '../src/sim/components.ts';
+import type { Agent, Needs, Position, Flora, Clock } from '../src/sim/components.ts';
 import { runClockSystem }    from '../src/sim/systems/ClockSystem.ts';
 import { runHungerSystem }   from '../src/sim/systems/HungerSystem.ts';
 import { runActionSystem }   from '../src/sim/systems/ActionSystem.ts';
@@ -74,15 +74,6 @@ describe('HungerSystem', () => {
     const { w, e } = makeAgent(1.0, 1.0);
     runHungerSystem(w, cfg);
     expect(w.isAlive(e)).toBe(true);
-  });
-
-  it('regenerates food sources', () => {
-    const w = new World();
-    const food: Food = { amount: 0.0, regenPerTick: 0.01 };
-    const fe = w.createEntity();
-    w.addComponent(fe, C_FOOD, food);
-    runHungerSystem(w, cfg);
-    expect(food.amount).toBeCloseTo(0.01);
   });
 });
 
@@ -163,15 +154,18 @@ describe('MovementSystem', () => {
     expect(needs.energy).toBeGreaterThan(0.5);
   });
 
-  it('agent seeking food eats when on the same cell', () => {
+  it('agent seeking food forages ripe flora on the same cell', () => {
     const w   = new World();
     const rng = createRNG(1);
     const needs: Needs = { hunger: 0.3, energy: 0.9 };
 
-    // Place agent and food on the same cell.
+    // Ripe flora and a hungry agent on the same cell.
     const fe = w.createEntity();
     w.addComponent<Position>(fe, C_POSITION, { x: 5, y: 5 });
-    w.addComponent<Food>(fe, C_FOOD, { amount: 1.0, regenPerTick: 0.001 });
+    w.addComponent<Flora>(fe, C_FLORA, {
+      speciesId: 'ash_grass', name: 'Ash Grass', color: '#9fb86a',
+      maturity: 1.0, growthPerTick: 0.01, edibleAt: 0.4, foodYield: 0.35, spreadChancePerTick: 0,
+    });
 
     const ae = w.createEntity();
     w.addComponent<Position>(ae, C_POSITION, { x: 5, y: 5 });
@@ -180,6 +174,7 @@ describe('MovementSystem', () => {
 
     const before = needs.hunger;
     runMovementSystem(w, cfg, rng, content);
-    expect(needs.hunger).toBeGreaterThan(before);
+    expect(needs.hunger).toBeGreaterThan(before);          // ate
+    expect(w.getComponent<Flora>(fe, C_FLORA)!.maturity).toBe(0); // grazed back to a sprout
   });
 });

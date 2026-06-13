@@ -1,0 +1,8 @@
+# Bioluminescent fungus of the damp forests. Slower, but a hearty meal.
+id: "glowcap"
+name: "Glowcap"
+color: "#6fe0b0"
+growthPerDay: 0.8
+edibleAt: 0.6
+foodYield: 0.6
+spreadChancePerDay: 0.12

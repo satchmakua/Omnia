@@ -6,3 +6,9 @@ terrain: "plains"
 color: "#6b7250"        # muted ash-green; renderer tints the tile background
 passable: true
 genWeight: 6            # most common biome at world generation
+flora:
+  - { id: "ash_grass", weight: 8 }
+  - { id: "spore_fern", weight: 1 }
+fauna:
+  - { id: "moth_grazer", weight: 5 }
+resources: []

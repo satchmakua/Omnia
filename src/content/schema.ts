@@ -40,9 +40,55 @@ export const CapabilitySchema = z.object({
 
 export type Capability = z.infer<typeof CapabilitySchema>;
 
+// ── Flora ─────────────────────────────────────────────────────────────────────
+// Plants/fungi: grow toward maturity, optionally spread, foraged for food.
+export const FloraSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour'),
+  growthPerDay: z.number().positive(),     // maturity gained per in-sim day
+  edibleAt: z.number().min(0).max(1).default(0.5),  // maturity needed to forage
+  foodYield: z.number().positive(),        // hunger restored when foraged ripe
+  spreadChancePerDay: z.number().min(0).max(1).default(0),  // chance to seed a neighbour
+}).strict();
+
+export type Flora = z.infer<typeof FloraSchema>;
+
+// ── Fauna ─────────────────────────────────────────────────────────────────────
+// Instinct-only light agents (no LLM, ever). Graze flora, breed, starve.
+export const FaunaSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour'),
+  size: z.enum(['small', 'medium', 'large']),
+  hungerDecayPerDay: z.number().positive(),
+  breedThreshold: z.number().min(0).max(1).default(0.7),  // hunger above which it may breed
+  breedCooldownDays: z.number().min(0).default(1),
+}).strict();
+
+export type Fauna = z.infer<typeof FaunaSchema>;
+
+// ── Resource ──────────────────────────────────────────────────────────────────
+// Extractable world nodes (timber, ore, ...). Renewable ones regrow; finite
+// ones deplete permanently. Extraction itself arrives with the economy (M3).
+export const ResourceSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour'),
+  renewable: z.boolean().default(true),
+  regenPerDay: z.number().min(0).default(0),  // only meaningful when renewable
+}).strict();
+
+export type Resource = z.infer<typeof ResourceSchema>;
+
 // ── Biome ─────────────────────────────────────────────────────────────────────
-// Spawn tables (flora/fauna/resources) are deliberately omitted until those
-// content types exist (a later M2 task), so we never reference unloadable ids.
+// Spawn tables reference flora/fauna/resource ids; the loader cross-checks them
+// against those registries at startup (fail loud on a dangling reference).
+const SpawnEntry = z.object({
+  id: z.string().min(1),
+  weight: z.number().positive(),
+}).strict();
+
 export const BiomeSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -51,9 +97,13 @@ export const BiomeSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour'),
   passable: z.boolean().default(true),
   genWeight: z.number().positive().default(1),  // relative frequency at world-gen
+  flora: z.array(SpawnEntry).default([]),
+  fauna: z.array(SpawnEntry).default([]),
+  resources: z.array(SpawnEntry).default([]),
 }).strict();
 
 export type Biome = z.infer<typeof BiomeSchema>;
+export type SpawnTableEntry = z.infer<typeof SpawnEntry>;
 
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
@@ -61,6 +111,9 @@ export const FOLDER_SCHEMAS = {
   species: SpeciesSchema,
   capabilities: CapabilitySchema,
   biomes: BiomeSchema,
+  flora: FloraSchema,
+  fauna: FaunaSchema,
+  resources: ResourceSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

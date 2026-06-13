@@ -5,7 +5,9 @@
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { FOLDER_SCHEMAS } from './schema.ts';
-import type { Species, Capability, Biome, ContentFolder } from './schema.ts';
+import type {
+  Species, Capability, Biome, Flora, Fauna, Resource, ContentFolder,
+} from './schema.ts';
 import { Registry } from './registry.ts';
 import { isKnownEffectTag } from '../capability/effects.ts';
 
@@ -13,6 +15,9 @@ export interface Content {
   species: Registry<Species>;
   capabilities: Registry<Capability>;
   biomes: Registry<Biome>;
+  flora: Registry<Flora>;
+  fauna: Registry<Fauna>;
+  resources: Registry<Resource>;
 }
 
 // Relative path like "species/human.yaml" -> "species".
@@ -35,7 +40,9 @@ function formatZodError(relPath: string, err: z.ZodError): string {
  * Fail loud, early, helpful (CONTENT_AND_DATA Rule 1).
  */
 export function loadContent(files: Map<string, string>): Content {
-  const buckets: Record<ContentFolder, unknown[]> = { species: [], capabilities: [], biomes: [] };
+  const buckets: Record<ContentFolder, unknown[]> = {
+    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [],
+  };
   const errors: string[] = [];
 
   // Deterministic processing order regardless of filesystem/glob ordering.
@@ -89,10 +96,16 @@ export function loadContent(files: Map<string, string>): Content {
   let species: Registry<Species>;
   let capabilities: Registry<Capability>;
   let biomes: Registry<Biome>;
+  let flora: Registry<Flora>;
+  let fauna: Registry<Fauna>;
+  let resources: Registry<Resource>;
   try {
     species = new Registry(buckets.species as Species[]);
     capabilities = new Registry(buckets.capabilities as Capability[]);
     biomes = new Registry(buckets.biomes as Biome[]);
+    flora = new Registry(buckets.flora as Flora[]);
+    fauna = new Registry(buckets.fauna as Fauna[]);
+    resources = new Registry(buckets.resources as Resource[]);
   } catch (e) {
     throw new Error(`Content failed to load: ${(e as Error).message}`);
   }
@@ -101,5 +114,26 @@ export function loadContent(files: Map<string, string>): Content {
     throw new Error('Content failed to load: no species defined under content/species');
   }
 
-  return { species, capabilities, biomes };
+  // Referential integrity: biome spawn tables must point at content that exists.
+  const refErrors: string[] = [];
+  for (const biome of biomes.all()) {
+    const check = (kind: string, reg: Registry<{ id: string }>, entries: { id: string }[]) => {
+      for (const entry of entries) {
+        if (!reg.has(entry.id)) {
+          refErrors.push(`biomes/${biome.id}: ${kind} spawn-table references unknown id '${entry.id}'`);
+        }
+      }
+    };
+    check('flora', flora, biome.flora);
+    check('fauna', fauna, biome.fauna);
+    check('resources', resources, biome.resources);
+  }
+  if (refErrors.length > 0) {
+    throw new Error(
+      `Content failed to load (${refErrors.length} problem${refErrors.length > 1 ? 's' : ''}):\n` +
+      refErrors.join('\n'),
+    );
+  }
+
+  return { species, capabilities, biomes, flora, fauna, resources };
 }

@@ -1,0 +1,6 @@
+# Strange humming crystal — a lost-world relic. Finite and irreplaceable.
+id: "reactive_crystal"
+name: "Reactive Crystal"
+color: "#e07ad0"
+renewable: false
+regenPerDay: 0

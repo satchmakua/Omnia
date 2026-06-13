@@ -12,9 +12,9 @@ import { createSimulation } from '../src/sim/world.ts';
 import { runMovementSystem } from '../src/sim/systems/MovementSystem.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_POSITION, C_NEEDS, C_FOOD, C_TILEMAP,
+  C_AGENT, C_POSITION, C_NEEDS, C_FLORA, C_FAUNA, C_TILEMAP,
 } from '../src/sim/components.ts';
-import type { Position, Needs, Agent, Food } from '../src/sim/components.ts';
+import type { Position, Needs, Agent, Flora } from '../src/sim/components.ts';
 import { testContent } from './helpers.ts';
 
 const content = testContent();
@@ -24,6 +24,7 @@ function biomeReg(...biomes: Partial<Biome>[]): Registry<Biome> {
     id: b.id ?? `b${i}`, name: b.name ?? `Biome ${i}`,
     climate: 'temperate', terrain: 'plains', color: b.color ?? '#445566',
     passable: b.passable ?? true, genWeight: b.genWeight ?? 1,
+    flora: [], fauna: [], resources: [],
   }));
   return new Registry(full);
 }
@@ -161,10 +162,13 @@ describe('movement and terrain', () => {
     const cfg = { ...defaultConfig, gridWidth: 5, gridHeight: 5 };
     const rng = createRNG(2);
 
-    // Food at (4,0); agent at (0,0); wall column x=2 between them.
+    // Ripe flora at (4,0); agent at (0,0); wall column x=2 between them.
     const fe = w.createEntity();
     w.addComponent<Position>(fe, C_POSITION, { x: 4, y: 0 });
-    w.addComponent<Food>(fe, C_FOOD, { amount: 1, regenPerTick: 0 });
+    w.addComponent<Flora>(fe, C_FLORA, {
+      speciesId: 'ash_grass', name: 'Ash Grass', color: '#9fb86a',
+      maturity: 1, growthPerTick: 0, edibleAt: 0.4, foodYield: 0.35, spreadChancePerTick: 0,
+    });
 
     const ae = w.createEntity();
     w.addComponent<Position>(ae, C_POSITION, { x: 0, y: 0 });
@@ -182,20 +186,24 @@ describe('movement and terrain', () => {
 // ── Integration: createSimulation places everything on passable land ──────────
 
 describe('createSimulation with terrain', () => {
-  it('spawns the tilemap and keeps all agents + food on passable tiles', () => {
+  it('spawns the tilemap and keeps agents, flora, and fauna on passable tiles', () => {
     const cfg = { ...defaultConfig, seed: 11 };
     const { world } = createSimulation(cfg, content);
 
     const map = world.getComponent<TileMapData>(world.query(C_TILEMAP)[0], C_TILEMAP)!;
     expect(map.width).toBe(cfg.gridWidth);
 
-    for (const e of world.query(C_AGENT, C_POSITION)) {
-      const p = world.getComponent<Position>(e, C_POSITION)!;
-      expect(isPassable(map, p.x, p.y)).toBe(true);
+    for (const comp of [C_AGENT, C_FLORA, C_FAUNA]) {
+      for (const e of world.query(comp, C_POSITION)) {
+        const p = world.getComponent<Position>(e, C_POSITION)!;
+        expect(isPassable(map, p.x, p.y), `${comp} on impassable tile`).toBe(true);
+      }
     }
-    for (const e of world.query(C_FOOD, C_POSITION)) {
-      const p = world.getComponent<Position>(e, C_POSITION)!;
-      expect(isPassable(map, p.x, p.y)).toBe(true);
-    }
+  });
+
+  it('populates the world with flora and fauna from biome spawn tables', () => {
+    const { world } = createSimulation({ ...defaultConfig, seed: 11 }, content);
+    expect(world.query(C_FLORA).length).toBeGreaterThan(0);
+    expect(world.query(C_FAUNA).length).toBeGreaterThan(0);
   });
 });

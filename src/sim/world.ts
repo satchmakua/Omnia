@@ -1,9 +1,9 @@
 import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
-  C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_FOOD, C_CLOCK, C_TILEMAP,
+  C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_CLOCK, C_TILEMAP, C_CHRONICLE,
 } from './components.ts';
-import type { Position, Needs, Wallet, Agent, SpeciesComp, Food, Clock } from './components.ts';
+import type { Position, Needs, Wallet, Agent, SpeciesComp, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
 import type { EntityId } from './ecs.ts';
 import type { RNG } from './rng.ts';
@@ -13,6 +13,10 @@ import { generateName } from '../content/names.ts';
 import { generateTileMap } from '../world/worldgen.ts';
 import { isPassable } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
+import { populateWorld } from '../world/populate.ts';
+import { createChronicle, chronicleAdd } from '../history/chronicle.ts';
+import type { ChronicleData } from '../history/chronicle.ts';
+import { generateBackstory } from '../history/backstory.ts';
 
 export interface Simulation {
   world: World;
@@ -61,16 +65,14 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const mapEntity = world.createEntity();
   world.addComponent<TileMapData>(mapEntity, C_TILEMAP, tileMap);
 
-  // Scatter food sources on passable tiles.
-  for (let i = 0; i < cfg.foodSourceCount; i++) {
-    const { x, y } = findPassableTile(rng, tileMap);
-    const e = world.createEntity();
-    world.addComponent<Position>(e, C_POSITION, { x, y });
-    world.addComponent<Food>(e, C_FOOD, {
-      amount: rngFloat(rng, 0.5, 1.0),
-      regenPerTick: cfg.foodRegenPerTick,
-    });
-  }
+  // Invent the post-apocalyptic backstory as the first Chronicle entries.
+  const chronicle = createChronicle();
+  for (const entry of generateBackstory(rng, tileMap)) chronicleAdd(chronicle, entry);
+  const chronicleEntity = world.createEntity();
+  world.addComponent<ChronicleData>(chronicleEntity, C_CHRONICLE, chronicle);
+
+  // Populate the world with flora, fauna, and resources from biome spawn tables.
+  populateWorld(world, rng, cfg, content, tileMap);
 
   // Spawn agents from species archetypes (weighted), with rolled values.
   const speciesList = content.species.all();             // deterministic (sorted by id)

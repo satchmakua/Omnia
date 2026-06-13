@@ -1,0 +1,8 @@
+# Aggressive spore-spreading fern. Quick and prolific, modest food.
+id: "spore_fern"
+name: "Spore Fern"
+color: "#7fd070"
+growthPerDay: 1.2
+edibleAt: 0.5
+foodYield: 0.4
+spreadChancePerDay: 0.3

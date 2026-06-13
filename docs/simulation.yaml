@@ -7,6 +7,13 @@ world:
   initialPopulation: 50      # Milestone 0 may start lower (~20); raise as systems mature.
   seed: 1                    # change for a different town; same seed => same run.
   biomeSeedCount: 14         # number of Voronoi biome seeds at world generation (M2).
+  # World population at generation (per passable tile, gated by biome spawn tables):
+  floraDensity: 0.06         # chance a passable tile starts with flora
+  faunaDensity: 0.006        # chance a passable tile starts with fauna
+  resourceDensity: 0.01      # chance a passable tile starts with a resource node
+  maxFlora: 500              # hard cap on flora entities (spread is bounded)
+  maxFauna: 150              # hard cap on fauna entities (breeding is bounded)
+  faunaBreedChancePerDay: 0.5 # per-day chance a fed, off-cooldown fauna breeds
 
 time:
   ticksPerDay: 240           # simulation granularity within a day.

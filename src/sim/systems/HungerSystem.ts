@@ -1,8 +1,10 @@
 import type { World } from '../ecs.ts';
-import { C_NEEDS, C_AGENT, C_SPECIES, C_FOOD } from '../components.ts';
-import type { Needs, SpeciesComp, Food } from '../components.ts';
+import { C_NEEDS, C_AGENT, C_SPECIES } from '../components.ts';
+import type { Needs, SpeciesComp } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 
+// Sapient needs decay; agents whose hunger bottoms out die. (Flora growth is the
+// FloraSystem's job now — food is no longer an abstract regenerating amount.)
 export function runHungerSystem(world: World, cfg: SimConfig): void {
   const baseHunger = cfg.hungerDecayPerDay / cfg.ticksPerDay;
   const baseEnergy = cfg.energyDecayPerDay / cfg.ticksPerDay;
@@ -25,10 +27,4 @@ export function runHungerSystem(world: World, cfg: SimConfig): void {
 
   // Destroy after iterating to avoid mutating the query result mid-loop.
   for (const entity of toKill) world.destroyEntity(entity);
-
-  // Regenerate food sources.
-  for (const entity of world.query(C_FOOD)) {
-    const food = world.getComponent<Food>(entity, C_FOOD)!;
-    food.amount = Math.min(1.0, food.amount + food.regenPerTick);
-  }
 }

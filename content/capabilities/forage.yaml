@@ -5,4 +5,4 @@ id: "forage"
 name: "Forage"
 tradition: "technology"   # common, knowledge-gated (vs. rare aptitude-gated magic)
 effects: ["restore_hunger"]
-power: 0.4                # max hunger restored per bite (also caps food consumed)
+power: 1.0                # foraging efficiency: hunger restored = floraYield × ripeness × power

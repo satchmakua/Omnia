@@ -1,0 +1,8 @@
+# Hardy grey-green grass of the open plains. Fast to grow and spread; low yield.
+id: "ash_grass"
+name: "Ash Grass"
+color: "#9fb86a"
+growthPerDay: 1.5          # reaches full maturity in well under a day
+edibleAt: 0.4
+foodYield: 0.35
+spreadChancePerDay: 0.25   # colonises neighbouring tiles readily

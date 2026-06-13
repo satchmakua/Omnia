@@ -1,0 +1,6 @@
+# Renewable wood from the fungal groves. Regrows slowly after extraction (M3).
+id: "timber"
+name: "Timber"
+color: "#8a5a3a"
+renewable: true
+regenPerDay: 0.05
