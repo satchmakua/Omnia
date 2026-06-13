@@ -1,6 +1,6 @@
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_TILEMAP } from '../components.ts';
-import type { Agent, Needs, Position, Flora } from '../components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_JOB, C_TILEMAP } from '../components.ts';
+import type { Agent, Needs, Position, Flora, Job } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
@@ -35,6 +35,17 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
     if (agent.action === 'sleep') {
       needs.energy = Math.min(1.0, needs.energy + cfg.sleepRestorePerTick);
       continue;
+    }
+
+    if (agent.action === 'work') {
+      // Walk to the employer's tile; the EconomySystem pays once standing on it.
+      const job = world.getComponent<Job>(entity, C_JOB);
+      const ep = job ? world.getComponent<Position>(job.employer, C_POSITION) : undefined;
+      if (ep) {
+        if (pos.x !== ep.x || pos.y !== ep.y) stepToward(pos, ep.x, ep.y, rng, enterable);
+        continue; // standing on the workplace: stay put and work
+      }
+      // No job/employer to walk to — fall through to wander.
     }
 
     if (agent.action === 'seek_food') {

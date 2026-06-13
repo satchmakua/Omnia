@@ -14,6 +14,7 @@ import { generateTileMap } from '../world/worldgen.ts';
 import { isPassable } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { populateWorld } from '../world/populate.ts';
+import { spawnBusiness } from '../world/spawn.ts';
 import { createChronicle, chronicleAdd } from '../history/chronicle.ts';
 import type { ChronicleData } from '../history/chronicle.ts';
 import { generateBackstory } from '../history/backstory.ts';
@@ -74,6 +75,15 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // Populate the world with flora, fauna, and resources from biome spawn tables.
   populateWorld(world, rng, cfg, content, tileMap);
 
+  // Place employer businesses (round-robin over professions for variety).
+  const professions = content.professions.all();          // deterministic (sorted by id)
+  if (professions.length > 0) {
+    for (let i = 0; i < cfg.businessCount; i++) {
+      const { x, y } = findPassableTile(rng, tileMap);
+      spawnBusiness(world, x, y, professions[i % professions.length], cfg);
+    }
+  }
+
   // Spawn agents from species archetypes (weighted), with rolled values.
   const speciesList = content.species.all();             // deterministic (sorted by id)
   const totalWeight = speciesList.reduce((sum, s) => sum + s.spawnWeight, 0);
@@ -91,6 +101,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
     });
     world.addComponent<Wallet>(e, C_WALLET, {
       gold: rngFloat(rng, 10, 50),
+      debt: 0,
     });
     world.addComponent<SpeciesComp>(e, C_SPECIES, {
       id: species.id,
@@ -104,6 +115,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
       name,
       action: 'wander',
       ticksAlive: 0,
+      wealthGoal: rngFloat(rng, cfg.wealthGoalMin, cfg.wealthGoalMax),
     });
   }
 

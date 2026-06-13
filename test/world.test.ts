@@ -9,10 +9,11 @@ import {
 import type { TileMapData } from '../src/world/tilemap.ts';
 import { World } from '../src/sim/ecs.ts';
 import { createSimulation } from '../src/sim/world.ts';
+import { runTicks } from '../src/sim/loop.ts';
 import { runMovementSystem } from '../src/sim/systems/MovementSystem.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_POSITION, C_NEEDS, C_FLORA, C_FAUNA, C_TILEMAP,
+  C_AGENT, C_POSITION, C_NEEDS, C_FLORA, C_FAUNA, C_BUSINESS, C_JOB, C_TILEMAP,
 } from '../src/sim/components.ts';
 import type { Position, Needs, Agent, Flora } from '../src/sim/components.ts';
 import { testContent } from './helpers.ts';
@@ -142,7 +143,7 @@ describe('movement and terrain', () => {
       const e = w.createEntity();
       w.addComponent<Position>(e, C_POSITION, { x: 0, y: i % 5 });
       w.addComponent<Needs>(e, C_NEEDS, { hunger: 0.9, energy: 0.9 });
-      w.addComponent<Agent>(e, C_AGENT, { name: `A${i}`, action: 'wander', ticksAlive: 0 });
+      w.addComponent<Agent>(e, C_AGENT, { name: `A${i}`, action: 'wander', ticksAlive: 0, wealthGoal: 50 });
     }
 
     for (let t = 0; t < 300; t++) runMovementSystem(w, cfg, rng, content);
@@ -173,7 +174,7 @@ describe('movement and terrain', () => {
     const ae = w.createEntity();
     w.addComponent<Position>(ae, C_POSITION, { x: 0, y: 0 });
     w.addComponent<Needs>(ae, C_NEEDS, { hunger: 0.2, energy: 0.9 });
-    w.addComponent<Agent>(ae, C_AGENT, { name: 'Seeker', action: 'seek_food', ticksAlive: 0 });
+    w.addComponent<Agent>(ae, C_AGENT, { name: 'Seeker', action: 'seek_food', ticksAlive: 0, wealthGoal: 50 });
 
     for (let t = 0; t < 60; t++) {
       const p = w.getComponent<Position>(ae, C_POSITION)!;
@@ -205,5 +206,14 @@ describe('createSimulation with terrain', () => {
     const { world } = createSimulation({ ...defaultConfig, seed: 11 }, content);
     expect(world.query(C_FLORA).length).toBeGreaterThan(0);
     expect(world.query(C_FAUNA).length).toBeGreaterThan(0);
+  });
+
+  it('places businesses and employs agents within a few ticks', () => {
+    const cfg = { ...defaultConfig, seed: 11 };
+    const sim = createSimulation(cfg, content);
+    expect(sim.world.query(C_BUSINESS).length).toBe(cfg.businessCount);
+    runTicks(sim.world, sim.rng, cfg, sim.clockEntity, content, 5);
+    // With ample openings, every agent should hold a job.
+    expect(sim.world.query(C_AGENT, C_JOB).length).toBe(sim.world.query(C_AGENT).length);
   });
 });
