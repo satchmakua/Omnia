@@ -18,7 +18,7 @@ world:
 time:
   ticksPerDay: 240           # simulation granularity within a day.
   daysPerSeason: 30
-  simSpeedTicksPerSecond: 10 # real-time playback speed; decoupled from sim time (pause/FF freely).
+  simSpeedTicksPerSecond: 6  # initial real-time playback speed; decoupled from sim time. Adjust live with the in-app speed slider (pause/FF freely).
 
 # Need decay per in-sim day (0..1 scale; higher = depletes faster). Action utility rises as a need drops.
 needs:

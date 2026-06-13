@@ -8,6 +8,7 @@ export interface SimConfig {
   energyDecayPerDay: number;
   actionThreshold: number;
   sleepRestorePerTick: number;
+  simSpeedTicksPerSecond: number;  // initial real-time playback speed (renderer only; decoupled from sim time)
   biomeSeedCount: number;    // number of Voronoi biome seeds at world generation
   // World population at generation (per passable tile, gated by biome spawn tables):
   floraDensity: number;      // chance a passable tile starts with flora
@@ -29,6 +30,7 @@ export const defaultConfig: SimConfig = {
   energyDecayPerDay: 0.7,
   actionThreshold: 0.4,
   sleepRestorePerTick: 0.008,
+  simSpeedTicksPerSecond: 6,   // gentle default; adjust live with the speed slider
   biomeSeedCount: 14,
   floraDensity: 0.06,
   faunaDensity: 0.006,
