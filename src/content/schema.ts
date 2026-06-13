@@ -81,6 +81,20 @@ export const ResourceSchema = z.object({
 
 export type Resource = z.infer<typeof ResourceSchema>;
 
+// ── Profession ────────────────────────────────────────────────────────────────
+// A job an agent can hold. Businesses are spawned per profession; agents earn the
+// profession's wage while working. (Skill/aptitude gating arrives with the
+// Capability system, M3 part 2.)
+export const ProfessionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  dailyWage: z.number().positive(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour'),
+  maxEmployeesPerBusiness: z.number().int().positive().default(4),
+}).strict();
+
+export type Profession = z.infer<typeof ProfessionSchema>;
+
 // ── Biome ─────────────────────────────────────────────────────────────────────
 // Spawn tables reference flora/fauna/resource ids; the loader cross-checks them
 // against those registries at startup (fail loud on a dangling reference).
@@ -114,6 +128,7 @@ export const FOLDER_SCHEMAS = {
   flora: FloraSchema,
   fauna: FaunaSchema,
   resources: ResourceSchema,
+  professions: ProfessionSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

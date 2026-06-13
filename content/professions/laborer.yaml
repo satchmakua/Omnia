@@ -1,0 +1,6 @@
+# Common unskilled work. Low pay, always hiring.
+id: "laborer"
+name: "Laborer"
+dailyWage: 6
+color: "#b08050"
+maxEmployeesPerBusiness: 6

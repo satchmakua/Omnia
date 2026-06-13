@@ -8,6 +8,7 @@ export interface SimConfig {
   energyDecayPerDay: number;
   actionThreshold: number;
   sleepRestorePerTick: number;
+  simSpeedTicksPerSecond: number;  // initial real-time playback speed (renderer only; decoupled from sim time)
   biomeSeedCount: number;    // number of Voronoi biome seeds at world generation
   // World population at generation (per passable tile, gated by biome spawn tables):
   floraDensity: number;      // chance a passable tile starts with flora
@@ -16,6 +17,13 @@ export interface SimConfig {
   maxFlora: number;          // hard cap on flora entities (spread is bounded)
   maxFauna: number;          // hard cap on fauna entities (breeding is bounded)
   faunaBreedChancePerDay: number;  // per-day chance a fed, off-cooldown fauna breeds
+  // Economy (M3):
+  businessCount: number;     // number of employer entities placed at world-gen
+  dailyUpkeep: number;       // cost of living deducted from each agent per day
+  wealthGoalMin: number;     // agents roll a personal gold target in [min, max];
+  wealthGoalMax: number;     //   they work while below it, so wealth stays bounded
+  businessStartBalance: number;        // employer starting funds
+  businessRevenueMargin: number;       // revenue per worker = wage × (1 + margin)
 }
 
 // Mirrors config/simulation.yaml; the YAML loader wires this in a later milestone.
@@ -29,6 +37,7 @@ export const defaultConfig: SimConfig = {
   energyDecayPerDay: 0.7,
   actionThreshold: 0.4,
   sleepRestorePerTick: 0.008,
+  simSpeedTicksPerSecond: 6,   // gentle default; adjust live with the speed slider
   biomeSeedCount: 14,
   floraDensity: 0.06,
   faunaDensity: 0.006,
@@ -36,4 +45,10 @@ export const defaultConfig: SimConfig = {
   maxFlora: 500,
   maxFauna: 150,
   faunaBreedChancePerDay: 0.5,
+  businessCount: 8,
+  dailyUpkeep: 3,
+  wealthGoalMin: 30,
+  wealthGoalMax: 110,
+  businessStartBalance: 300,
+  businessRevenueMargin: 0.25,
 };

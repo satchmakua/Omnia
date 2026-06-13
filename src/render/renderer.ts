@@ -2,15 +2,19 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
-  C_POSITION, C_AGENT, C_SPECIES, C_FLORA, C_FAUNA, C_RESOURCE, C_CLOCK, C_TILEMAP,
+  C_POSITION, C_AGENT, C_SPECIES, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_CLOCK, C_TILEMAP,
 } from '../sim/components.ts';
-import type { Position, Agent, SpeciesComp, Flora, Fauna, Resource, Clock } from '../sim/components.ts';
+import type {
+  Position, Agent, SpeciesComp, Flora, Fauna, Resource, Business, Clock,
+} from '../sim/components.ts';
 import type { TileMapData } from '../world/tilemap.ts';
+import { wealthStats } from '../sim/wealth.ts';
 
 const ACTION_COLOR: Record<string, string> = {
   wander:    '#e0e0ff',
   seek_food: '#ff9944',
   sleep:     '#7799ff',
+  work:      '#ffd24a',
 };
 
 // Species are visibly distinct by dot radius (size) plus a species-coloured ring.
@@ -69,6 +73,20 @@ export class Renderer {
           ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
         }
       }
+    }
+
+    // Businesses — fixed buildings: a bordered square in the profession's colour.
+    for (const e of world.query(C_BUSINESS, C_POSITION)) {
+      const biz = world.getComponent<Business>(e, C_BUSINESS)!;
+      const pos = world.getComponent<Position>(e, C_POSITION)!;
+      const m = cellSize * 0.12;
+      ctx.fillStyle = biz.color;
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(pos.x * cellSize + m, pos.y * cellSize + m, cellSize - 2 * m, cellSize - 2 * m);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#1a1a2a';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pos.x * cellSize + m, pos.y * cellSize + m, cellSize - 2 * m, cellSize - 2 * m);
     }
 
     // Resource nodes — small inset squares (brightness by remaining amount).
@@ -137,7 +155,9 @@ export class Renderer {
     const pop   = world.query(C_AGENT).length;
     const fauna = world.query(C_FAUNA).length;
     const flora = world.query(C_FLORA).length;
-    const label = `Day ${clock.day}  ${clock.isDay ? '☀' : '☾'}  Hour ${clock.hour}  |  Folk ${pop}  Fauna ${fauna}  Flora ${flora}`;
+    const w = wealthStats(world);
+    const label = `Day ${clock.day}  ${clock.isDay ? '☀' : '☾'}  Hour ${clock.hour}  |  ` +
+      `Folk ${pop}  Fauna ${fauna}  Flora ${flora}  |  median ${Math.round(w.median)}g  Gini ${w.gini.toFixed(2)}`;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, W, 28);
     ctx.fillStyle = '#ccd';
@@ -160,7 +180,7 @@ export class Renderer {
       return null;
     };
 
-    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_RESOURCE) ?? at(C_FLORA);
+    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_BUSINESS) ?? at(C_RESOURCE) ?? at(C_FLORA);
     if (hit !== null) this.onEntityClick?.(hit);
     return hit;
   }

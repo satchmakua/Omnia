@@ -4,14 +4,14 @@
 // systems spawn offspring by copying an existing entity (no content needed).
 import type { World, EntityId } from '../sim/ecs.ts';
 import {
-  C_POSITION, C_FLORA, C_FAUNA, C_RESOURCE,
+  C_POSITION, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS,
 } from '../sim/components.ts';
-import type { Position, Flora, Fauna, Resource } from '../sim/components.ts';
+import type { Position, Flora, Fauna, Resource, Business } from '../sim/components.ts';
 import type { SimConfig } from '../sim/config.ts';
 import { rngFloat } from '../sim/rng.ts';
 import type { RNG } from '../sim/rng.ts';
 import type {
-  Flora as FloraDef, Fauna as FaunaDef, Resource as ResourceDef,
+  Flora as FloraDef, Fauna as FaunaDef, Resource as ResourceDef, Profession as ProfessionDef,
 } from '../content/schema.ts';
 
 export function spawnFlora(
@@ -63,6 +63,24 @@ export function spawnResource(
     amount: rngFloat(rng, 0.6, 1.0),
     renewable: def.renewable,
     regenPerTick: def.regenPerDay / cfg.ticksPerDay,
+  });
+  return e;
+}
+
+export function spawnBusiness(
+  world: World, x: number, y: number, def: ProfessionDef, cfg: SimConfig,
+): EntityId {
+  const wagePerTick = def.dailyWage / cfg.ticksPerDay;
+  const e = world.createEntity();
+  world.addComponent<Position>(e, C_POSITION, { x, y });
+  world.addComponent<Business>(e, C_BUSINESS, {
+    professionId: def.id,
+    professionName: def.name,
+    color: def.color,
+    balance: cfg.businessStartBalance,
+    maxEmployees: def.maxEmployeesPerBusiness,
+    wagePerTick,
+    revenuePerWorkerPerTick: wagePerTick * (1 + cfg.businessRevenueMargin),
   });
   return e;
 }
