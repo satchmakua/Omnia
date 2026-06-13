@@ -125,3 +125,4 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 - More traditions for the capability system (alchemy, bio-engineering, ritual) — date: founding.
 - Domestication of fauna; agriculture depth — date: founding.
+- Renderer: interpolate entity positions between ticks for smooth gliding motion (currently entities snap a cell per tick) — date: 2026-06-13.
