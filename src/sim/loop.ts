@@ -9,6 +9,7 @@ import { runResourceSystem } from './systems/ResourceSystem.ts';
 import { runHungerSystem }   from './systems/HungerSystem.ts';
 import { runActionSystem }   from './systems/ActionSystem.ts';
 import { runMovementSystem } from './systems/MovementSystem.ts';
+import { runEconomySystem }  from './systems/EconomySystem.ts';
 import { runFaunaSystem }    from './systems/FaunaSystem.ts';
 
 // System execution order is fixed and deterministic. The world (flora/resources)
@@ -21,7 +22,8 @@ export function tick(
   runResourceSystem(world);              // resources regrow (no brain)
   runHungerSystem(world, cfg);           // sapient needs decay / starvation
   runActionSystem(world, cfg);           // sapient utility action choice
-  runMovementSystem(world, cfg, rng, content); // sapient movement / forage
+  runMovementSystem(world, cfg, rng, content); // sapient movement / forage / commute
+  runEconomySystem(world, cfg);          // hiring, wages, cost of living
   runFaunaSystem(world, cfg, rng);       // fauna instinct (graze / breed / die)
 }
 

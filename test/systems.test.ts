@@ -52,7 +52,7 @@ describe('HungerSystem', () => {
     const w = new World();
     const needs: Needs = { hunger, energy };
     const e = w.createEntity();
-    w.addComponent(e, C_AGENT, { name: 'T', action: 'wander', ticksAlive: 0 } satisfies Agent);
+    w.addComponent(e, C_AGENT, { name: 'T', action: 'wander', ticksAlive: 0, wealthGoal: 50 } satisfies Agent);
     w.addComponent(e, C_NEEDS, needs);
     return { w, needs, e };
   }
@@ -82,7 +82,7 @@ describe('HungerSystem', () => {
 describe('ActionSystem', () => {
   function makeAgent(hunger: number, energy: number) {
     const w = new World();
-    const agent: Agent = { name: 'A', action: 'wander', ticksAlive: 0 };
+    const agent: Agent = { name: 'A', action: 'wander', ticksAlive: 0, wealthGoal: 50 };
     const e = w.createEntity();
     w.addComponent(e, C_AGENT, agent);
     w.addComponent(e, C_NEEDS, { hunger, energy } satisfies Needs);
@@ -127,7 +127,7 @@ describe('MovementSystem', () => {
       const e = w.createEntity();
       w.addComponent<Position>(e, C_POSITION, { x: 0, y: 0 });
       w.addComponent<Needs>(e, C_NEEDS, { hunger: 0.9, energy: 0.9 });
-      w.addComponent<Agent>(e, C_AGENT, { name: `A${i}`, action: 'wander', ticksAlive: 0 });
+      w.addComponent<Agent>(e, C_AGENT, { name: `A${i}`, action: 'wander', ticksAlive: 0, wealthGoal: 50 });
     }
 
     for (let t = 0; t < 200; t++) runMovementSystem(w, small, rng, content);
@@ -148,7 +148,7 @@ describe('MovementSystem', () => {
     const e = w.createEntity();
     w.addComponent<Position>(e, C_POSITION, { x: 0, y: 0 });
     w.addComponent<Needs>(e, C_NEEDS, needs);
-    w.addComponent<Agent>(e, C_AGENT, { name: 'Napper', action: 'sleep', ticksAlive: 0 });
+    w.addComponent<Agent>(e, C_AGENT, { name: 'Napper', action: 'sleep', ticksAlive: 0, wealthGoal: 50 });
 
     runMovementSystem(w, cfg, rng, content);
     expect(needs.energy).toBeGreaterThan(0.5);
@@ -170,7 +170,7 @@ describe('MovementSystem', () => {
     const ae = w.createEntity();
     w.addComponent<Position>(ae, C_POSITION, { x: 5, y: 5 });
     w.addComponent<Needs>(ae, C_NEEDS, needs);
-    w.addComponent<Agent>(ae, C_AGENT, { name: 'Hungry', action: 'seek_food', ticksAlive: 0 });
+    w.addComponent<Agent>(ae, C_AGENT, { name: 'Hungry', action: 'seek_food', ticksAlive: 0, wealthGoal: 50 });
 
     const before = needs.hunger;
     runMovementSystem(w, cfg, rng, content);

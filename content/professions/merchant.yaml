@@ -1,0 +1,6 @@
+# Trades goods across the town. Lucrative, but a trading house keeps few hands.
+id: "merchant"
+name: "Merchant"
+dailyWage: 18
+color: "#d0b040"
+maxEmployeesPerBusiness: 2

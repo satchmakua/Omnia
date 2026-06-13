@@ -53,13 +53,13 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **Goal:** agents make a living; the unified magic/technology system lands.
 
-- [ ] Jobs, employers, wages; `EconomySystem`; spend on food/shelter; debt when broke; businesses as org entities; a minimal supply/demand market.
+- [x] Jobs, employers, wages; `EconomySystem`; spend on food/shelter; debt when broke; businesses as org entities. *(S7: 5 professions as content; businesses placed at world-gen; hiring; wages from business balance; daily upkeep → debt; per-agent wealth goal bounds accumulation.)* — supply/demand **market** deferred (see backlog).
 - [ ] The unified **Capability system**: invoke → prerequisites → cost → effect (`MAGIC_AND_TECHNOLOGY.md`).
 - [ ] **Technology** tradition (common, knowledge-gated) + crafting/tech professions tied to resources.
 - [ ] **Magic** tradition (rare, aptitude-gated): innate aptitude rolled per species/lineage; mana cost; a few magical professions.
-- [ ] Wealth-distribution metric.
+- [x] Wealth-distribution metric. *(S7: `src/sim/wealth.ts` — min/median/mean/max net worth + Gini; in soak metrics and the HUD.)*
 
-**DoD:** agents earn/spend and can prosper or go broke; capabilities of both traditions work through one engine; magic is visibly rare (most agents lack aptitude); economy stable over many sim-years; tested.
+**DoD:** agents earn/spend and can prosper or go broke; capabilities of both traditions work through one engine; magic is visibly rare (most agents lack aptitude); economy stable over many sim-years; tested. *(Economy half done & stable — Gini ~0.20, no runaway debt over 10k ticks. Capability/magic/tech half remains.)*
 
 ## Milestone 4 — Relationships & Life Cycle
 
@@ -125,3 +125,5 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 - More traditions for the capability system (alchemy, bio-engineering, ritual) — date: founding.
 - Domestication of fauna; agriculture depth — date: founding.
+- Renderer: interpolate entity positions between ticks for smooth gliding motion (currently entities snap a cell per tick) — date: 2026-06-13.
+- Economy: a real supply/demand **market** (prices, goods, business revenue from actual sales rather than abstract productivity); businesses that can go bankrupt and close — date: 2026-06-13 (deferred from M3 part 1).
