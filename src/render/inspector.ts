@@ -1,10 +1,11 @@
 import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP,
+  C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_JOB, C_BUSINESS,
+  C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP,
 } from '../sim/components.ts';
 import type {
-  Agent, Needs, Wallet, Position, SpeciesComp, Fauna, Flora, Resource,
+  Agent, Needs, Wallet, Position, SpeciesComp, Job, Business, Fauna, Flora, Resource,
 } from '../sim/components.ts';
 import { biomeNameAt, inBounds } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -80,6 +81,8 @@ export class Inspector {
 
     if (world.hasComponent(entity, C_AGENT)) {
       body = this._agent(world, entity, pos);
+    } else if (world.hasComponent(entity, C_BUSINESS)) {
+      body = this._business(world, entity, pos);
     } else if (world.hasComponent(entity, C_FAUNA)) {
       body = this._fauna(world, entity, pos);
     } else if (world.hasComponent(entity, C_RESOURCE)) {
@@ -105,8 +108,14 @@ export class Inspector {
     const needs   = world.getComponent<Needs>(e, C_NEEDS)!;
     const wallet  = world.getComponent<Wallet>(e, C_WALLET)!;
     const species = world.getComponent<SpeciesComp>(e, C_SPECIES);
+    const job     = world.getComponent<Job>(e, C_JOB);
     const speciesLine = species
       ? `<div><b>Species</b> <span style="color:${species.color}">${species.name}</span> (${species.size})</div>` : '';
+    const jobLine = job
+      ? `<div><b>Job</b> ${job.professionName}</div>`
+      : `<div><b>Job</b> <span style="color:#a99">unemployed</span></div>`;
+    const debtLine = wallet.debt > 0
+      ? `<div style="color:#f99">Debt ${wallet.debt.toFixed(1)}</div>` : '';
     return `
       ${this.title(agent.name, 'sapient · folk')}
       ${speciesLine}
@@ -119,8 +128,29 @@ export class Inspector {
       <div>Hunger ${bar(needs.hunger)}</div>
       <div>Energy ${bar(needs.energy)}</div>
       <hr style="${RULE}">
-      <div style="${SECTION}">Wallet</div>
-      <div>Gold ${wallet.gold.toFixed(1)}</div>`;
+      <div style="${SECTION}">Livelihood</div>
+      ${jobLine}
+      <div>Gold ${wallet.gold.toFixed(1)}</div>
+      ${debtLine}
+      <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>`;
+  }
+
+  private _business(world: World, e: EntityId, pos: Position): string {
+    const biz = world.getComponent<Business>(e, C_BUSINESS)!;
+    // Count current staff.
+    let staff = 0;
+    for (const a of world.query(C_AGENT, C_JOB)) {
+      if (world.getComponent<Job>(a, C_JOB)!.employer === e) staff++;
+    }
+    return `
+      ${this.title(biz.professionName + ' house', 'business · employer')}
+      ${this.terrainLine(world, pos)}
+      <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
+      <hr style="${RULE}">
+      <div style="${SECTION}">Business</div>
+      <div><b>Trade</b> <span style="color:${biz.color}">${biz.professionName}</span></div>
+      <div><b>Staff</b> ${staff} / ${biz.maxEmployees}</div>
+      <div><b>Balance</b> ${biz.balance.toFixed(0)}g</div>`;
   }
 
   private _fauna(world: World, e: EntityId, pos: Position): string {

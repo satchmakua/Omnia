@@ -1,0 +1,6 @@
+# Tends crops and beasts. Modest, steady pay.
+id: "farmer"
+name: "Farmer"
+dailyWage: 8
+color: "#80b060"
+maxEmployeesPerBusiness: 5

@@ -17,6 +17,13 @@ export interface SimConfig {
   maxFlora: number;          // hard cap on flora entities (spread is bounded)
   maxFauna: number;          // hard cap on fauna entities (breeding is bounded)
   faunaBreedChancePerDay: number;  // per-day chance a fed, off-cooldown fauna breeds
+  // Economy (M3):
+  businessCount: number;     // number of employer entities placed at world-gen
+  dailyUpkeep: number;       // cost of living deducted from each agent per day
+  wealthGoalMin: number;     // agents roll a personal gold target in [min, max];
+  wealthGoalMax: number;     //   they work while below it, so wealth stays bounded
+  businessStartBalance: number;        // employer starting funds
+  businessRevenueMargin: number;       // revenue per worker = wage × (1 + margin)
 }
 
 // Mirrors config/simulation.yaml; the YAML loader wires this in a later milestone.
@@ -38,4 +45,10 @@ export const defaultConfig: SimConfig = {
   maxFlora: 500,
   maxFauna: 150,
   faunaBreedChancePerDay: 0.5,
+  businessCount: 8,
+  dailyUpkeep: 3,
+  wealthGoalMin: 30,
+  wealthGoalMax: 110,
+  businessStartBalance: 300,
+  businessRevenueMargin: 0.25,
 };

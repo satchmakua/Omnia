@@ -3,6 +3,8 @@ export const C_NEEDS     = 'Needs';
 export const C_WALLET    = 'Wallet';
 export const C_AGENT     = 'Agent';     // brain tier: sapient (full)
 export const C_SPECIES   = 'Species';
+export const C_JOB       = 'Job';       // an agent's current occupation
+export const C_BUSINESS  = 'Business';  // an employer / organization entity
 export const C_FLORA     = 'Flora';     // brain tier: none (rule-driven)
 export const C_FAUNA     = 'Fauna';     // brain tier: instinct-only (no LLM)
 export const C_RESOURCE  = 'Resource';  // brain tier: none (rule-driven)
@@ -21,15 +23,37 @@ export interface Needs {
 }
 
 export interface Wallet {
-  gold: number;
+  gold: number;   // >= 0 always
+  debt: number;   // >= 0; what the agent owes (no negative gold without a debt record)
 }
 
-export type AgentAction = 'wander' | 'seek_food' | 'sleep';
+export type AgentAction = 'wander' | 'seek_food' | 'sleep' | 'work';
 
 export interface Agent {
   name: string;
   action: AgentAction;
   ticksAlive: number;
+  wealthGoal: number;   // gold level the agent works toward; bounds wealth, varies by agent
+}
+
+// An agent's occupation. `employer` points at a Business entity; `wagePerTick`
+// is baked from the profession's daily wage so the EconomySystem needs no registry.
+export interface Job {
+  professionId: string;
+  professionName: string;
+  employer: number;     // EntityId of the Business
+  wagePerTick: number;
+}
+
+// An employer/organization entity (D-roadmap "businesses as org entities").
+export interface Business {
+  professionId: string;
+  professionName: string;
+  color: string;
+  balance: number;        // pays wages from here; revenue replenishes it
+  maxEmployees: number;
+  wagePerTick: number;
+  revenuePerWorkerPerTick: number;
 }
 
 // Resolved, per-agent species facts baked in at spawn so hot systems don't
