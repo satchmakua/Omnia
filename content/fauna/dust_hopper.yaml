@@ -1,0 +1,8 @@
+# Skittish little grazer of the wastes. Hungrier and breeds slower than the moth.
+id: "dust_hopper"
+name: "Dust Hopper"
+color: "#c98f6b"
+size: "small"
+hungerDecayPerDay: 0.8
+breedThreshold: 0.75
+breedCooldownDays: 3

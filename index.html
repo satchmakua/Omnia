@@ -5,14 +5,16 @@
   <title>Omnia</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0d0d1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+    body { background: #0d0d1a; display: flex; justify-content: center; align-items: center;
+           min-height: 100vh; padding: 16px; overflow: auto; }
     #canvas { cursor: crosshair; display: block; }
-    #hud { position: fixed; bottom: 12px; left: 12px; color: #aaa; font: 11px/1.6 monospace; }
+    #hud { position: fixed; bottom: 12px; left: 12px; color: #aaa; font: 11px/1.6 monospace;
+           background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; }
   </style>
 </head>
 <body>
   <canvas id="canvas" width="640" height="640"></canvas>
-  <div id="hud">Space = pause/resume</div>
+  <div id="hud">Space = pause/resume &nbsp;·&nbsp; Click a dot/diamond = inspect &nbsp;·&nbsp; C = Chronicle</div>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

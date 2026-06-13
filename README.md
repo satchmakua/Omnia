@@ -34,55 +34,81 @@ This repository is built to be developed **incrementally by an AI agent over man
 
 ```
 npm install            # install dependencies (first time only)
-npm run dev            # open http://localhost:5173 — moving dots + click inspector
+npm run dev            # launch the live view → http://localhost:5173
 npm test               # full test suite (vitest)
-npm run test:coverage  # same, plus a coverage report (gated at 90% in CI)
-npm run soak           # 10,000-tick headless run with health metrics (~40 ms)
+npm run test:coverage  # same, plus a coverage report (gated 90%/85% in CI)
+npm run soak           # 10,000-tick headless run with world-health metrics
 npm run lint           # TypeScript type-check (tsc --noEmit)
 ```
 
-### Sanity-checking it yourself
+To watch the simulation, run `npm run dev` and open **http://localhost:5173** in a
+browser. (Everything runs locally; no server, account, or model needed yet.)
 
-**1. Run the tests** — `npm test`. You should see all test files pass
-(`Test Files  N passed`). This is the fastest confidence check: it covers the
-RNG, ECS, every system, seed-determinism, and a 10,000-tick soak.
+### Exploring the live view
 
-**2. Run the soak** — `npm run soak`. Watch for:
-- It prints a line every 1,000 ticks and ends with **`PASS`**.
-- Every line shows **`invalid=0`** — no agent is ever out of bounds or has an
-  impossible need value. A `*** VIOLATION ***` marker would mean a real bug.
-- Each line shows the species mix, e.g. `[human=4 dwarf=7]`. Dwarves get hungry
-  more slowly (a data-driven need multiplier), so they visibly outlast humans —
-  a good sign the species archetypes affect behaviour, not just looks.
-- `pop` drifts *downward* over the run (20 → a handful). That is **expected**:
-  agents starve and there is no reproduction yet (that arrives in Milestone 4).
-  A sudden jump to 0 early, or a population *explosion*, would be the thing to flag.
+When the page loads you're looking at a small living world ticking in real time.
 
-**3. Watch it live** — `npm run dev`, open http://localhost:5173.
-- **The map has coloured biome regions** (ash-green plains, phosphor-green fungal
-  forest, amethyst crystal flats, ochre wastes, deep-blue drowned ruins). The
-  blue water is impassable — agents and food never sit on it, and agents route
-  around it.
-- **Dots move.** Most drift randomly (white); some head purposefully toward the
-  bright food markers (orange); some sit still recovering energy (blue).
-- **The HUD** (top-left) shows the day counter and a ☀/☾ that flips each
-  half-day — proof the clock is ticking.
-- **Click a dot.** A panel opens on the right showing that agent's name, species,
-  the terrain it's standing on, current action, age, position, hunger/energy
-  bars, and gold. The bars should update live as you watch.
-- **Press Space** to pause/resume — useful for clicking a specific dot.
-- Over a minute or two, some dots will **vanish** (those are starvation deaths);
-  the inspector shows "Agent died" if you were watching one.
+**Controls**
+| Input | Effect |
+|-------|--------|
+| **Click** a dot, diamond, plant, or node | Open the **inspector** (right panel) for that thing |
+| **Space** | Pause / resume (handy for clicking a specific creature) |
+| **C** | Open / close the **Chronicle** — the world's invented backstory |
+| **✕** (top-right of the inspector) | Close the inspector |
 
-> The same instructions, plus what each command does, are mirrored in
-> `CLAUDE.md` (the agent's operating manual) under **Commands**.
+**What you're looking at**
+- **Biome regions** tint the map: ash-green *plains*, phosphor-green *fungal forest*,
+  amethyst *crystal flats*, ochre *irradiated wastes*, and deep-blue *drowned ruins*.
+  The blue water is **impassable** — nothing spawns or walks on it, and creatures
+  route around it.
+- **Round dots = sapient folk** (your townspeople). Fill colour shows what they're
+  doing — white = wandering, orange = seeking food, blue = sleeping — and the
+  coloured ring + size shows their **species** (warm-sand/larger = human,
+  slate/smaller = dwarf).
+- **Diamonds = fauna** (animals: moth grazers, dust hoppers). Instinct-only — they
+  graze plants, breed when well-fed, and die if they starve. **No LLM, ever.**
+- **Soft circles = flora** (plants/fungi). They start small and grow; a brighter,
+  larger circle is riper and edible. Folk and fauna forage them.
+- **Small squares = resource nodes** (timber, ore, reactive crystal).
+- **The HUD** (top bar) shows the day, a ☀/☾ that flips each half-day, and live
+  counts of **Folk / Fauna / Flora**.
 
-**Controls:** click any dot to open the inspector; Space to pause/resume.
+**Things worth trying**
+- Press **C** to read how this particular world ended and began — a different story
+  for every seed.
+- **Click a moth grazer** (diamond) and watch its hunger bar; pause first if it's
+  darting around. Click a **plant** to see its maturity and food yield.
+- Watch the HUD **Fauna** count climb as animals breed, then settle as the land
+  reaches its carrying capacity.
 
-**Legend:** coloured tiles = biomes (blue = impassable water); bright green markers
-= food; dot *fill* = action (white = wandering, orange = seeking food, blue =
-sleeping); dot *ring colour + size* = species (sand/larger = human, slate/smaller =
-dwarf). Click a dot to see its species and terrain in the inspector.
+> The `world.seed` in `config/simulation.yaml` (mirrored in `src/sim/config.ts`)
+> chooses the world; the same seed always produces the same town, backstory, and
+> run. Change it for a brand-new world.
+
+### Sanity-checking it headlessly
+
+**Run the tests** — `npm test`: every file should pass (`Test Files N passed`).
+Covers the RNG, ECS, every system, the content loader, seed-determinism, property
+tests, and a 10,000-tick soak.
+
+**Run the soak** — `npm run soak`. It prints a metrics line every 1,000 ticks and
+ends with **`PASS`**. Watch for:
+- **`invalid=0`** on every line — nobody is ever out of bounds, on water, or in an
+  impossible state. A `*** VIOLATION ***` marker means a real bug.
+- The **species mix** (e.g. `[human=12 dwarf=8]`): dwarves get hungry more slowly,
+  so they tend to persist — proof archetypes change behaviour, not just looks.
+- **`flora`/`fauna`/`res`** counts: flora fills in, fauna breed up toward the land's
+  carrying capacity, then hold steady — a stable ecosystem, not a runaway one.
+
+## Legend
+
+| On screen | Meaning |
+|-----------|---------|
+| Coloured tile | Biome (deep blue = impassable water) |
+| Round dot | Sapient folk — fill = action, ring = species |
+| Diamond | Fauna (animal, instinct-only) |
+| Soft circle | Flora (plant; bigger/brighter = riper) |
+| Small square | Resource node (timber / ore / crystal) |
 
 ## Stack at a glance
 

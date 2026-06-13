@@ -6,3 +6,10 @@ terrain: "forest"
 color: "#4f7d63"        # phosphor green
 passable: true
 genWeight: 4
+flora:
+  - { id: "glowcap", weight: 5 }
+  - { id: "spore_fern", weight: 4 }
+fauna:
+  - { id: "moth_grazer", weight: 3 }
+resources:
+  - { id: "timber", weight: 4 }

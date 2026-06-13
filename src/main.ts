@@ -4,6 +4,7 @@ import { defaultConfig } from './sim/config.ts';
 import { loadContent } from './content/loader.ts';
 import { Renderer } from './render/renderer.ts';
 import { Inspector } from './render/inspector.ts';
+import { ChroniclePanel } from './render/chroniclePanel.ts';
 
 // Browser content source: Vite bundles every YAML under /content as raw text.
 // (Node code paths use src/content/fsSource.ts instead.)
@@ -22,8 +23,14 @@ const { world, rng, clockEntity } = sim;
 
 const renderer  = new Renderer(canvas, cfg);
 const inspector = new Inspector();
+const chronicle = new ChroniclePanel();
 
 renderer.setClickHandler((entity) => inspector.inspect(entity, world));
+
+// Dev-only debug handle (stripped from production builds by Vite).
+if (import.meta.env.DEV) {
+  (window as unknown as { __omnia: unknown }).__omnia = { sim, world, content, renderer, inspector };
+}
 
 let paused = false;
 
@@ -37,6 +44,7 @@ function loop() {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === ' ') { paused = !paused; e.preventDefault(); }
+  if (e.key === 'c' || e.key === 'C') { chronicle.toggle(world); }
 });
 
 loop();
