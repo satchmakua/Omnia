@@ -87,10 +87,14 @@ When the page loads you're looking at a small living world ticking in real time.
 
 | Input | Effect |
 |-------|--------|
-| **Click** a dot, diamond, plant, or node | Open the **inspector** (right-side panel) for that thing |
+| **Speed slider** (bottom of the screen) | Drag to set how fast time passes (ticks/second); the ▶/⏸ button pauses |
 | **Space** | Pause / resume (easiest way to click a specific creature) |
+| **Click** a dot, diamond, plant, or node | Open the **inspector** (right-side panel) for that thing |
 | **C** | Open / close the **Chronicle** — the world's invented backstory |
 | **✕** (top-right of the inspector) | Close the inspector |
+
+> Things feel too fast? Drag the speed slider down, or pause with **Space** and
+> click at your leisure. The starting speed is intentionally gentle.
 
 **What you're looking at**
 
