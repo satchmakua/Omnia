@@ -18,7 +18,7 @@ world:
 time:
   ticksPerDay: 240           # simulation granularity within a day.
   daysPerSeason: 30
-  simSpeedTicksPerSecond: 10 # real-time playback speed; decoupled from sim time (pause/FF freely).
+  simSpeedTicksPerSecond: 6  # initial real-time playback speed; decoupled from sim time. Adjust live with the in-app speed slider (pause/FF freely).
 
 # Need decay per in-sim day (0..1 scale; higher = depletes faster). Action utility rises as a need drops.
 needs:
@@ -28,6 +28,16 @@ needs:
   socialDecayPerDay: 0.4
   funDecayPerDay: 0.3
   actionThreshold: 0.4       # below this, satisfying the need dominates action choice.
+
+# Economy (see docs/ROADMAP.md M3). Agents earn wages, pay a daily cost of living,
+# and work toward a personal wealth goal (which bounds accumulation).
+economy:
+  businessCount: 8           # employer entities placed at world generation.
+  dailyUpkeep: 3             # cost of living deducted from each agent per day.
+  wealthGoalMin: 30          # agents roll a personal gold target in [min, max];
+  wealthGoalMax: 110         #   they work while below it, so wealth stays bounded.
+  businessStartBalance: 300  # employer starting funds.
+  businessRevenueMargin: 0.25 # revenue per working employee = wage × (1 + margin).
 
 performance:
   maxActiveAgents: 500       # design target for smooth simulation on a typical laptop.
