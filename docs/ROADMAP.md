@@ -37,19 +37,19 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **DoD:** content loads and validates (Zod `.strict()`); a deliberately broken file aborts startup with a clear, file-named message (8 fail-loud tests); 2 species defined purely in YAML produce visibly distinct agents (verified: dwarves' lower hunger multiplier lets them outlast humans in soak; distinct ring colour + dot size in the renderer). 66 tests green.
 
-## ▶ Milestone 2 — World & Environment  *(current)*
+## ✅ Milestone 2 — World & Environment  *(done — 2026-06-12)*
 
 **Goal:** the world agents live in, and the entity/brain tiers.
 
-- [x] Biomes, terrain, the tile grid (from content). *(Session 4: 5 biomes as YAML; seeded Voronoi tile-grid generation; passability wired into movement + spawning; biome backgrounds + terrain in the inspector.)*
-- [ ] **Flora** (grow/spread/harvest), **fauna** (instinct-only light agents), **resources** (renewable + finite).
-- [ ] Formalize the **brain tiers**: sapient (full), fauna (instinct, no LLM), flora/resources (no brain).
-- [x] Seeded **world generation** (terrain layer). *(Session 4: deterministic biome map. Flora/fauna/resource placement + the backstory Chronicle still pending.)*
-- [ ] Invent the post-apocalyptic backstory as the first Chronicle entries.
+- [x] Biomes, terrain, the tile grid (from content). *(S4: 5 biomes; seeded Voronoi tile grid; passability in movement + spawning.)*
+- [x] **Flora** (grow/spread/harvest), **fauna** (instinct-only light agents), **resources** (renewable + finite). *(S5: 4 flora, 2 fauna, 3 resources as YAML; FloraSystem grow/spread, FaunaSystem graze/breed/starve, ResourceSystem regen; biome spawn tables with load-time referential integrity.)*
+- [x] Formalize the **brain tiers**: sapient (full), fauna (instinct, no LLM), flora/resources (no brain). *(S5: `src/sim/tiers.ts`; mutually-exclusive component markers so the LLM layer can only ever attach to sapient folk.)*
+- [x] Seeded **world generation**. *(S4 terrain; S5 flora/fauna/resource placement.)*
+- [x] Invent the post-apocalyptic backstory as the first Chronicle entries. *(S5: `src/history/` Chronicle + deterministic backstory; viewable in-app with the C key.)*
 
-**DoD:** a generated world with biomes, growing flora, roaming fauna, and harvestable resources runs stably for many sim-years; tested (e.g. an overhunted species can crash — and that's detectable in metrics). *(Terrain substrate done; flora/fauna/resources/brain-tiers/Chronicle remain.)*
+**DoD:** a generated world with biomes, growing flora, roaming fauna, and harvestable resources runs stably for many sim-years (10k-tick soak, 0 violations) — met; an overgrazed fauna population **can crash** and it's detectable by counting (tested in `ecosystem.test.ts`). 102 tests green.
 
-## Milestone 3 — Economy, Work & Capabilities
+## ▶ Milestone 3 — Economy, Work & Capabilities  *(current)*
 
 **Goal:** agents make a living; the unified magic/technology system lands.
 

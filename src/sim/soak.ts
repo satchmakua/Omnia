@@ -5,7 +5,9 @@ import { createSimulation } from './world.ts';
 import { tick } from './loop.ts';
 import { defaultConfig } from './config.ts';
 import { loadContentFromDisk } from '../content/fsSource.ts';
-import { C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_TILEMAP, C_CLOCK } from './components.ts';
+import {
+  C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
+} from './components.ts';
 import type { Needs, Position, SpeciesComp, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
 import { isPassable } from '../world/tilemap.ts';
@@ -41,11 +43,21 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       if (!isPassable(tileMap, p.x, p.y)) inv++;  // M2 invariant: never on water/blocked
     }
 
+    // Fauna must also stay on passable land.
+    for (const e of world.query(C_FAUNA, C_POSITION)) {
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (!isPassable(tileMap, p.x, p.y)) inv++;
+    }
+
     violations += inv;
+    const flora = world.query(C_FLORA).length;
+    const fauna = world.query(C_FAUNA).length;
+    const resources = world.query(C_RESOURCE).length;
     const marker = inv > 0 ? ' *** VIOLATION ***' : '';
     const mix = Object.entries(bySpecies).map(([k, v]) => `${k}=${v}`).join(' ');
     console.log(
-      `  tick=${t+1}  day=${clock.day}  pop=${agents.length}  [${mix}]  invalid=${inv}${marker}`,
+      `  tick=${t+1}  day=${clock.day}  folk=${agents.length} [${mix}]  ` +
+      `flora=${flora} fauna=${fauna} res=${resources}  invalid=${inv}${marker}`,
     );
   }
 }

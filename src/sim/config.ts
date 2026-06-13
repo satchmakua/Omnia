@@ -7,13 +7,18 @@ export interface SimConfig {
   hungerDecayPerDay: number;
   energyDecayPerDay: number;
   actionThreshold: number;
-  foodSourceCount: number;
-  foodRegenPerTick: number;
   sleepRestorePerTick: number;
-  biomeSeedCount: number;   // number of Voronoi biome seeds at world generation
+  biomeSeedCount: number;    // number of Voronoi biome seeds at world generation
+  // World population at generation (per passable tile, gated by biome spawn tables):
+  floraDensity: number;      // chance a passable tile starts with flora
+  faunaDensity: number;      // chance a passable tile starts with fauna
+  resourceDensity: number;   // chance a passable tile starts with a resource node
+  maxFlora: number;          // hard cap on flora entities (spread is bounded)
+  maxFauna: number;          // hard cap on fauna entities (breeding is bounded)
+  faunaBreedChancePerDay: number;  // per-day chance a fed, off-cooldown fauna breeds
 }
 
-// Mirrors config/simulation.yaml; the YAML loader wires this in M1.
+// Mirrors config/simulation.yaml; the YAML loader wires this in a later milestone.
 export const defaultConfig: SimConfig = {
   gridWidth: 64,
   gridHeight: 64,
@@ -23,8 +28,12 @@ export const defaultConfig: SimConfig = {
   hungerDecayPerDay: 0.8,
   energyDecayPerDay: 0.7,
   actionThreshold: 0.4,
-  foodSourceCount: 25,
-  foodRegenPerTick: 0.005,
   sleepRestorePerTick: 0.008,
   biomeSeedCount: 14,
+  floraDensity: 0.06,
+  faunaDensity: 0.006,
+  resourceDensity: 0.01,
+  maxFlora: 500,
+  maxFauna: 150,
+  faunaBreedChancePerDay: 0.5,
 };

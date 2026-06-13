@@ -1,0 +1,6 @@
+# Finite metal ore in the irradiated badlands. Does not regenerate once mined.
+id: "ore"
+name: "Ore"
+color: "#b0b0b8"
+renewable: false
+regenPerDay: 0

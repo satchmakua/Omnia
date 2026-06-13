@@ -1,0 +1,8 @@
+# Slow-growing crystalline flower of the salt flats. Rare and rich.
+id: "crystal_bloom"
+name: "Crystal Bloom"
+color: "#c79ff0"
+growthPerDay: 0.4          # slow
+edibleAt: 0.7
+foodYield: 0.7
+spreadChancePerDay: 0.04   # barely spreads

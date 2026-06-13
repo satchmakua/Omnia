@@ -1,8 +1,10 @@
 import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
-import { C_POSITION, C_AGENT, C_SPECIES, C_FOOD, C_CLOCK, C_TILEMAP } from '../sim/components.ts';
-import type { Position, Agent, SpeciesComp, Food, Clock } from '../sim/components.ts';
+import {
+  C_POSITION, C_AGENT, C_SPECIES, C_FLORA, C_FAUNA, C_RESOURCE, C_CLOCK, C_TILEMAP,
+} from '../sim/components.ts';
+import type { Position, Agent, SpeciesComp, Flora, Fauna, Resource, Clock } from '../sim/components.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 
 const ACTION_COLOR: Record<string, string> = {
@@ -21,7 +23,8 @@ const SIZE_RADIUS: Record<string, number> = {
 export class Renderer {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly cellSize: number;
-  private onAgentClick: ((entity: EntityId) => void) | null = null;
+  private onEntityClick: ((entity: EntityId) => void) | null = null;
+  private _pendingClick: { gx: number; gy: number } | null = null;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -33,15 +36,19 @@ export class Renderer {
     );
 
     canvas.addEventListener('click', (e) => {
-      const r  = canvas.getBoundingClientRect();
-      const gx = Math.floor((e.clientX - r.left)  / this.cellSize);
-      const gy = Math.floor((e.clientY - r.top)   / this.cellSize);
-      this.handleClick(gx, gy);
+      // Map CSS click coords to canvas-internal pixels (the canvas may be
+      // displayed at a different CSS size than its backing resolution).
+      const r = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / r.width;
+      const scaleY = canvas.height / r.height;
+      const gx = Math.floor((e.clientX - r.left) * scaleX / this.cellSize);
+      const gy = Math.floor((e.clientY - r.top)  * scaleY / this.cellSize);
+      this._pendingClick = { gx, gy };
     });
   }
 
   setClickHandler(cb: (entity: EntityId) => void): void {
-    this.onAgentClick = cb;
+    this.onEntityClick = cb;
   }
 
   render(world: World, clockEntity: EntityId): void {
@@ -64,19 +71,46 @@ export class Renderer {
       }
     }
 
-    // Food sources — bright inset marker so they read over any biome colour.
-    for (const e of world.query(C_FOOD, C_POSITION)) {
-      const food = world.getComponent<Food>(e, C_FOOD)!;
-      const pos  = world.getComponent<Position>(e, C_POSITION)!;
-      const inset = cellSize * (0.5 - food.amount * 0.18); // fuller = bigger marker
-      ctx.fillStyle = `rgba(180,255,120,${(0.35 + food.amount * 0.55).toFixed(2)})`;
-      ctx.fillRect(
-        pos.x * cellSize + inset, pos.y * cellSize + inset,
-        cellSize - inset * 2, cellSize - inset * 2,
-      );
+    // Resource nodes — small inset squares (brightness by remaining amount).
+    for (const e of world.query(C_RESOURCE, C_POSITION)) {
+      const r   = world.getComponent<Resource>(e, C_RESOURCE)!;
+      const pos = world.getComponent<Position>(e, C_POSITION)!;
+      const inset = cellSize * 0.28;
+      ctx.globalAlpha = 0.4 + r.amount * 0.6;
+      ctx.fillStyle = r.color;
+      ctx.fillRect(pos.x * cellSize + inset, pos.y * cellSize + inset, cellSize - inset * 2, cellSize - inset * 2);
+      ctx.globalAlpha = 1;
     }
 
-    // Agents: fill colour = current action, ring colour + radius = species.
+    // Flora — circle whose size/opacity grows with maturity.
+    for (const e of world.query(C_FLORA, C_POSITION)) {
+      const f   = world.getComponent<Flora>(e, C_FLORA)!;
+      const pos = world.getComponent<Position>(e, C_POSITION)!;
+      const r = cellSize * (0.12 + f.maturity * 0.26);
+      ctx.globalAlpha = 0.35 + f.maturity * 0.5;
+      ctx.fillStyle = f.color;
+      ctx.beginPath();
+      ctx.arc(pos.x * cellSize + cellSize / 2, pos.y * cellSize + cellSize / 2, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Fauna — diamonds, to read as distinct from round sapient agents.
+    for (const e of world.query(C_FAUNA, C_POSITION)) {
+      const fa  = world.getComponent<Fauna>(e, C_FAUNA)!;
+      const pos = world.getComponent<Position>(e, C_POSITION)!;
+      const cx = pos.x * cellSize + cellSize / 2;
+      const cy = pos.y * cellSize + cellSize / 2;
+      const r  = cellSize * 0.32;
+      ctx.fillStyle = fa.color;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy);
+      ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Sapient agents: fill colour = current action, ring colour + radius = species.
     for (const e of world.query(C_AGENT, C_POSITION)) {
       const agent   = world.getComponent<Agent>(e, C_AGENT)!;
       const pos     = world.getComponent<Position>(e, C_POSITION)!;
@@ -101,7 +135,9 @@ export class Renderer {
     // HUD overlay
     const clock = world.getComponent<Clock>(clockEntity, C_CLOCK)!;
     const pop   = world.query(C_AGENT).length;
-    const label = `Day ${clock.day}  ${clock.isDay ? '☀' : '☾'}  Hour ${clock.hour}  |  Pop ${pop}`;
+    const fauna = world.query(C_FAUNA).length;
+    const flora = world.query(C_FLORA).length;
+    const label = `Day ${clock.day}  ${clock.isDay ? '☀' : '☾'}  Hour ${clock.hour}  |  Folk ${pop}  Fauna ${fauna}  Flora ${flora}`;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, W, 28);
     ctx.fillStyle = '#ccd';
@@ -109,27 +145,23 @@ export class Renderer {
     ctx.fillText(label, 8, 17);
   }
 
-  private handleClick(gx: number, gy: number): void {
-    // No world reference stored; caller supplies it via the closure in main.ts.
-    this._pendingClick = { gx, gy };
-  }
-
-  // Called from main.ts after render with the current world snapshot.
+  // Called from main.ts after render. Picks the most interesting entity on the
+  // clicked tile: sapient agent > fauna > resource > flora.
   consumeClick(world: World): EntityId | null {
     if (!this._pendingClick) return null;
     const { gx, gy } = this._pendingClick;
     this._pendingClick = null;
 
-    const agents = world.query(C_AGENT, C_POSITION);
-    for (const e of agents) {
-      const pos = world.getComponent<Position>(e, C_POSITION)!;
-      if (pos.x === gx && pos.y === gy) {
-        this.onAgentClick?.(e);
-        return e;
+    const at = (component: string): EntityId | null => {
+      for (const e of world.query(component, C_POSITION)) {
+        const pos = world.getComponent<Position>(e, C_POSITION)!;
+        if (pos.x === gx && pos.y === gy) return e;
       }
-    }
-    return null;
-  }
+      return null;
+    };
 
-  private _pendingClick: { gx: number; gy: number } | null = null;
+    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_RESOURCE) ?? at(C_FLORA);
+    if (hit !== null) this.onEntityClick?.(hit);
+    return hit;
+  }
 }

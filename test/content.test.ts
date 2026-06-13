@@ -117,6 +117,27 @@ describe('loadContent — invalid content aborts with a clear message', () => {
   });
 });
 
+// ── Biome spawn-table referential integrity ───────────────────────────────────
+
+describe('biome spawn-table references', () => {
+  const BIOME_WITH_FLORA = `
+id: "meadow"
+name: "Meadow"
+climate: "temperate"
+terrain: "plains"
+color: "#33aa33"
+flora:
+  - { id: "ghost_weed", weight: 2 }
+`;
+
+  it('rejects a biome that references flora content which does not exist', () => {
+    expect(() => loadContent(files({
+      'species/elf.yaml': VALID_SPECIES,
+      'biomes/meadow.yaml': BIOME_WITH_FLORA,   // ghost_weed is never defined
+    }))).toThrowError(/unknown id 'ghost_weed'/);
+  });
+});
+
 // ── Capability / effect-tag boundary ──────────────────────────────────────────
 
 describe('effect-tag boundary', () => {
@@ -162,6 +183,22 @@ describe('authored /content', () => {
     expect(content.biomes.size).toBeGreaterThanOrEqual(2);
     expect(content.biomes.has('ashen_plains')).toBe(true);
     expect(content.biomes.require('drowned_ruins').passable).toBe(false);
+  });
+
+  it('defines flora, fauna, and resources', () => {
+    const content = loadContentFromDisk('./content');
+    expect(content.flora.has('ash_grass')).toBe(true);
+    expect(content.fauna.has('moth_grazer')).toBe(true);
+    expect(content.resources.require('ore').renewable).toBe(false);
+  });
+
+  it('every biome spawn-table id resolves to real content', () => {
+    const content = loadContentFromDisk('./content');
+    for (const biome of content.biomes.all()) {
+      for (const f of biome.flora)     expect(content.flora.has(f.id)).toBe(true);
+      for (const f of biome.fauna)     expect(content.fauna.has(f.id)).toBe(true);
+      for (const r of biome.resources) expect(content.resources.has(r.id)).toBe(true);
+    }
   });
 
   it('species schema parses the on-disk human archetype', () => {
