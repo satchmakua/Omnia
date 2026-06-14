@@ -1,19 +1,16 @@
 import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
-  C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_MAGIC, C_CLOCK, C_TILEMAP, C_CHRONICLE,
-  C_HEALTH, C_RELATIONSHIPS, C_LINEAGE,
+  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_AGENT, C_LINEAGE, C_RELATIONSHIPS,
 } from './components.ts';
-import type {
-  Position, Needs, Wallet, Agent, SpeciesComp, Magic, Clock, Health, Relationships, Lineage, Sex,
-} from './components.ts';
+import type { Clock, Agent, Lineage, Relationships } from './components.ts';
 import type { SimConfig } from './config.ts';
-import { ticksPerYear } from './config.ts';
+import { ticksPerYear, ageInYears } from './config.ts';
 import type { EntityId } from './ecs.ts';
 import type { RNG } from './rng.ts';
 import type { Content } from '../content/loader.ts';
 import type { Species } from '../content/schema.ts';
-import { generateName } from '../content/names.ts';
+import { spawnAgent } from './spawnAgent.ts';
 import { generateTileMap } from '../world/worldgen.ts';
 import { isPassable } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -38,6 +35,25 @@ function rollSpecies(rng: RNG, species: Species[], totalWeight: number): Species
     if (r < 0) return s;
   }
   return species[species.length - 1]; // float-safety fallback
+}
+
+// Marry up adult opposite-sex founders so households exist from day one.
+function pairFounders(world: World, cfg: SimConfig): void {
+  const males: EntityId[] = [];
+  const females: EntityId[] = [];
+  for (const e of world.query(C_AGENT, C_LINEAGE)) {
+    const agent = world.getComponent<Agent>(e, C_AGENT)!;
+    if (ageInYears(agent.ticksAlive, cfg) < cfg.adultAgeYears) continue;
+    (agent.sex === 'male' ? males : females).push(e);
+  }
+  const pairs = Math.min(males.length, females.length);
+  for (let i = 0; i < pairs; i++) {
+    const m = males[i], f = females[i];
+    world.getComponent<Lineage>(m, C_LINEAGE)!.partner = f;
+    world.getComponent<Lineage>(f, C_LINEAGE)!.partner = m;
+    world.getComponent<Relationships>(m, C_RELATIONSHIPS)!.edges[f] = { type: 'partner', sentiment: 0.8 };
+    world.getComponent<Relationships>(f, C_RELATIONSHIPS)!.edges[m] = { type: 'partner', sentiment: 0.8 };
+  }
 }
 
 // Find a passable tile by rejection sampling, falling back to a deterministic
@@ -95,54 +111,16 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const tpy = ticksPerYear(cfg);
   for (let i = 0; i < cfg.initialPopulation; i++) {
     const species = rollSpecies(rng, speciesList, totalWeight);
-    const name = generateName(rng, species);
     const { x, y } = findPassableTile(rng, tileMap);
-    const sex: Sex = rng() < 0.5 ? 'male' : 'female';
     // Founders have a spread of ages so the town starts with a real generation mix.
     const ageTicks = Math.floor(rngFloat(rng, cfg.initialAgeMinYears, cfg.initialAgeMaxYears) * tpy);
-    const lifespanTicks = Math.floor(rngFloat(rng, species.lifespanYears.min, species.lifespanYears.max) * tpy);
-
-    const e = world.createEntity();
-    world.addComponent<Position>(e, C_POSITION, { x, y });
-    world.addComponent<Needs>(e, C_NEEDS, {
-      hunger: rngFloat(rng, 0.5, 1.0),
-      energy: rngFloat(rng, 0.5, 1.0),
-      social: rngFloat(rng, 0.5, 1.0),
-    });
-    world.addComponent<Wallet>(e, C_WALLET, {
-      gold: rngFloat(rng, 10, 50),
-      debt: 0,
-    });
-    world.addComponent<SpeciesComp>(e, C_SPECIES, {
-      id: species.id,
-      name: species.name,
-      color: species.color,
-      size: species.size,
-      hungerMult: species.needs.hunger,
-      energyMult: species.needs.energy,
-    });
-    world.addComponent<Agent>(e, C_AGENT, {
-      name,
-      action: 'wander',
-      ticksAlive: ageTicks,
-      wealthGoal: rngFloat(rng, cfg.wealthGoalMin, cfg.wealthGoalMax),
-      sex,
-      lifespanTicks,
-    });
-    world.addComponent<Health>(e, C_HEALTH, { value: 1, ill: false });
-    world.addComponent<Relationships>(e, C_RELATIONSHIPS, { edges: {} });
-    world.addComponent<Lineage>(e, C_LINEAGE, { partner: null, parents: [], children: [] });
-
-    // Rare innate magic aptitude, rolled per the species' chance. Most agents
-    // get no Magic component at all, so magic stays scarce by construction.
-    if (rng() < species.magicAptitudeChance) {
-      world.addComponent<Magic>(e, C_MAGIC, {
-        mana: cfg.magicManaMax,
-        maxMana: cfg.magicManaMax,
-        manaRegenPerTick: cfg.manaRegenPerDay / cfg.ticksPerDay,
-      });
-    }
+    spawnAgent(world, cfg, rng, species, { x, y, ageTicks });
   }
+
+  // Pre-pair adult founders into couples so the first generation can start
+  // families immediately (a founding town arrives with households), rather than
+  // spending years courting while the elders die off.
+  pairFounders(world, cfg);
 
   return { world, rng, clockEntity, content };
 }
