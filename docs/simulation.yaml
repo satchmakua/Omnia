@@ -59,9 +59,10 @@ content:
 
 # Unified capability system (see docs/MAGIC_AND_TECHNOLOGY.md).
 capabilities:
-  baseMagicAptitudeChance: 0.03   # global base rate; species multipliers in content override/scale this.
-  manaRegenPerDay: 10             # for agents with aptitude.
-  allowLostArts: true             # an art with no living practitioner becomes "lost" until rediscovered.
+  baseMagicAptitudeChance: 0.03   # reference base rate; per-species magicAptitudeChance in content is authoritative.
+  magicManaMax: 100               # mana pool size for aptitude-gifted agents (M3 part 2).
+  manaRegenPerDay: 10             # mana regenerated per in-sim day, for agents with aptitude.
+  allowLostArts: true             # an art with no living practitioner becomes "lost" until rediscovered (backlog).
 
 # Culture & language evolution (see docs/CULTURE_AND_LANGUAGE.md). Tuned for "deep but tenable".
 culture_language:

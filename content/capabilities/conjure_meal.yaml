@@ -1,0 +1,12 @@
+# A magic capability — the rare, aptitude-gated sibling of foraging. Same engine
+# as forage (invoke→prereq→cost→effect); differs only in its gate (aptitude) and
+# cost (mana). Only agents who rolled magic aptitude can ever cast it.
+id: "conjure_meal"
+name: "Conjure Meal"
+tradition: "magic"
+prerequisites:
+  aptitude: true
+cost:
+  mana: 18
+effects: ["restore_hunger"]
+power: 0.6

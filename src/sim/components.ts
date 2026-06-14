@@ -3,6 +3,7 @@ export const C_NEEDS     = 'Needs';
 export const C_WALLET    = 'Wallet';
 export const C_AGENT     = 'Agent';     // brain tier: sapient (full)
 export const C_SPECIES   = 'Species';
+export const C_MAGIC     = 'Magic';     // present only on the rare agents with magic aptitude
 export const C_JOB       = 'Job';       // an agent's current occupation
 export const C_BUSINESS  = 'Business';  // an employer / organization entity
 export const C_FLORA     = 'Flora';     // brain tier: none (rule-driven)
@@ -36,6 +37,15 @@ export interface Agent {
   wealthGoal: number;   // gold level the agent works toward; bounds wealth, varies by agent
 }
 
+// Innate magic aptitude — present on only the rare agents who rolled it at birth
+// (so the LLM/capability systems can find casters cheaply, and most folk simply
+// lack this component). Holds the agent's mana pool.
+export interface Magic {
+  mana: number;
+  maxMana: number;
+  manaRegenPerTick: number;
+}
+
 // An agent's occupation. `employer` points at a Business entity; `wagePerTick`
 // is baked from the profession's daily wage so the EconomySystem needs no registry.
 export interface Job {
@@ -54,6 +64,7 @@ export interface Business {
   maxEmployees: number;
   wagePerTick: number;
   revenuePerWorkerPerTick: number;
+  requiresAptitude: boolean;  // magical employers hire only agents with magic aptitude
 }
 
 // Resolved, per-agent species facts baked in at spawn so hot systems don't

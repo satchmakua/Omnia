@@ -1,0 +1,10 @@
+# Magic capability: spend mana to restore vigour (energy) instead of sleeping.
+id: "mend_vigor"
+name: "Mend Vigour"
+tradition: "magic"
+prerequisites:
+  aptitude: true
+cost:
+  mana: 14
+effects: ["restore_energy"]
+power: 0.5

@@ -81,6 +81,7 @@ export function spawnBusiness(
     maxEmployees: def.maxEmployeesPerBusiness,
     wagePerTick,
     revenuePerWorkerPerTick: wagePerTick * (1 + cfg.businessRevenueMargin),
+    requiresAptitude: def.requiresAptitude,
   });
   return e;
 }

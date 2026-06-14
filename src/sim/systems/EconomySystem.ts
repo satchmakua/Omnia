@@ -3,7 +3,7 @@
 // Businesses earn revenue from each working employee, so they stay solvent.
 import type { World, EntityId } from '../ecs.ts';
 import {
-  C_AGENT, C_WALLET, C_JOB, C_BUSINESS, C_CLOCK,
+  C_AGENT, C_WALLET, C_JOB, C_BUSINESS, C_MAGIC, C_CLOCK,
 } from '../components.ts';
 import type { Agent, Wallet, Job, Business, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
@@ -22,21 +22,41 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
     employees.set(job.employer, (employees.get(job.employer) ?? 0) + 1);
   }
 
-  // Place each unemployed agent into the first business with an opening.
+  // Place each unemployed agent into a business with an opening. Magical
+  // employers hire only the aptitude-gifted; gifted agents prefer magical work
+  // (so the rare mage tends to become the town's hedge-witch).
+  const hireInto = (e: EntityId, b: EntityId, biz: Business) => {
+    world.addComponent<Job>(e, C_JOB, {
+      professionId: biz.professionId,
+      professionName: biz.professionName,
+      employer: b,
+      wagePerTick: biz.wagePerTick,
+    });
+    employees.set(b, (employees.get(b) ?? 0) + 1);
+  };
+  const hasOpening = (b: EntityId, biz: Business) => (employees.get(b) ?? 0) < biz.maxEmployees;
+
   for (const e of world.query(C_AGENT, C_WALLET)) {
     if (world.hasComponent(e, C_JOB)) continue;
-    for (const b of businesses) {
-      const biz = world.getComponent<Business>(b, C_BUSINESS)!;
-      if ((employees.get(b) ?? 0) >= biz.maxEmployees) continue;
-      world.addComponent<Job>(e, C_JOB, {
-        professionId: biz.professionId,
-        professionName: biz.professionName,
-        employer: b,
-        wagePerTick: biz.wagePerTick,
-      });
-      employees.set(b, (employees.get(b) ?? 0) + 1);
-      break;
+    const apt = world.hasComponent(e, C_MAGIC);
+
+    let chosen: EntityId | null = null;
+    // Gifted agents try magical employers first.
+    if (apt) {
+      for (const b of businesses) {
+        const biz = world.getComponent<Business>(b, C_BUSINESS)!;
+        if (biz.requiresAptitude && hasOpening(b, biz)) { chosen = b; break; }
+      }
     }
+    // Otherwise the first compatible opening (non-apt skip magical employers).
+    if (chosen === null) {
+      for (const b of businesses) {
+        const biz = world.getComponent<Business>(b, C_BUSINESS)!;
+        if (biz.requiresAptitude && !apt) continue;
+        if (hasOpening(b, biz)) { chosen = b; break; }
+      }
+    }
+    if (chosen !== null) hireInto(e, chosen, world.getComponent<Business>(chosen, C_BUSINESS)!);
   }
 
   // ── Wages ───────────────────────────────────────────────────────────────────
