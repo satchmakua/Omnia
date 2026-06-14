@@ -49,19 +49,19 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **DoD:** a generated world with biomes, growing flora, roaming fauna, and harvestable resources runs stably for many sim-years (10k-tick soak, 0 violations) — met; an overgrazed fauna population **can crash** and it's detectable by counting (tested in `ecosystem.test.ts`). 102 tests green.
 
-## ▶ Milestone 3 — Economy, Work & Capabilities  *(current)*
+## ✅ Milestone 3 — Economy, Work & Capabilities  *(done — 2026-06-13)*
 
 **Goal:** agents make a living; the unified magic/technology system lands.
 
-- [x] Jobs, employers, wages; `EconomySystem`; spend on food/shelter; debt when broke; businesses as org entities. *(S7: 5 professions as content; businesses placed at world-gen; hiring; wages from business balance; daily upkeep → debt; per-agent wealth goal bounds accumulation.)* — supply/demand **market** deferred (see backlog).
-- [ ] The unified **Capability system**: invoke → prerequisites → cost → effect (`MAGIC_AND_TECHNOLOGY.md`).
-- [ ] **Technology** tradition (common, knowledge-gated) + crafting/tech professions tied to resources.
-- [ ] **Magic** tradition (rare, aptitude-gated): innate aptitude rolled per species/lineage; mana cost; a few magical professions.
-- [x] Wealth-distribution metric. *(S7: `src/sim/wealth.ts` — min/median/mean/max net worth + Gini; in soak metrics and the HUD.)*
+- [x] Jobs, employers, wages; `EconomySystem`; spend on food/shelter; debt when broke; businesses as org entities. *(S7: 5 professions; businesses at world-gen; hiring; wages from business balance; daily upkeep → debt; per-agent wealth goal bounds accumulation.)* — supply/demand **market** deferred (backlog).
+- [x] The unified **Capability system**: invoke → prerequisites → cost → effect. *(S8: `canInvoke`/`invokeCapability` — one code path for both traditions; checks aptitude + mana/energy cost, then applies effect tags.)*
+- [x] **Technology** tradition (common, knowledge-gated). *(S8: `forage` is the common, ungated tech capability.)* — resource-consuming crafting deferred (backlog).
+- [x] **Magic** tradition (rare, aptitude-gated): innate aptitude rolled per species; mana cost; magical professions. *(S8: `Magic` component on the rare aptitude-rolled agents; `conjure_meal`/`mend_vigor` cast via `CapabilitySystem`; `hedge_witch` profession hires only the gifted.)*
+- [x] Wealth-distribution metric. *(S7: `src/sim/wealth.ts` — net-worth min/median/mean/max + Gini; in soak + HUD.)*
 
-**DoD:** agents earn/spend and can prosper or go broke; capabilities of both traditions work through one engine; magic is visibly rare (most agents lack aptitude); economy stable over many sim-years; tested. *(Economy half done & stable — Gini ~0.20, no runaway debt over 10k ticks. Capability/magic/tech half remains.)*
+**DoD:** agents earn/spend and can prosper or go broke; capabilities of both traditions work through one engine; magic is visibly rare (most agents lack aptitude — ~8/300 in tests, often 0–1 per town); economy stable over many sim-years (Gini ~0.2–0.3, no runaway debt, 0 violations over 10k ticks); tested. **Met.** *(Deferred to backlog: supply/demand market, resource-consuming crafting, skill/knowledge gating.)*
 
-## Milestone 4 — Relationships & Life Cycle
+## ▶ Milestone 4 — Relationships & Life Cycle  *(current)*
 
 **Goal:** people connect, reproduce, age, and die across generations.
 
@@ -127,3 +127,5 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 - Domestication of fauna; agriculture depth — date: founding.
 - Renderer: interpolate entity positions between ticks for smooth gliding motion (currently entities snap a cell per tick) — date: 2026-06-13.
 - Economy: a real supply/demand **market** (prices, goods, business revenue from actual sales rather than abstract productivity); businesses that can go bankrupt and close — date: 2026-06-13 (deferred from M3 part 1).
+- Capabilities: **resource-consuming crafting** (tech professions like miner/artisan consume nearby ore/timber as they work) + **skill/knowledge gating** for technology (learn-by-doing or apprenticeship) — date: 2026-06-13 (deferred from M3 part 2).
+- Capabilities: **lost arts** — a capability whose last knowledgeable/aptitude-holding practitioner dies becomes "lost" until rediscovered (`MAGIC_AND_TECHNOLOGY.md`) — date: 2026-06-13.
