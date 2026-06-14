@@ -65,11 +65,11 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **Goal:** people connect, reproduce, age, and die across generations.
 
-- [ ] `Relationships` graph (sentiment + type); `SocialSystem`; social need.
-- [ ] Courtship → marriage; reproduction, children, `Lineage`; aging.
-- [ ] Illness, injury, death; **tombstone** records on death (`SIMULATION_MODEL.md`).
+- [x] `Relationships` graph (sentiment + type); `SocialSystem`; social need. *(S9: proximity interactions build friend/partner edges; social need decays and is met by company.)*
+- [~] Courtship → marriage; reproduction, children, `Lineage`; aging. *(S9: courtship→marriage, aging, and the `Lineage` component done; **reproduction/children = part 2**.)*
+- [x] Illness, injury, death; **tombstone** records on death (`SIMULATION_MODEL.md`). *(S9: `HealthSystem` illness + age-ramped mortality; death strips living components and leaves a compact `Tombstone`, keeping the entity id so lineage pointers resolve.)*
 
-**DoD:** the town sustains itself across several generations (no collapse/explosion); family trees form; deaths free agents into tombstones; tested.
+**DoD:** the town sustains itself across several generations (no collapse/explosion); family trees form; deaths free agents into tombstones; tested. *(Part 1 done — mortality, social, marriage, tombstones; 0 violations over 10k ticks. **Part 2 remains:** reproduction/children + multi-generation population balance, which is what truly "sustains across generations".)*
 
 ## Milestone 5 — The Soul (LLM layer)
 

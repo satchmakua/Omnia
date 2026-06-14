@@ -27,6 +27,13 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
     ripeList.push({ x: p.x, y: p.y });
   }
 
+  // Agent positions (for socialising: walking toward the nearest other person).
+  const agentList: { id: EntityId; x: number; y: number }[] = [];
+  for (const ae of world.query(C_AGENT, C_POSITION)) {
+    const p = world.getComponent<Position>(ae, C_POSITION)!;
+    agentList.push({ id: ae, x: p.x, y: p.y });
+  }
+
   for (const entity of world.query(C_AGENT, C_NEEDS, C_POSITION)) {
     const agent = world.getComponent<Agent>(entity, C_AGENT)!;
     const pos   = world.getComponent<Position>(entity, C_POSITION)!;
@@ -46,6 +53,20 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
         continue; // standing on the workplace: stay put and work
       }
       // No job/employer to walk to — fall through to wander.
+    }
+
+    if (agent.action === 'socialize') {
+      // Walk toward the nearest other person; converging onto a shared tile lets
+      // the SocialSystem strike up an interaction.
+      let nearest: { x: number; y: number } | null = null;
+      let best = Infinity;
+      for (const o of agentList) {
+        if (o.id === entity) continue;
+        const d = Math.abs(o.x - pos.x) + Math.abs(o.y - pos.y);
+        if (d > 0 && d < best) { best = d; nearest = o; }
+      }
+      if (nearest) { stepToward(pos, nearest.x, nearest.y, rng, enterable); continue; }
+      // Alone in the world — wander.
     }
 
     if (agent.action === 'seek_food') {

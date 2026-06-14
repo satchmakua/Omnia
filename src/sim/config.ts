@@ -27,6 +27,31 @@ export interface SimConfig {
   // Capabilities / magic (M3 part 2):
   magicManaMax: number;                // mana pool size for aptitude-gifted agents
   manaRegenPerDay: number;             // mana regenerated per in-sim day
+  // Life cycle (M4):
+  daysPerYear: number;                 // sim-days in a "year" (compressed so lives turn over)
+  adultAgeYears: number;               // age at which an agent works / courts / reproduces
+  initialAgeMinYears: number;          // founders are seeded with ages in this range
+  initialAgeMaxYears: number;
+  socialDecayPerDay: number;           // social need depletion
+  socialGainPerInteract: number;       // social restored per tick spent beside another agent
+  sentimentGainPerInteract: number;    // relationship sentiment gained per tick together
+  friendSentiment: number;             // sentiment at/above which an edge becomes "friend"
+  marrySentiment: number;              // sentiment needed to consider marriage
+  marryChancePerDay: number;           // daily chance an eligible, willing pair weds
+  illnessChancePerDay: number;         // chance per day of falling ill
+  illnessHealthLoss: number;           // health lost when illness strikes
+  healthRecoveryPerDay: number;        // health regained per day when not newly ill
+  baseMortalityPerDay: number;         // flat background death chance
+  ageMortalityScale: number;           // age-driven mortality multiplier (ramps near lifespan)
+  sickMortalityPerDay: number;         // extra death chance while in poor health
+}
+
+export function ticksPerYear(cfg: SimConfig): number {
+  return cfg.ticksPerDay * cfg.daysPerYear;
+}
+
+export function ageInYears(ticksAlive: number, cfg: SimConfig): number {
+  return ticksAlive / ticksPerYear(cfg);
 }
 
 // Mirrors config/simulation.yaml; the YAML loader wires this in a later milestone.
@@ -34,7 +59,7 @@ export const defaultConfig: SimConfig = {
   gridWidth: 64,
   gridHeight: 64,
   initialPopulation: 20,
-  seed: 1,
+  seed: 2,          // a town that happens to include one mage (magic is rare)
   ticksPerDay: 240,
   hungerDecayPerDay: 0.8,
   energyDecayPerDay: 0.7,
@@ -56,4 +81,20 @@ export const defaultConfig: SimConfig = {
   businessRevenueMargin: 0.25,
   magicManaMax: 100,
   manaRegenPerDay: 10,
+  daysPerYear: 4,
+  adultAgeYears: 16,
+  initialAgeMinYears: 16,
+  initialAgeMaxYears: 55,
+  socialDecayPerDay: 0.4,
+  socialGainPerInteract: 0.05,
+  sentimentGainPerInteract: 0.02,
+  friendSentiment: 0.4,
+  marrySentiment: 0.7,
+  marryChancePerDay: 0.2,
+  illnessChancePerDay: 0.03,
+  illnessHealthLoss: 0.4,
+  healthRecoveryPerDay: 0.25,
+  baseMortalityPerDay: 0.0003,
+  ageMortalityScale: 0.5,
+  sickMortalityPerDay: 0.01,
 };

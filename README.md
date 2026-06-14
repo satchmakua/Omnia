@@ -118,7 +118,11 @@ When the page loads you're looking at a small living world ticking in real time.
   never have. These mages can take the hedge-witch profession and cast (conjure
   food, mend vigour) using mana instead of foraging or sleeping.
 - **The HUD** (top bar) shows the day, a ☀/☾ that flips each half-day, live counts
-  of **Folk / Fauna / Flora / Mages**, and the town's **median wealth + Gini**.
+  of **Folk / Mages / Graves** and **Fauna / Flora**, and the town's **Gini**
+  (wealth inequality).
+- Folk **age, befriend each other, marry, fall ill, and die** — the dead leave a
+  grave (the **Graves** count climbs over time). Click someone to see their age,
+  sex, social need, health, and family (partner + children).
 
 **Things worth trying**
 
@@ -135,6 +139,10 @@ When the page loads you're looking at a small living world ticking in real time.
   seed has one — look for the violet pip). Click them to see their mana, and
   watch it drain when they cast. No mage in your town? Magic is deliberately rare
   — change `world.seed` in `config/simulation.yaml` for a different draw.
+- **Watch a life unfold.** Fast-forward with the speed slider and watch the
+  **Graves** count rise as elders pass, couples pair off (an inspected person
+  shows their partner), and the town's average age drift. (Births arrive in the
+  next milestone — for now the founding generation lives out its days.)
 
 > Want a different world? Edit `seed` under `world:` in `config/simulation.yaml`
 > (mirrored in `src/sim/config.ts`) and restart. The same seed always produces the
@@ -197,6 +205,7 @@ is simply "keep going," and the agent should know what to do.
 | Small square | Resource node (timber / ore / crystal) |
 | Bordered square | Business (employer; colour = profession) |
 | Violet pip in a dot | Magic aptitude (rare — a potential mage) |
+| **Graves** (HUD count) | Folk who have died and left a tombstone record |
 
 ## Stack at a glance
 
