@@ -25,7 +25,7 @@ function addPerson(
   w.addComponent<Needs>(e, C_NEEDS, { hunger: 1, energy: 1, social: opts.social ?? 1 });
   w.addComponent<Health>(e, C_HEALTH, { value: 1, ill: false });
   w.addComponent<Relationships>(e, C_RELATIONSHIPS, { edges: {} });
-  w.addComponent<Lineage>(e, C_LINEAGE, { partner: null, parents: [], children: [] });
+  w.addComponent<Lineage>(e, C_LINEAGE, { partner: null, parents: [], children: [], reproCooldownTicks: 0 });
   w.addComponent(e, C_POSITION, { x: opts.x ?? 0, y: opts.y ?? 0 });
   return e;
 }

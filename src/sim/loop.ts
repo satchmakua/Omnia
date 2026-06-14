@@ -12,6 +12,7 @@ import { runActionSystem }   from './systems/ActionSystem.ts';
 import { runMovementSystem } from './systems/MovementSystem.ts';
 import { runEconomySystem }  from './systems/EconomySystem.ts';
 import { runSocialSystem }   from './systems/SocialSystem.ts';
+import { runReproductionSystem } from './systems/ReproductionSystem.ts';
 import { runHealthSystem }   from './systems/HealthSystem.ts';
 import { runFaunaSystem }    from './systems/FaunaSystem.ts';
 
@@ -29,6 +30,7 @@ export function tick(
   runMovementSystem(world, cfg, rng, content); // sapient movement / forage / commute / socialise
   runEconomySystem(world, cfg);          // hiring, wages, cost of living
   runSocialSystem(world, cfg, rng);      // relationships, social need, courtship → marriage
+  runReproductionSystem(world, cfg, rng, content); // births → children + lineage
   runHealthSystem(world, cfg, rng);      // illness, ageing, death → tombstones
   runFaunaSystem(world, cfg, rng);       // fauna instinct (graze / breed / die)
 }

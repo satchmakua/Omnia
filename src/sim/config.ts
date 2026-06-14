@@ -44,6 +44,14 @@ export interface SimConfig {
   baseMortalityPerDay: number;         // flat background death chance
   ageMortalityScale: number;           // age-driven mortality multiplier (ramps near lifespan)
   sickMortalityPerDay: number;         // extra death chance while in poor health
+  // Reproduction (M4 part 2):
+  maxPopulation: number;               // births pause at this cap (bounds growth)
+  birthChancePerDay: number;           // daily chance an eligible couple conceives
+  reproCooldownDays: number;           // a mother's recovery between births
+  fertilityMaxAgeYears: number;        // upper age for bearing children
+  reproMinHunger: number;              // parents must be at least this fed to breed
+  reproMinHealth: number;              // ...and at least this healthy
+  childMageAptitudeChance: number;     // aptitude chance for a child with a mage parent (heritable)
 }
 
 export function ticksPerYear(cfg: SimConfig): number {
@@ -89,12 +97,19 @@ export const defaultConfig: SimConfig = {
   socialGainPerInteract: 0.05,
   sentimentGainPerInteract: 0.02,
   friendSentiment: 0.4,
-  marrySentiment: 0.7,
-  marryChancePerDay: 0.2,
+  marrySentiment: 0.5,
+  marryChancePerDay: 0.5,
   illnessChancePerDay: 0.03,
   illnessHealthLoss: 0.4,
   healthRecoveryPerDay: 0.25,
   baseMortalityPerDay: 0.0003,
   ageMortalityScale: 0.5,
   sickMortalityPerDay: 0.01,
+  maxPopulation: 60,
+  birthChancePerDay: 0.4,
+  reproCooldownDays: 4,
+  fertilityMaxAgeYears: 50,
+  reproMinHunger: 0.5,
+  reproMinHealth: 0.5,
+  childMageAptitudeChance: 0.25,  // heritable but diluting — magic stays uncommon
 };
