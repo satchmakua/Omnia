@@ -120,9 +120,13 @@ When the page loads you're looking at a small living world ticking in real time.
 - **The HUD** (top bar) shows the day, a ☀/☾ that flips each half-day, live counts
   of **Folk / Mages / Graves** and **Fauna / Flora**, and the town's **Gini**
   (wealth inequality).
-- Folk **age, befriend each other, marry, fall ill, and die** — the dead leave a
-  grave (the **Graves** count climbs over time). Click someone to see their age,
-  sex, social need, health, and family (partner + children).
+- Folk **age, befriend each other, marry, have children, fall ill, and die** —
+  the dead leave a grave (the **Graves** count climbs over time). Click someone to
+  see their age, sex, social need, health, and family (partner + children).
+- **Children are drawn smaller than adults**, so you can watch generations: the
+  population grows toward a cap and then holds steady as births balance deaths,
+  sustaining the town across many lifetimes. Magic **runs in families** (a mage's
+  children are likelier to be gifted).
 
 **Things worth trying**
 
@@ -139,10 +143,10 @@ When the page loads you're looking at a small living world ticking in real time.
   seed has one — look for the violet pip). Click them to see their mana, and
   watch it drain when they cast. No mage in your town? Magic is deliberately rare
   — change `world.seed` in `config/simulation.yaml` for a different draw.
-- **Watch a life unfold.** Fast-forward with the speed slider and watch the
-  **Graves** count rise as elders pass, couples pair off (an inspected person
-  shows their partner), and the town's average age drift. (Births arrive in the
-  next milestone — for now the founding generation lives out its days.)
+- **Watch generations turn over.** Fast-forward with the speed slider: couples
+  pair off and have children (small dots), elders pass into **Graves**, and the
+  town refills itself. Click a long-lived elder and a child to see the family
+  links between them — the town sustains itself across many lifetimes.
 
 > Want a different world? Edit `seed` under `world:` in `config/simulation.yaml`
 > (mirrored in `src/sim/config.ts`) and restart. The same seed always produces the

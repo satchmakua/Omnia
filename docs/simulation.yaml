@@ -41,6 +41,12 @@ life_cycle:
   illnessChancePerDay: 0.03  # chance per day of falling ill
   baseMortalityPerDay: 0.0003 # flat background death chance
   ageMortalityScale: 0.5     # age-driven mortality multiplier (ramps steeply near lifespan)
+  # Reproduction (M4 part 2):
+  maxPopulation: 60          # births pause at this cap, so the town holds a carrying capacity
+  birthChancePerDay: 0.4     # daily chance an eligible couple conceives
+  reproCooldownDays: 4       # a mother's recovery between births
+  fertilityMaxAgeYears: 50   # upper age for bearing children
+  childMageAptitudeChance: 0.25 # aptitude chance for a child of a mage (heritable, diluting)
 
 # Economy (see docs/ROADMAP.md M3). Agents earn wages, pay a daily cost of living,
 # and work toward a personal wealth goal (which bounds accumulation).
