@@ -7,16 +7,17 @@ import { defaultConfig } from './config.ts';
 import { loadContentFromDisk } from '../content/fsSource.ts';
 import {
   C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS,
-  C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
+  C_HEALTH, C_LINEAGE, C_TOMBSTONE, C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
 } from './components.ts';
-import type { Needs, Position, SpeciesComp, Wallet, Magic, Clock } from './components.ts';
+import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
+import { ageInYears } from './config.ts';
 import { isPassable } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { wealthStats } from './wealth.ts';
 
 const SOAK_TICKS = 10_000;
-const cfg: SimConfig = { ...defaultConfig, seed: 7 }; // seed 7 happens to include a mage
+const cfg: SimConfig = { ...defaultConfig, seed: 11 }; // seed 11 includes a couple of mages
 
 console.log(`Omnia soak: ${SOAK_TICKS} ticks, seed=${cfg.seed}, pop=${cfg.initialPopulation}`);
 const t0 = Date.now();
@@ -40,11 +41,13 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       const p = world.getComponent<Position>(e, C_POSITION)!;
       const sp = world.getComponent<SpeciesComp>(e, C_SPECIES);
       const w = world.getComponent<Wallet>(e, C_WALLET);
+      const h = world.getComponent<Health>(e, C_HEALTH);
       if (sp) bySpecies[sp.id] = (bySpecies[sp.id] ?? 0) + 1;
-      if (n.hunger < 0 || n.hunger > 1 || n.energy < 0 || n.energy > 1) inv++;
+      if (n.hunger < 0 || n.hunger > 1 || n.energy < 0 || n.energy > 1 || n.social < 0 || n.social > 1) inv++;
       if (p.x < 0 || p.x >= cfg.gridWidth || p.y < 0 || p.y >= cfg.gridHeight) inv++;
       if (!isPassable(tileMap, p.x, p.y)) inv++;  // M2 invariant: never on water/blocked
       if (w && (w.gold < 0 || w.debt < 0)) inv++; // M3 invariant: no negative gold/debt
+      if (h && (h.value < 0 || h.value > 1)) inv++; // M4 invariant: health in [0,1]
     }
 
     // Fauna must also stay on passable land.
@@ -61,17 +64,23 @@ for (let t = 0; t < SOAK_TICKS; t++) {
 
     violations += inv;
     const fauna = world.query(C_FAUNA).length;
-    const employed = world.query(C_AGENT, C_JOB).length;
-    const businesses = world.query(C_BUSINESS).length;
     const mages = world.query(C_AGENT, C_MAGIC).length;
+    const graves = world.query(C_TOMBSTONE).length;
+    // Average age (years) and number of married folk.
+    let ageSum = 0, married = 0;
+    for (const e of agents) {
+      ageSum += ageInYears(world.getComponent<Agent>(e, C_AGENT)!.ticksAlive, cfg);
+      const lin = world.getComponent(e, C_LINEAGE) as { partner: number | null } | undefined;
+      if (lin && lin.partner != null && world.hasComponent(lin.partner, C_AGENT)) married++;
+    }
+    const avgAge = agents.length ? (ageSum / agents.length).toFixed(0) : '0';
     const wlth = wealthStats(world);
     const marker = inv > 0 ? ' *** VIOLATION ***' : '';
     const mix = Object.entries(bySpecies).map(([k, v]) => `${k}=${v}`).join(' ');
     console.log(
-      `  tick=${t+1}  day=${clock.day}  folk=${agents.length} [${mix}]  fauna=${fauna}  mages=${mages}  ` +
-      `jobs=${employed}/${agents.length}@${businesses}biz  ` +
-      `wealth(min/med/max)=${Math.round(wlth.min)}/${Math.round(wlth.median)}/${Math.round(wlth.max)} ` +
-      `gini=${wlth.gini.toFixed(2)} inDebt=${wlth.inDebt}  invalid=${inv}${marker}`,
+      `  tick=${t+1}  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(1)}  ` +
+      `folk=${agents.length} [${mix}] avgAge=${avgAge}  married=${married} graves=${graves} mages=${mages}  ` +
+      `fauna=${fauna}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
     );
   }
 }

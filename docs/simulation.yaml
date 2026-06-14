@@ -29,6 +29,19 @@ needs:
   funDecayPerDay: 0.3
   actionThreshold: 0.4       # below this, satisfying the need dominates action choice.
 
+# Life cycle (see docs/ROADMAP.md M4). Agents age, socialise, marry, fall ill, and die.
+life_cycle:
+  daysPerYear: 4             # sim-days per "year" (compressed so lives turn over in a session)
+  adultAgeYears: 16          # age at which an agent works / courts / reproduces
+  initialAgeMinYears: 16     # founders are seeded with a spread of ages...
+  initialAgeMaxYears: 55     #   ...so the town starts with a real generation mix
+  socialDecayPerDay: 0.4     # social-need depletion
+  marrySentiment: 0.7        # warmth two adults need before they may wed
+  marryChancePerDay: 0.2     # daily chance an eligible, willing pair weds
+  illnessChancePerDay: 0.03  # chance per day of falling ill
+  baseMortalityPerDay: 0.0003 # flat background death chance
+  ageMortalityScale: 0.5     # age-driven mortality multiplier (ramps steeply near lifespan)
+
 # Economy (see docs/ROADMAP.md M3). Agents earn wages, pay a daily cost of living,
 # and work toward a personal wealth goal (which bounds accumulation).
 economy:

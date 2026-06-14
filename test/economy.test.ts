@@ -50,7 +50,7 @@ describe('wealth metric', () => {
     const w = new World();
     const mk = (gold: number, debt: number) => {
       const e = w.createEntity();
-      w.addComponent<Agent>(e, C_AGENT, { name: 'A', action: 'wander', ticksAlive: 0, wealthGoal: 50 });
+      w.addComponent<Agent>(e, C_AGENT, { name: 'A', action: 'wander', ticksAlive: 20000, wealthGoal: 50, sex: 'female', lifespanTicks: 1_000_000_000 });
       w.addComponent<Wallet>(e, C_WALLET, { gold, debt });
     };
     mk(10, 0); mk(30, 0); mk(0, 5);
@@ -78,7 +78,7 @@ function makeBusiness(w: World, over: Partial<Business> = {}) {
 
 function makeAgent(w: World, over: Partial<Agent> = {}, wallet: Wallet = { gold: 0, debt: 0 }) {
   const e = w.createEntity();
-  w.addComponent<Agent>(e, C_AGENT, { name: 'A', action: 'work', ticksAlive: 0, wealthGoal: 50, ...over });
+  w.addComponent<Agent>(e, C_AGENT, { name: 'A', action: 'work', ticksAlive: 20000, wealthGoal: 50, sex: 'female', lifespanTicks: 1_000_000_000, ...over });
   w.addComponent<Wallet>(e, C_WALLET, wallet);
   w.addComponent(e, C_POSITION, { x: 1, y: 1 });
   return e;
@@ -141,8 +141,8 @@ describe('ActionSystem work choice', () => {
   function agentWithJob(gold: number, goal: number) {
     const w = new World();
     const e = w.createEntity();
-    w.addComponent<Agent>(e, C_AGENT, { name: 'A', action: 'wander', ticksAlive: 0, wealthGoal: goal });
-    w.addComponent<Needs>(e, C_NEEDS, { hunger: 0.9, energy: 0.9 }); // comfortable
+    w.addComponent<Agent>(e, C_AGENT, { name: 'A', action: 'wander', ticksAlive: 20000, wealthGoal: goal, sex: 'female', lifespanTicks: 1_000_000_000 });
+    w.addComponent<Needs>(e, C_NEEDS, { hunger: 0.9, energy: 0.9, social: 1 }); // comfortable
     w.addComponent<Wallet>(e, C_WALLET, { gold, debt: 0 });
     w.addComponent<Job>(e, C_JOB, { professionId: 'laborer', professionName: 'Laborer', employer: 999, wagePerTick: 0.5 });
     return { w, e };

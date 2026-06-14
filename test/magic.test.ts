@@ -26,21 +26,21 @@ function addMage(w: World, needs: Needs, mana: number): { e: number; magic: Magi
 describe('CapabilitySystem', () => {
   it('regenerates mana toward the cap', () => {
     const w = new World();
-    const { magic } = addMage(w, { hunger: 0.9, energy: 0.9 }, 50); // comfortable → no cast
+    const { magic } = addMage(w, { hunger: 0.9, energy: 0.9, social: 1 }, 50); // comfortable → no cast
     runCapabilitySystem(w, cfg, content);
     expect(magic.mana).toBeCloseTo(50.5);
   });
 
   it('does not overfill mana past the cap', () => {
     const w = new World();
-    const { magic } = addMage(w, { hunger: 0.9, energy: 0.9 }, 100);
+    const { magic } = addMage(w, { hunger: 0.9, energy: 0.9, social: 1 }, 100);
     runCapabilitySystem(w, cfg, content);
     expect(magic.mana).toBe(100);
   });
 
   it('a hungry mage conjures a meal — hunger up, mana spent', () => {
     const w = new World();
-    const { magic, needs } = addMage(w, { hunger: 0.1, energy: 0.9 }, 100);
+    const { magic, needs } = addMage(w, { hunger: 0.1, energy: 0.9, social: 1 }, 100);
     runCapabilitySystem(w, cfg, content);
     expect(needs.hunger).toBeGreaterThan(0.1);   // conjured food
     expect(magic.mana).toBeLessThan(100);        // paid mana
@@ -48,7 +48,7 @@ describe('CapabilitySystem', () => {
 
   it('a tired mage mends its vigour when not hungry', () => {
     const w = new World();
-    const { magic, needs } = addMage(w, { hunger: 0.9, energy: 0.1 }, 100);
+    const { magic, needs } = addMage(w, { hunger: 0.9, energy: 0.1, social: 1 }, 100);
     runCapabilitySystem(w, cfg, content);
     expect(needs.energy).toBeGreaterThan(0.1);
     expect(magic.mana).toBeLessThan(100);
@@ -56,7 +56,7 @@ describe('CapabilitySystem', () => {
 
   it('a mage out of mana cannot cast (falls back to mundane survival)', () => {
     const w = new World();
-    const { needs, magic } = addMage(w, { hunger: 0.1, energy: 0.9 }, 1);
+    const { needs, magic } = addMage(w, { hunger: 0.1, energy: 0.9, social: 1 }, 1);
     runCapabilitySystem(w, cfg, content);
     // 1 + 0.5 regen = 1.5 mana, far below conjure cost → no cast, hunger unchanged.
     expect(needs.hunger).toBe(0.1);
@@ -102,7 +102,7 @@ describe('magical-profession hiring', () => {
   }
   function person(w: World, apt: boolean) {
     const e = w.createEntity();
-    w.addComponent<Agent>(e, C_AGENT, { name: 'A', action: 'wander', ticksAlive: 0, wealthGoal: 50 });
+    w.addComponent<Agent>(e, C_AGENT, { name: 'A', action: 'wander', ticksAlive: 20000, wealthGoal: 50, sex: 'female', lifespanTicks: 1_000_000_000 });
     w.addComponent<Wallet>(e, C_WALLET, { gold: 0, debt: 0 });
     w.addComponent(e, C_POSITION, { x: 1, y: 1 });
     if (apt) w.addComponent<Magic>(e, C_MAGIC, { mana: 100, maxMana: 100, manaRegenPerTick: 0.04 });

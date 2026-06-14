@@ -142,8 +142,8 @@ describe('movement and terrain', () => {
     for (let i = 0; i < 8; i++) {
       const e = w.createEntity();
       w.addComponent<Position>(e, C_POSITION, { x: 0, y: i % 5 });
-      w.addComponent<Needs>(e, C_NEEDS, { hunger: 0.9, energy: 0.9 });
-      w.addComponent<Agent>(e, C_AGENT, { name: `A${i}`, action: 'wander', ticksAlive: 0, wealthGoal: 50 });
+      w.addComponent<Needs>(e, C_NEEDS, { hunger: 0.9, energy: 0.9, social: 1 });
+      w.addComponent<Agent>(e, C_AGENT, { name: `A${i}`, action: 'wander', ticksAlive: 0, wealthGoal: 50, sex: 'female', lifespanTicks: 1_000_000_000 });
     }
 
     for (let t = 0; t < 300; t++) runMovementSystem(w, cfg, rng, content);
@@ -173,8 +173,8 @@ describe('movement and terrain', () => {
 
     const ae = w.createEntity();
     w.addComponent<Position>(ae, C_POSITION, { x: 0, y: 0 });
-    w.addComponent<Needs>(ae, C_NEEDS, { hunger: 0.2, energy: 0.9 });
-    w.addComponent<Agent>(ae, C_AGENT, { name: 'Seeker', action: 'seek_food', ticksAlive: 0, wealthGoal: 50 });
+    w.addComponent<Needs>(ae, C_NEEDS, { hunger: 0.2, energy: 0.9, social: 1 });
+    w.addComponent<Agent>(ae, C_AGENT, { name: 'Seeker', action: 'seek_food', ticksAlive: 0, wealthGoal: 50, sex: 'female', lifespanTicks: 1_000_000_000 });
 
     for (let t = 0; t < 60; t++) {
       const p = w.getComponent<Position>(ae, C_POSITION)!;
