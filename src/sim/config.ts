@@ -24,6 +24,9 @@ export interface SimConfig {
   wealthGoalMax: number;     //   they work while below it, so wealth stays bounded
   businessStartBalance: number;        // employer starting funds
   businessRevenueMargin: number;       // revenue per worker = wage × (1 + margin)
+  // Capabilities / magic (M3 part 2):
+  magicManaMax: number;                // mana pool size for aptitude-gifted agents
+  manaRegenPerDay: number;             // mana regenerated per in-sim day
 }
 
 // Mirrors config/simulation.yaml; the YAML loader wires this in a later milestone.
@@ -51,4 +54,6 @@ export const defaultConfig: SimConfig = {
   wealthGoalMax: 110,
   businessStartBalance: 300,
   businessRevenueMargin: 0.25,
+  magicManaMax: 100,
+  manaRegenPerDay: 10,
 };

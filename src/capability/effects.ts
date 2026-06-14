@@ -16,6 +16,10 @@ export const EFFECT_TAGS: Record<string, EffectFn> = {
   restore_hunger: (ctx) => {
     ctx.needs.hunger = Math.min(1, ctx.needs.hunger + ctx.power);
   },
+  // Restore energy/vigour by `power`, clamped to [0,1].
+  restore_energy: (ctx) => {
+    ctx.needs.energy = Math.min(1, ctx.needs.energy + ctx.power);
+  },
 };
 
 export function isKnownEffectTag(tag: string): boolean {

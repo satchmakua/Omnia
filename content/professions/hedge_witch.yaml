@@ -1,0 +1,8 @@
+# A magical profession — lucrative, but only the rare aptitude-gifted can hold it.
+# Most towns have one hedge-witch and no formal mage at all (MAGIC_AND_TECHNOLOGY).
+id: "hedge_witch"
+name: "Hedge-Witch"
+dailyWage: 22
+color: "#b060d0"
+maxEmployeesPerBusiness: 2
+requiresAptitude: true

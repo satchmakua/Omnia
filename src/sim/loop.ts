@@ -7,6 +7,7 @@ import { runClockSystem }    from './systems/ClockSystem.ts';
 import { runFloraSystem }    from './systems/FloraSystem.ts';
 import { runResourceSystem } from './systems/ResourceSystem.ts';
 import { runHungerSystem }   from './systems/HungerSystem.ts';
+import { runCapabilitySystem } from './systems/CapabilitySystem.ts';
 import { runActionSystem }   from './systems/ActionSystem.ts';
 import { runMovementSystem } from './systems/MovementSystem.ts';
 import { runEconomySystem }  from './systems/EconomySystem.ts';
@@ -21,6 +22,7 @@ export function tick(
   runFloraSystem(world, cfg, rng);       // flora grow/spread (no brain)
   runResourceSystem(world);              // resources regrow (no brain)
   runHungerSystem(world, cfg);           // sapient needs decay / starvation
+  runCapabilitySystem(world, cfg, content); // magic: mana regen + casting (rare)
   runActionSystem(world, cfg);           // sapient utility action choice
   runMovementSystem(world, cfg, rng, content); // sapient movement / forage / commute
   runEconomySystem(world, cfg);          // hiring, wages, cost of living
