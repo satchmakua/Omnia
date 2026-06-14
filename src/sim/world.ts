@@ -2,9 +2,13 @@ import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
   C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_MAGIC, C_CLOCK, C_TILEMAP, C_CHRONICLE,
+  C_HEALTH, C_RELATIONSHIPS, C_LINEAGE,
 } from './components.ts';
-import type { Position, Needs, Wallet, Agent, SpeciesComp, Magic, Clock } from './components.ts';
+import type {
+  Position, Needs, Wallet, Agent, SpeciesComp, Magic, Clock, Health, Relationships, Lineage, Sex,
+} from './components.ts';
 import type { SimConfig } from './config.ts';
+import { ticksPerYear } from './config.ts';
 import type { EntityId } from './ecs.ts';
 import type { RNG } from './rng.ts';
 import type { Content } from '../content/loader.ts';
@@ -88,16 +92,22 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const speciesList = content.species.all();             // deterministic (sorted by id)
   const totalWeight = speciesList.reduce((sum, s) => sum + s.spawnWeight, 0);
 
+  const tpy = ticksPerYear(cfg);
   for (let i = 0; i < cfg.initialPopulation; i++) {
     const species = rollSpecies(rng, speciesList, totalWeight);
     const name = generateName(rng, species);
     const { x, y } = findPassableTile(rng, tileMap);
+    const sex: Sex = rng() < 0.5 ? 'male' : 'female';
+    // Founders have a spread of ages so the town starts with a real generation mix.
+    const ageTicks = Math.floor(rngFloat(rng, cfg.initialAgeMinYears, cfg.initialAgeMaxYears) * tpy);
+    const lifespanTicks = Math.floor(rngFloat(rng, species.lifespanYears.min, species.lifespanYears.max) * tpy);
 
     const e = world.createEntity();
     world.addComponent<Position>(e, C_POSITION, { x, y });
     world.addComponent<Needs>(e, C_NEEDS, {
       hunger: rngFloat(rng, 0.5, 1.0),
       energy: rngFloat(rng, 0.5, 1.0),
+      social: rngFloat(rng, 0.5, 1.0),
     });
     world.addComponent<Wallet>(e, C_WALLET, {
       gold: rngFloat(rng, 10, 50),
@@ -114,9 +124,14 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
     world.addComponent<Agent>(e, C_AGENT, {
       name,
       action: 'wander',
-      ticksAlive: 0,
+      ticksAlive: ageTicks,
       wealthGoal: rngFloat(rng, cfg.wealthGoalMin, cfg.wealthGoalMax),
+      sex,
+      lifespanTicks,
     });
+    world.addComponent<Health>(e, C_HEALTH, { value: 1, ill: false });
+    world.addComponent<Relationships>(e, C_RELATIONSHIPS, { edges: {} });
+    world.addComponent<Lineage>(e, C_LINEAGE, { partner: null, parents: [], children: [] });
 
     // Rare innate magic aptitude, rolled per the species' chance. Most agents
     // get no Magic component at all, so magic stays scarce by construction.

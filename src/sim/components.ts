@@ -9,6 +9,10 @@ export const C_BUSINESS  = 'Business';  // an employer / organization entity
 export const C_FLORA     = 'Flora';     // brain tier: none (rule-driven)
 export const C_FAUNA     = 'Fauna';     // brain tier: instinct-only (no LLM)
 export const C_RESOURCE  = 'Resource';  // brain tier: none (rule-driven)
+export const C_HEALTH        = 'Health';        // condition + mortality (M4)
+export const C_RELATIONSHIPS = 'Relationships'; // social graph edges (M4)
+export const C_LINEAGE       = 'Lineage';       // partner / parents / children (M4)
+export const C_TOMBSTONE     = 'Tombstone';     // a dead agent's compact record (M4)
 export const C_CLOCK     = 'Clock';
 export const C_TILEMAP   = 'TileMap';   // singleton: the terrain grid (src/world/tilemap.ts)
 export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/history/chronicle.ts)
@@ -21,6 +25,7 @@ export interface Position {
 export interface Needs {
   hunger: number;  // 0..1; 1 = full, 0 = starving
   energy: number;  // 0..1; 1 = rested, 0 = exhausted
+  social: number;  // 0..1; 1 = content, 0 = lonely
 }
 
 export interface Wallet {
@@ -28,13 +33,17 @@ export interface Wallet {
   debt: number;   // >= 0; what the agent owes (no negative gold without a debt record)
 }
 
-export type AgentAction = 'wander' | 'seek_food' | 'sleep' | 'work';
+export type AgentAction = 'wander' | 'seek_food' | 'sleep' | 'work' | 'socialize';
+
+export type Sex = 'male' | 'female';
 
 export interface Agent {
   name: string;
   action: AgentAction;
-  ticksAlive: number;
+  ticksAlive: number;   // also the agent's age, in ticks
   wealthGoal: number;   // gold level the agent works toward; bounds wealth, varies by agent
+  sex: Sex;
+  lifespanTicks: number; // rolled from species lifespan; mortality ramps as age nears it
 }
 
 // Innate magic aptitude — present on only the rare agents who rolled it at birth
@@ -113,6 +122,51 @@ export interface Resource {
   amount: number;        // 0..1
   renewable: boolean;
   regenPerTick: number;
+}
+
+// Physical condition + mortality inputs (M4). Death is driven by age and health.
+export interface Health {
+  value: number;  // 0..1; low health raises mortality
+  ill: boolean;
+}
+
+export type RelationType = 'friend' | 'rival' | 'partner';
+
+export interface RelationEdge {
+  type: RelationType;
+  sentiment: number;  // -1..1
+}
+
+// An agent's social graph: a small map of other agents → how they feel about them.
+export interface Relationships {
+  edges: Record<number, RelationEdge>;  // keyed by EntityId
+}
+
+// Family ties (D-roadmap "Lineage"). partner is the spouse; parents/children are
+// EntityIds that may point at living agents or at Tombstones (the dead persist as
+// referenceable records).
+export interface Lineage {
+  partner: number | null;
+  parents: number[];
+  children: number[];
+}
+
+// A dead agent's compact record (SIMULATION_MODEL Mechanism 5). The agent's heavy
+// components are stripped on death and replaced by this; the entity id stays valid
+// so lineage pointers keep resolving ("your grandmother who founded the guild").
+export interface Tombstone {
+  name: string;
+  speciesName: string;
+  sex: Sex;
+  bornTick: number;
+  diedTick: number;
+  ageYears: number;
+  role: string | null;     // last profession, if any
+  cause: string;           // 'old age' | 'illness' | 'misfortune'
+  legacy: string;          // one-line summary
+  partner: number | null;
+  parents: number[];
+  children: number[];
 }
 
 export interface Clock {

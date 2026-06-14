@@ -2,13 +2,16 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS,
-  C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP,
+  C_HEALTH, C_LINEAGE, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP,
 } from '../sim/components.ts';
 import type {
-  Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Fauna, Flora, Resource,
+  Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business,
+  Health, Lineage, Fauna, Flora, Resource,
 } from '../sim/components.ts';
 import { biomeNameAt, inBounds } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
+import { ageInYears } from '../sim/config.ts';
+import { defaultConfig } from '../sim/config.ts';
 
 function bar(v: number): string {
   const filled = Math.max(0, Math.min(10, Math.round(v * 10)));
@@ -122,23 +125,46 @@ export class Inspector {
          <div style="${SECTION}">Magic <span style="color:#d090f0">✦ aptitude</span></div>
          <div>Mana ${bar(magic.mana / magic.maxMana)}</div>`
       : '';
+
+    const health = world.getComponent<Health>(e, C_HEALTH);
+    const lin = world.getComponent<Lineage>(e, C_LINEAGE);
+    const ageYears = Math.floor(ageInYears(agent.ticksAlive, defaultConfig));
+    const sexGlyph = agent.sex === 'female' ? '♀' : '♂';
+
+    // Family: name the partner if alive; count living children & friends.
+    let family = '';
+    if (lin) {
+      const partnerName = lin.partner != null && world.hasComponent(lin.partner, C_AGENT)
+        ? world.getComponent<Agent>(lin.partner, C_AGENT)!.name : null;
+      const livingChildren = lin.children.filter(c => world.hasComponent(c, C_AGENT)).length;
+      family = `<hr style="${RULE}">
+        <div style="${SECTION}">Family</div>
+        <div><b>Partner</b> ${partnerName ?? '<span style="color:#889">none</span>'}</div>
+        <div><b>Children</b> ${livingChildren}</div>`;
+    }
+    const healthBlock = health
+      ? `<div>Health ${bar(health.value)}${health.ill ? ' <span style="color:#f99">(ill)</span>' : ''}</div>` : '';
+
     return `
       ${this.title(agent.name, magic ? 'sapient · folk · mage' : 'sapient · folk')}
       ${speciesLine}
       ${this.terrainLine(world, pos)}
+      <div><b>Sex / Age</b> ${sexGlyph} · ${ageYears}y</div>
       <div><b>Action</b> ${agent.action}</div>
-      <div><b>Age</b> ${agent.ticksAlive} ticks</div>
       <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
       <hr style="${RULE}">
       <div style="${SECTION}">Needs</div>
       <div>Hunger ${bar(needs.hunger)}</div>
       <div>Energy ${bar(needs.energy)}</div>
+      <div>Social ${bar(needs.social)}</div>
+      ${healthBlock}
       <hr style="${RULE}">
       <div style="${SECTION}">Livelihood</div>
       ${jobLine}
       <div>Gold ${wallet.gold.toFixed(1)}</div>
       ${debtLine}
       <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>
+      ${family}
       ${magicBlock}`;
   }
 

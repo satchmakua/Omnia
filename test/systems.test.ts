@@ -50,9 +50,9 @@ describe('ClockSystem', () => {
 describe('HungerSystem', () => {
   function makeAgent(hunger: number, energy: number) {
     const w = new World();
-    const needs: Needs = { hunger, energy };
+    const needs: Needs = { hunger, energy, social: 1 };
     const e = w.createEntity();
-    w.addComponent(e, C_AGENT, { name: 'T', action: 'wander', ticksAlive: 0, wealthGoal: 50 } satisfies Agent);
+    w.addComponent(e, C_AGENT, { name: 'T', action: 'wander', ticksAlive: 0, wealthGoal: 50, sex: 'female', lifespanTicks: 1_000_000_000 } satisfies Agent);
     w.addComponent(e, C_NEEDS, needs);
     return { w, needs, e };
   }
@@ -82,10 +82,10 @@ describe('HungerSystem', () => {
 describe('ActionSystem', () => {
   function makeAgent(hunger: number, energy: number) {
     const w = new World();
-    const agent: Agent = { name: 'A', action: 'wander', ticksAlive: 0, wealthGoal: 50 };
+    const agent: Agent = { name: 'A', action: 'wander', ticksAlive: 0, wealthGoal: 50, sex: 'female', lifespanTicks: 1_000_000_000 };
     const e = w.createEntity();
     w.addComponent(e, C_AGENT, agent);
-    w.addComponent(e, C_NEEDS, { hunger, energy } satisfies Needs);
+    w.addComponent(e, C_NEEDS, { hunger, energy, social: 1 } satisfies Needs);
     return { w, agent };
   }
 
@@ -126,8 +126,8 @@ describe('MovementSystem', () => {
     for (let i = 0; i < 10; i++) {
       const e = w.createEntity();
       w.addComponent<Position>(e, C_POSITION, { x: 0, y: 0 });
-      w.addComponent<Needs>(e, C_NEEDS, { hunger: 0.9, energy: 0.9 });
-      w.addComponent<Agent>(e, C_AGENT, { name: `A${i}`, action: 'wander', ticksAlive: 0, wealthGoal: 50 });
+      w.addComponent<Needs>(e, C_NEEDS, { hunger: 0.9, energy: 0.9, social: 1 });
+      w.addComponent<Agent>(e, C_AGENT, { name: `A${i}`, action: 'wander', ticksAlive: 0, wealthGoal: 50, sex: 'female', lifespanTicks: 1_000_000_000 });
     }
 
     for (let t = 0; t < 200; t++) runMovementSystem(w, small, rng, content);
@@ -144,11 +144,11 @@ describe('MovementSystem', () => {
   it('sleeping agents recover energy', () => {
     const w   = new World();
     const rng = createRNG(1);
-    const needs: Needs = { hunger: 0.9, energy: 0.5 };
+    const needs: Needs = { hunger: 0.9, energy: 0.5, social: 1 };
     const e = w.createEntity();
     w.addComponent<Position>(e, C_POSITION, { x: 0, y: 0 });
     w.addComponent<Needs>(e, C_NEEDS, needs);
-    w.addComponent<Agent>(e, C_AGENT, { name: 'Napper', action: 'sleep', ticksAlive: 0, wealthGoal: 50 });
+    w.addComponent<Agent>(e, C_AGENT, { name: 'Napper', action: 'sleep', ticksAlive: 0, wealthGoal: 50, sex: 'female', lifespanTicks: 1_000_000_000 });
 
     runMovementSystem(w, cfg, rng, content);
     expect(needs.energy).toBeGreaterThan(0.5);
@@ -157,7 +157,7 @@ describe('MovementSystem', () => {
   it('agent seeking food forages ripe flora on the same cell', () => {
     const w   = new World();
     const rng = createRNG(1);
-    const needs: Needs = { hunger: 0.3, energy: 0.9 };
+    const needs: Needs = { hunger: 0.3, energy: 0.9, social: 1 };
 
     // Ripe flora and a hungry agent on the same cell.
     const fe = w.createEntity();
@@ -170,7 +170,7 @@ describe('MovementSystem', () => {
     const ae = w.createEntity();
     w.addComponent<Position>(ae, C_POSITION, { x: 5, y: 5 });
     w.addComponent<Needs>(ae, C_NEEDS, needs);
-    w.addComponent<Agent>(ae, C_AGENT, { name: 'Hungry', action: 'seek_food', ticksAlive: 0, wealthGoal: 50 });
+    w.addComponent<Agent>(ae, C_AGENT, { name: 'Hungry', action: 'seek_food', ticksAlive: 0, wealthGoal: 50, sex: 'female', lifespanTicks: 1_000_000_000 });
 
     const before = needs.hunger;
     runMovementSystem(w, cfg, rng, content);
