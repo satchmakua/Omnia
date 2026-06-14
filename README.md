@@ -112,9 +112,13 @@ When the page loads you're looking at a small living world ticking in real time.
   larger circle is riper and edible. Folk and fauna forage them.
 - **Small squares = resource nodes** (timber, ore, reactive crystal).
 - **Bordered coloured squares = businesses** — employers (laborer, farmer, miner,
-  artisan, merchant houses). Folk take jobs there and gather to work (amber dot).
+  artisan, merchant houses, and the rare hedge-witch). Folk take jobs there and
+  gather to work (amber dot).
+- **A small violet pip inside a dot = magic aptitude** — a rare gift most folk
+  never have. These mages can take the hedge-witch profession and cast (conjure
+  food, mend vigour) using mana instead of foraging or sleeping.
 - **The HUD** (top bar) shows the day, a ☀/☾ that flips each half-day, live counts
-  of **Folk / Fauna / Flora**, and the town's **median wealth + Gini** (inequality).
+  of **Folk / Fauna / Flora / Mages**, and the town's **median wealth + Gini**.
 
 **Things worth trying**
 
@@ -127,6 +131,10 @@ When the page loads you're looking at a small living world ticking in real time.
 - **Click a person** to see their job, gold, and (if any) debt; click a **business**
   to see its trade, staff, and balance. Watch the HUD **median wealth / Gini** —
   the town stratifies into richer and poorer folk over the first few days.
+- **Find the mage.** The HUD shows how many **Mages** the town has (the default
+  seed has one — look for the violet pip). Click them to see their mana, and
+  watch it drain when they cast. No mage in your town? Magic is deliberately rare
+  — change `world.seed` in `config/simulation.yaml` for a different draw.
 
 > Want a different world? Edit `seed` under `world:` in `config/simulation.yaml`
 > (mirrored in `src/sim/config.ts`) and restart. The same seed always produces the
@@ -188,6 +196,7 @@ is simply "keep going," and the agent should know what to do.
 | Soft circle | Flora (plant; bigger/brighter = riper) |
 | Small square | Resource node (timber / ore / crystal) |
 | Bordered square | Business (employer; colour = profession) |
+| Violet pip in a dot | Magic aptitude (rare — a potential mage) |
 
 ## Stack at a glance
 

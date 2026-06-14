@@ -30,11 +30,21 @@ export const SpeciesSchema = z.object({
 export type Species = z.infer<typeof SpeciesSchema>;
 
 // ── Capability ────────────────────────────────────────────────────────────────
+// Every capability shares one shape: invoke → prerequisites → cost → effect
+// (MAGIC_AND_TECHNOLOGY.md). Traditions differ only in their gates and costs:
+// technology is common (no aptitude); magic requires innate aptitude and mana.
 export const CapabilitySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   tradition: z.enum(['technology', 'magic']),
-  effects: z.array(z.string()).min(1),        // effect tags; code must implement each
+  prerequisites: z.object({
+    aptitude: z.boolean().default(false),   // magic: only agents with innate aptitude
+  }).strict().default({}),
+  cost: z.object({
+    mana: z.number().min(0).default(0),      // magic cost
+    energy: z.number().min(0).default(0),    // physical exertion
+  }).strict().default({}),
+  effects: z.array(z.string()).min(1),       // effect tags; code must implement each
   power: z.number().default(0),
 }).strict();
 
@@ -91,6 +101,7 @@ export const ProfessionSchema = z.object({
   dailyWage: z.number().positive(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour'),
   maxEmployeesPerBusiness: z.number().int().positive().default(4),
+  requiresAptitude: z.boolean().default(false),  // magical professions hire only the aptitude-gifted
 }).strict();
 
 export type Profession = z.infer<typeof ProfessionSchema>;
