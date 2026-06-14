@@ -69,7 +69,8 @@ function makeBusiness(w: World, over: Partial<Business> = {}) {
   const e = w.createEntity();
   w.addComponent<Business>(e, C_BUSINESS, {
     professionId: 'laborer', professionName: 'Laborer', color: '#fff',
-    balance: 100, maxEmployees: 2, wagePerTick: 0.5, revenuePerWorkerPerTick: 0.6, ...over,
+    balance: 100, maxEmployees: 2, wagePerTick: 0.5, revenuePerWorkerPerTick: 0.6,
+    requiresAptitude: false, ...over,
   });
   w.addComponent(e, C_POSITION, { x: 0, y: 0 });
   return e;

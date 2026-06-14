@@ -2,7 +2,7 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
-  C_POSITION, C_AGENT, C_SPECIES, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_CLOCK, C_TILEMAP,
+  C_POSITION, C_AGENT, C_SPECIES, C_MAGIC, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_CLOCK, C_TILEMAP,
 } from '../sim/components.ts';
 import type {
   Position, Agent, SpeciesComp, Flora, Fauna, Resource, Business, Clock,
@@ -148,6 +148,14 @@ export class Renderer {
         ctx.lineWidth = Math.max(1, cellSize * 0.12);
         ctx.stroke();
       }
+
+      // Rare magic aptitude: a small bright violet pip in the centre.
+      if (world.hasComponent(e, C_MAGIC)) {
+        ctx.fillStyle = '#e090ff';
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.max(1, cellSize * 0.13), 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     // HUD overlay
@@ -156,8 +164,9 @@ export class Renderer {
     const fauna = world.query(C_FAUNA).length;
     const flora = world.query(C_FLORA).length;
     const w = wealthStats(world);
+    const mages = world.query(C_AGENT, C_MAGIC).length;
     const label = `Day ${clock.day}  ${clock.isDay ? '☀' : '☾'}  Hour ${clock.hour}  |  ` +
-      `Folk ${pop}  Fauna ${fauna}  Flora ${flora}  |  median ${Math.round(w.median)}g  Gini ${w.gini.toFixed(2)}`;
+      `Folk ${pop}  Fauna ${fauna}  Flora ${flora}  Mages ${mages}  |  median ${Math.round(w.median)}g  Gini ${w.gini.toFixed(2)}`;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, W, 28);
     ctx.fillStyle = '#ccd';

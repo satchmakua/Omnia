@@ -1,9 +1,9 @@
 import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
-  C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_CLOCK, C_TILEMAP, C_CHRONICLE,
+  C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_MAGIC, C_CLOCK, C_TILEMAP, C_CHRONICLE,
 } from './components.ts';
-import type { Position, Needs, Wallet, Agent, SpeciesComp, Clock } from './components.ts';
+import type { Position, Needs, Wallet, Agent, SpeciesComp, Magic, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
 import type { EntityId } from './ecs.ts';
 import type { RNG } from './rng.ts';
@@ -117,6 +117,16 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
       ticksAlive: 0,
       wealthGoal: rngFloat(rng, cfg.wealthGoalMin, cfg.wealthGoalMax),
     });
+
+    // Rare innate magic aptitude, rolled per the species' chance. Most agents
+    // get no Magic component at all, so magic stays scarce by construction.
+    if (rng() < species.magicAptitudeChance) {
+      world.addComponent<Magic>(e, C_MAGIC, {
+        mana: cfg.magicManaMax,
+        maxMana: cfg.magicManaMax,
+        manaRegenPerTick: cfg.manaRegenPerDay / cfg.ticksPerDay,
+      });
+    }
   }
 
   return { world, rng, clockEntity, content };

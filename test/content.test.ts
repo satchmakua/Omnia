@@ -199,6 +199,23 @@ describe('authored /content', () => {
     expect(content.professions.has('laborer')).toBe(true);
   });
 
+  it('has both technology and magic capabilities through one schema', () => {
+    const content = loadContentFromDisk('./content');
+    const forage = content.capabilities.require('forage');
+    const conjure = content.capabilities.require('conjure_meal');
+    expect(forage.tradition).toBe('technology');
+    expect(forage.prerequisites.aptitude).toBe(false);     // common
+    expect(conjure.tradition).toBe('magic');
+    expect(conjure.prerequisites.aptitude).toBe(true);      // gated
+    expect(conjure.cost.mana).toBeGreaterThan(0);
+  });
+
+  it('the hedge-witch profession requires aptitude', () => {
+    const content = loadContentFromDisk('./content');
+    expect(content.professions.require('hedge_witch').requiresAptitude).toBe(true);
+    expect(content.professions.require('laborer').requiresAptitude).toBe(false);
+  });
+
   it('every biome spawn-table id resolves to real content', () => {
     const content = loadContentFromDisk('./content');
     for (const biome of content.biomes.all()) {
