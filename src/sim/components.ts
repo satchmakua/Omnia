@@ -149,6 +149,7 @@ export interface Lineage {
   partner: number | null;
   parents: number[];
   children: number[];
+  reproCooldownTicks: number;  // a mother's recovery period between births (0 = ready)
 }
 
 // A dead agent's compact record (SIMULATION_MODEL Mechanism 5). The agent's heavy

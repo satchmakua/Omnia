@@ -10,6 +10,7 @@ import type {
 } from '../sim/components.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { wealthStats } from '../sim/wealth.ts';
+import { ageInYears } from '../sim/config.ts';
 
 const ACTION_COLOR: Record<string, string> = {
   wander:    '#e0e0ff',
@@ -137,7 +138,9 @@ export class Renderer {
 
       const cx = pos.x * cellSize + cellSize / 2;
       const cy = pos.y * cellSize + cellSize / 2;
-      const r  = Math.max(2, cellSize * (SIZE_RADIUS[species?.size ?? 'medium'] ?? 0.42));
+      // Children render smaller than adults, so generations are visible at a glance.
+      const ageFactor = 0.55 + 0.45 * Math.min(1, ageInYears(agent.ticksAlive, this.cfg) / this.cfg.adultAgeYears);
+      const r  = Math.max(2, cellSize * (SIZE_RADIUS[species?.size ?? 'medium'] ?? 0.42) * ageFactor);
 
       ctx.fillStyle = ACTION_COLOR[agent.action] ?? '#fff';
       ctx.beginPath();

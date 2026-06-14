@@ -16,8 +16,8 @@ import { isPassable } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { wealthStats } from './wealth.ts';
 
-const SOAK_TICKS = 10_000;
-const cfg: SimConfig = { ...defaultConfig, seed: 11 }; // seed 11 includes a couple of mages
+const SOAK_TICKS = 40_000; // ~42 sim-years — long enough to see several generations
+const cfg: SimConfig = { ...defaultConfig, seed: 8 }; // seed 8 includes a couple of mages
 
 console.log(`Omnia soak: ${SOAK_TICKS} ticks, seed=${cfg.seed}, pop=${cfg.initialPopulation}`);
 const t0 = Date.now();
@@ -30,7 +30,7 @@ let violations = 0;
 for (let t = 0; t < SOAK_TICKS; t++) {
   tick(world, rng, cfg, clockEntity, content);
 
-  if ((t + 1) % 1_000 === 0) {
+  if ((t + 1) % 6_000 === 0) {
     const agents = world.query(C_AGENT, C_NEEDS, C_POSITION);
     const clock  = world.getComponent<Clock>(clockEntity, C_CLOCK)!;
     let inv = 0;
@@ -66,20 +66,22 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     const fauna = world.query(C_FAUNA).length;
     const mages = world.query(C_AGENT, C_MAGIC).length;
     const graves = world.query(C_TOMBSTONE).length;
-    // Average age (years) and number of married folk.
-    let ageSum = 0, married = 0;
+    // Average age (years), married folk, and the locally-born (have parents).
+    let ageSum = 0, married = 0, born = 0;
     for (const e of agents) {
       ageSum += ageInYears(world.getComponent<Agent>(e, C_AGENT)!.ticksAlive, cfg);
-      const lin = world.getComponent(e, C_LINEAGE) as { partner: number | null } | undefined;
+      const lin = world.getComponent(e, C_LINEAGE) as { partner: number | null; parents: number[] } | undefined;
       if (lin && lin.partner != null && world.hasComponent(lin.partner, C_AGENT)) married++;
+      if (lin && lin.parents.length > 0) born++;
     }
     const avgAge = agents.length ? (ageSum / agents.length).toFixed(0) : '0';
     const wlth = wealthStats(world);
     const marker = inv > 0 ? ' *** VIOLATION ***' : '';
     const mix = Object.entries(bySpecies).map(([k, v]) => `${k}=${v}`).join(' ');
     console.log(
-      `  tick=${t+1}  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(1)}  ` +
-      `folk=${agents.length} [${mix}] avgAge=${avgAge}  married=${married} graves=${graves} mages=${mages}  ` +
+      `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
+      `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
+      `married=${married} born=${born} graves=${graves} mages=${mages}  ` +
       `fauna=${fauna}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
     );
   }
