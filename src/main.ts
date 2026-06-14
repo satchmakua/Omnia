@@ -36,7 +36,11 @@ const controls = new SpeedControl(speed, (v) => { speed = v; });
 
 // Dev-only debug handle (stripped from production builds by Vite).
 if (import.meta.env.DEV) {
-  (window as unknown as { __omnia: unknown }).__omnia = { sim, world, content, renderer, inspector, controls };
+  (window as unknown as { __omnia: unknown }).__omnia = {
+    sim, world, content, renderer, inspector, controls,
+    // step() advances the sim manually (useful when a hidden tab throttles rAF).
+    step: (n = 1) => { for (let i = 0; i < n; i++) tick(world, rng, cfg, clockEntity, content); },
+  };
 }
 
 let last = performance.now();

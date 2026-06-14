@@ -1,11 +1,11 @@
 import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_JOB, C_BUSINESS,
+  C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS,
   C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP,
 } from '../sim/components.ts';
 import type {
-  Agent, Needs, Wallet, Position, SpeciesComp, Job, Business, Fauna, Flora, Resource,
+  Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Fauna, Flora, Resource,
 } from '../sim/components.ts';
 import { biomeNameAt, inBounds } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -116,8 +116,14 @@ export class Inspector {
       : `<div><b>Job</b> <span style="color:#a99">unemployed</span></div>`;
     const debtLine = wallet.debt > 0
       ? `<div style="color:#f99">Debt ${wallet.debt.toFixed(1)}</div>` : '';
+    const magic = world.getComponent<Magic>(e, C_MAGIC);
+    const magicBlock = magic
+      ? `<hr style="${RULE}">
+         <div style="${SECTION}">Magic <span style="color:#d090f0">✦ aptitude</span></div>
+         <div>Mana ${bar(magic.mana / magic.maxMana)}</div>`
+      : '';
     return `
-      ${this.title(agent.name, 'sapient · folk')}
+      ${this.title(agent.name, magic ? 'sapient · folk · mage' : 'sapient · folk')}
       ${speciesLine}
       ${this.terrainLine(world, pos)}
       <div><b>Action</b> ${agent.action}</div>
@@ -132,7 +138,8 @@ export class Inspector {
       ${jobLine}
       <div>Gold ${wallet.gold.toFixed(1)}</div>
       ${debtLine}
-      <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>`;
+      <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>
+      ${magicBlock}`;
   }
 
   private _business(world: World, e: EntityId, pos: Position): string {
