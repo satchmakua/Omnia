@@ -11,6 +11,8 @@ import { runCapabilitySystem } from './systems/CapabilitySystem.ts';
 import { runActionSystem }   from './systems/ActionSystem.ts';
 import { runMovementSystem } from './systems/MovementSystem.ts';
 import { runEconomySystem }  from './systems/EconomySystem.ts';
+import { runSocialSystem }   from './systems/SocialSystem.ts';
+import { runHealthSystem }   from './systems/HealthSystem.ts';
 import { runFaunaSystem }    from './systems/FaunaSystem.ts';
 
 // System execution order is fixed and deterministic. The world (flora/resources)
@@ -24,8 +26,10 @@ export function tick(
   runHungerSystem(world, cfg);           // sapient needs decay / starvation
   runCapabilitySystem(world, cfg, content); // magic: mana regen + casting (rare)
   runActionSystem(world, cfg);           // sapient utility action choice
-  runMovementSystem(world, cfg, rng, content); // sapient movement / forage / commute
+  runMovementSystem(world, cfg, rng, content); // sapient movement / forage / commute / socialise
   runEconomySystem(world, cfg);          // hiring, wages, cost of living
+  runSocialSystem(world, cfg, rng);      // relationships, social need, courtship → marriage
+  runHealthSystem(world, cfg, rng);      // illness, ageing, death → tombstones
   runFaunaSystem(world, cfg, rng);       // fauna instinct (graze / breed / die)
 }
 
