@@ -61,17 +61,17 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **DoD:** agents earn/spend and can prosper or go broke; capabilities of both traditions work through one engine; magic is visibly rare (most agents lack aptitude — ~8/300 in tests, often 0–1 per town); economy stable over many sim-years (Gini ~0.2–0.3, no runaway debt, 0 violations over 10k ticks); tested. **Met.** *(Deferred to backlog: supply/demand market, resource-consuming crafting, skill/knowledge gating.)*
 
-## ▶ Milestone 4 — Relationships & Life Cycle  *(current)*
+## ✅ Milestone 4 — Relationships & Life Cycle  *(done — 2026-06-14)*
 
 **Goal:** people connect, reproduce, age, and die across generations.
 
-- [x] `Relationships` graph (sentiment + type); `SocialSystem`; social need. *(S9: proximity interactions build friend/partner edges; social need decays and is met by company.)*
-- [~] Courtship → marriage; reproduction, children, `Lineage`; aging. *(S9: courtship→marriage, aging, and the `Lineage` component done; **reproduction/children = part 2**.)*
+- [x] `Relationships` graph (sentiment + type); `SocialSystem`; social need. *(S9: proximity interactions build friend edges; social need decays and is met by company.)*
+- [x] Courtship → marriage; reproduction, children, `Lineage`; aging. *(S9 marriage + aging; S10 reproduction: married opposite-sex couples bear children wired into `Lineage`; a matchmaking pass pairs unattached adults so households keep forming.)*
 - [x] Illness, injury, death; **tombstone** records on death (`SIMULATION_MODEL.md`). *(S9: `HealthSystem` illness + age-ramped mortality; death strips living components and leaves a compact `Tombstone`, keeping the entity id so lineage pointers resolve.)*
 
-**DoD:** the town sustains itself across several generations (no collapse/explosion); family trees form; deaths free agents into tombstones; tested. *(Part 1 done — mortality, social, marriage, tombstones; 0 violations over 10k ticks. **Part 2 remains:** reproduction/children + multi-generation population balance, which is what truly "sustains across generations".)*
+**DoD:** the town sustains itself across several generations (no collapse/explosion); family trees form; deaths free agents into tombstones; tested. **Met** — population climbs to a carrying-capacity cap and holds there across 100+ sim-years (0 violations); grandchildren (3rd generation) appear; a dedicated multi-generation test asserts bounded population + a 3-deep lineage. Magic aptitude is heritable (runs in families, stays uncommon).
 
-## Milestone 5 — The Soul (LLM layer)
+## ▶ Milestone 5 — The Soul (LLM layer)  *(current)*
 
 **Goal:** an inner life via the local model, off the hot path.
 
@@ -129,3 +129,5 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 - Economy: a real supply/demand **market** (prices, goods, business revenue from actual sales rather than abstract productivity); businesses that can go bankrupt and close — date: 2026-06-13 (deferred from M3 part 1).
 - Capabilities: **resource-consuming crafting** (tech professions like miner/artisan consume nearby ore/timber as they work) + **skill/knowledge gating** for technology (learn-by-doing or apprenticeship) — date: 2026-06-13 (deferred from M3 part 2).
 - Capabilities: **lost arts** — a capability whose last knowledgeable/aptitude-holding practitioner dies becomes "lost" until rediscovered (`MAGIC_AND_TECHNOLOGY.md`) — date: 2026-06-13.
+- Wealth metric: exclude (penniless) children, or weight by adults, so Gini reflects the working economy rather than demographics — date: 2026-06-14.
+- Family-tree / lineage view UI (browse ancestry + tombstones); tie into the Legends view — date: 2026-06-14 (M6/M8).
