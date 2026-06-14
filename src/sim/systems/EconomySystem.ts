@@ -7,6 +7,7 @@ import {
 } from '../components.ts';
 import type { Agent, Wallet, Job, Business, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
+import { ageInYears } from '../config.ts';
 import { earn, spend } from '../economy.ts';
 
 export function runEconomySystem(world: World, cfg: SimConfig): void {
@@ -38,6 +39,8 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
 
   for (const e of world.query(C_AGENT, C_WALLET)) {
     if (world.hasComponent(e, C_JOB)) continue;
+    const agent = world.getComponent<Agent>(e, C_AGENT)!;
+    if (ageInYears(agent.ticksAlive, cfg) < cfg.adultAgeYears) continue; // children don't work
     const apt = world.hasComponent(e, C_MAGIC);
 
     let chosen: EntityId | null = null;

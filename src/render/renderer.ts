@@ -2,7 +2,8 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
-  C_POSITION, C_AGENT, C_SPECIES, C_MAGIC, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_CLOCK, C_TILEMAP,
+  C_POSITION, C_AGENT, C_SPECIES, C_MAGIC, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS,
+  C_TOMBSTONE, C_CLOCK, C_TILEMAP,
 } from '../sim/components.ts';
 import type {
   Position, Agent, SpeciesComp, Flora, Fauna, Resource, Business, Clock,
@@ -165,8 +166,10 @@ export class Renderer {
     const flora = world.query(C_FLORA).length;
     const w = wealthStats(world);
     const mages = world.query(C_AGENT, C_MAGIC).length;
+    const graves = world.query(C_TOMBSTONE).length;
     const label = `Day ${clock.day}  ${clock.isDay ? '☀' : '☾'}  Hour ${clock.hour}  |  ` +
-      `Folk ${pop}  Fauna ${fauna}  Flora ${flora}  Mages ${mages}  |  median ${Math.round(w.median)}g  Gini ${w.gini.toFixed(2)}`;
+      `Folk ${pop}  Mages ${mages}  Graves ${graves}  |  Fauna ${fauna}  Flora ${flora}  |  ` +
+      `median ${Math.round(w.median)}g  Gini ${w.gini.toFixed(2)}`;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, W, 28);
     ctx.fillStyle = '#ccd';
