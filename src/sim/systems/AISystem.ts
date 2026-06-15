@@ -131,49 +131,60 @@ function decisionPass(
   return budget;
 }
 
-// Two agents who share a tile and a bond (partner or friend) exchange a line. At
-// most one conversation per tile; the speaker is chosen deterministically by id.
+// The 8-neighbourhood + own tile — "standing together" now means adjacent, since
+// collision (M6.5) keeps two folk off the same tile.
+const NEIGH: readonly [number, number][] = [
+  [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1],
+];
+
+// Two bonded agents (partner or friend) standing next to each other exchange a
+// line. Speakers are taken in id order; each agent speaks at most once per tick.
 function dialoguePass(
   world: World, cfg: SimConfig, provider: AIProvider, tick: number, interval: number, budget: number,
 ): number {
   if (budget <= 0) return budget;
 
+  const ents = world.query(C_AGENT, C_MEMORY, C_POSITION);
   const byTile = new Map<number, EntityId[]>();
-  for (const e of world.query(C_AGENT, C_MEMORY, C_POSITION)) {
+  for (const e of ents) {
     const p = world.getComponent<Position>(e, C_POSITION)!;
-    const key = p.y * cfg.gridWidth + p.x;
-    const list = byTile.get(key);
-    if (list) list.push(e); else byTile.set(key, [e]);
+    const list = byTile.get(p.y * cfg.gridWidth + p.x);
+    if (list) list.push(e); else byTile.set(p.y * cfg.gridWidth + p.x, [e]);
   }
 
-  for (const key of [...byTile.keys()].sort((a, b) => a - b)) {
+  const spoken = new Set<EntityId>();
+  for (const speaker of [...ents].sort((a, b) => a - b)) {
     if (budget <= 0) break;
-    const group = byTile.get(key)!;
-    if (group.length < 2) continue;
-    group.sort((a, b) => a - b);
+    if (spoken.has(speaker)) continue;
+    const mem = world.getComponent<Memory>(speaker, C_MEMORY)!;
+    if (mem.events.length < cfg.minMemoriesToReflect) continue;
+    if (tick - mem.lastSpokeTick < interval) continue;
+    const rel = world.getComponent<Relationships>(speaker, C_RELATIONSHIPS);
+    if (!rel) continue;
+    const p = world.getComponent<Position>(speaker, C_POSITION)!;
 
-    for (const speaker of group) {
-      const mem = world.getComponent<Memory>(speaker, C_MEMORY)!;
-      if (mem.events.length < cfg.minMemoriesToReflect) continue;
-      if (tick - mem.lastSpokeTick < interval) continue;
-      const rel = world.getComponent<Relationships>(speaker, C_RELATIONSHIPS);
-      if (!rel) continue;
-
-      const listener = group.find(o => o !== speaker &&
+    let listener: EntityId | undefined;
+    for (const [dx, dy] of NEIGH) {
+      const nx = p.x + dx, ny = p.y + dy;
+      if (nx < 0 || nx >= cfg.gridWidth || ny < 0 || ny >= cfg.gridHeight) continue;
+      const here = byTile.get(ny * cfg.gridWidth + nx);
+      if (!here) continue;
+      listener = here.find(o => o !== speaker && !spoken.has(o) &&
         (rel.edges[o]?.type === 'partner' || rel.edges[o]?.type === 'friend'));
-      if (listener === undefined) continue;
-
-      const name = world.getComponent<Agent>(speaker, C_AGENT)!.name;
-      const other = world.getComponent<Agent>(listener, C_AGENT)!.name;
-      const top = retrieve(mem, `${name} and ${other}`, provider, cfg.reflectMemories);
-      const prompt = buildDialoguePrompt(name, other, tick, top);
-      const line = provider.completeSync!(prompt);
-      commit(world, cfg, mem, tick, 'say', `“${line}” — to ${other}`, prompt, line);
-      mem.lastSpokeTick = tick;
-      emitEvent(world, 'dialogue', `${name} to ${other}: “${line}”`);
-      budget--;
-      break; // one conversation per tile
+      if (listener !== undefined) break;
     }
+    if (listener === undefined) continue;
+
+    const name = world.getComponent<Agent>(speaker, C_AGENT)!.name;
+    const other = world.getComponent<Agent>(listener, C_AGENT)!.name;
+    const top = retrieve(mem, `${name} and ${other}`, provider, cfg.reflectMemories);
+    const prompt = buildDialoguePrompt(name, other, tick, top);
+    const line = provider.completeSync!(prompt);
+    commit(world, cfg, mem, tick, 'say', `“${line}” — to ${other}`, prompt, line);
+    mem.lastSpokeTick = tick;
+    emitEvent(world, 'dialogue', `${name} to ${other}: “${line}”`);
+    spoken.add(speaker); spoken.add(listener);
+    budget--;
   }
   return budget;
 }

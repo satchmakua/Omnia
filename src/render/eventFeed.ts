@@ -1,10 +1,11 @@
 // A live activity feed pinned to the screen — the town's day-to-day drama scrolls
 // past as it happens (births, weddings, deaths, new jobs, spells, spent veins).
-// Reads the EventLog singleton each frame.
+// Reads the EventLog singleton each frame. Minimizable via its header caret (M6.5).
 import type { World } from '../sim/ecs.ts';
 import { C_EVENTLOG } from '../sim/components.ts';
 import { recentEvents } from '../history/eventlog.ts';
 import type { EventLogData, EventKind } from '../history/eventlog.ts';
+import { makePanel } from './panelUtil.ts';
 
 const KIND_COLOR: Record<EventKind, string> = {
   birth:    '#8fe88f',
@@ -25,26 +26,26 @@ const KIND_GLYPH: Record<EventKind, string> = {
 };
 
 export class EventFeed {
-  private readonly panel: HTMLDivElement;
+  private readonly body: HTMLDivElement;
   private lastTopTick = -1;
   private lastCount = -1;
 
   constructor() {
-    this.panel = document.createElement('div');
-    Object.assign(this.panel.style, {
-      position: 'fixed', left: '12px', bottom: '64px', width: '300px', maxHeight: '40vh',
-      overflow: 'hidden', background: 'rgba(8,8,22,0.82)', color: '#dde',
-      font: '11px/1.5 monospace', padding: '10px 12px', borderRadius: '8px',
-      border: '1px solid rgba(255,255,255,0.1)', zIndex: '4', pointerEvents: 'none',
+    const { panel, body } = makePanel({
+      title: 'Town Happenings',
+      style: {
+        position: 'fixed', left: '12px', bottom: '64px', width: '300px', maxHeight: '40vh',
+        overflow: 'hidden',
+      },
     });
-    document.body.appendChild(this.panel);
+    this.body = body;
+    document.body.appendChild(panel);
   }
 
   render(world: World): void {
     const ents = world.query(C_EVENTLOG);
     const log = ents.length ? world.getComponent<EventLogData>(ents[0], C_EVENTLOG) : undefined;
     const events = log ? recentEvents(log, 16) : [];
-    // Only rebuild the DOM when the feed actually changed.
     const top = events[0]?.tick ?? -1;
     if (top === this.lastTopTick && events.length === this.lastCount) return;
     this.lastTopTick = top; this.lastCount = events.length;
@@ -54,8 +55,6 @@ export class EventFeed {
       return `<div style="margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">` +
         `<span style="color:${col}">${KIND_GLYPH[e.kind]}</span> ${e.text}</div>`;
     }).join('');
-    this.panel.innerHTML =
-      `<div style="color:#ffd278;font-weight:bold;margin-bottom:6px">Town Happenings</div>` +
-      (rows || '<div style="color:#778">quiet for now…</div>');
+    this.body.innerHTML = rows || '<div style="color:#778">quiet for now…</div>';
   }
 }

@@ -1,12 +1,16 @@
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_JOB, C_RESOURCE, C_TILEMAP } from '../components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_FAUNA, C_JOB, C_RESOURCE, C_TILEMAP } from '../components.ts';
 import type { Agent, Needs, Position, Flora, Job, Resource } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
 import { invokeCapability } from '../../capability/invoke.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
-import { makeEnterable, stepToward, wanderStep } from './movementUtil.ts';
+import { makeEnterable, stepToward, wanderStep, buildOccupancy } from './movementUtil.ts';
+
+// Mobile creatures never share a tile; a content agent at its workplace fidgets a
+// little so it looks alive rather than frozen on the spot.
+const WORK_FIDGET = 0.3;
 
 export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const forage = content.capabilities.require('forage');
@@ -14,6 +18,7 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
   const mapEnts = world.query(C_TILEMAP);
   const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
   const enterable = makeEnterable(cfg, map);
+  const occ = buildOccupancy(world, cfg.gridWidth, [C_AGENT, C_FAUNA]);
 
   // Ripe flora available to forage, indexed by tile + listed for nearest-search.
   const florae = world.query(C_FLORA, C_POSITION);
@@ -71,15 +76,17 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       if (job && job.gathers) {
         const node = nearestNode(job.gathers, pos.x, pos.y);
         if (node) {
-          if (pos.x !== node.x || pos.y !== node.y) stepToward(pos, node.x, node.y, rng, enterable);
+          if (pos.x !== node.x || pos.y !== node.y) stepToward(pos, node.x, node.y, rng, enterable, occ);
           continue;
         }
         // Resource exhausted everywhere — fall back to the employer.
       }
-      // Otherwise walk to the employer's tile and work there.
+      // Otherwise walk to the employer's tile and work there; once there, fidget
+      // occasionally so a working agent looks busy rather than frozen on the spot.
       const ep = job ? world.getComponent<Position>(job.employer, C_POSITION) : undefined;
       if (ep) {
-        if (pos.x !== ep.x || pos.y !== ep.y) stepToward(pos, ep.x, ep.y, rng, enterable);
+        if (pos.x !== ep.x || pos.y !== ep.y) stepToward(pos, ep.x, ep.y, rng, enterable, occ);
+        else if (rng() < WORK_FIDGET) wanderStep(pos, rng, enterable, occ);
         continue;
       }
       // No job/employer to walk to — fall through to wander.
@@ -95,7 +102,7 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
         const d = Math.abs(o.x - pos.x) + Math.abs(o.y - pos.y);
         if (d > 0 && d < best) { best = d; nearest = o; }
       }
-      if (nearest) { stepToward(pos, nearest.x, nearest.y, rng, enterable); continue; }
+      if (nearest) { stepToward(pos, nearest.x, nearest.y, rng, enterable, occ); continue; }
       // Alone in the world — wander.
     }
 
@@ -118,9 +125,9 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
         const d = Math.abs(r.x - pos.x) + Math.abs(r.y - pos.y);
         if (d < best) { best = d; nearest = r; }
       }
-      if (nearest) { stepToward(pos, nearest.x, nearest.y, rng, enterable); continue; }
+      if (nearest) { stepToward(pos, nearest.x, nearest.y, rng, enterable, occ); continue; }
     }
 
-    wanderStep(pos, rng, enterable);
+    wanderStep(pos, rng, enterable, occ);
   }
 }
