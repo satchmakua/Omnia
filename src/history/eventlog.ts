@@ -6,7 +6,9 @@ import type { World } from '../sim/ecs.ts';
 import { C_EVENTLOG, C_CLOCK } from '../sim/components.ts';
 import type { Clock } from '../sim/components.ts';
 
-export type EventKind = 'birth' | 'death' | 'marriage' | 'work' | 'magic' | 'illness' | 'resource' | 'reflect';
+export type EventKind =
+  | 'birth' | 'death' | 'marriage' | 'work' | 'magic' | 'illness' | 'resource'
+  | 'reflect' | 'dialogue' | 'dream' | 'decide';
 
 export interface EventEntry {
   tick: number;

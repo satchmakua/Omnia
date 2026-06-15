@@ -15,9 +15,13 @@ const KIND_COLOR: Record<EventKind, string> = {
   illness:  '#ff9a6a',
   resource: '#c8a06a',
   reflect:  '#a0d0ff',
+  dialogue: '#bfe3ff',
+  dream:    '#c9b6ff',
+  decide:   '#ffcaa0',
 };
 const KIND_GLYPH: Record<EventKind, string> = {
-  birth: '✚', death: '†', marriage: '❤', work: '⚒', magic: '✦', illness: '☣', resource: '⛏', reflect: '☼',
+  birth: '✚', death: '†', marriage: '❤', work: '⚒', magic: '✦', illness: '☣', resource: '⛏',
+  reflect: '☼', dialogue: '❝', dream: '☾', decide: '➜',
 };
 
 export class EventFeed {

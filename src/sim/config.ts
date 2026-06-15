@@ -61,6 +61,11 @@ export interface SimConfig {
   minMemoriesToReflect: number;        // an agent needs at least this many memories first
   reflectMemories: number;             // how many top memories feed a reflection
   maxBeliefs: number;                  // beliefs kept per agent
+  // Dialogue / dreams / decisions (M5 part 2):
+  expressionIntervalDays: number;      // min sim-days between an agent's dialogue/dream/decision
+  maxExpressionsPerTick: number;       // global per-tick cap on utterances (keeps the soul rare)
+  maxUtterances: number;               // recent utterances kept per agent
+  decisionImportance: number;          // a memory at/above this importance is a "turning point"
 }
 
 export function ticksPerYear(cfg: SimConfig): number {
@@ -129,4 +134,8 @@ export const defaultConfig: SimConfig = {
   minMemoriesToReflect: 3,
   reflectMemories: 5,
   maxBeliefs: 6,
+  expressionIntervalDays: 6,      // a given agent speaks/dreams/resolves rarely
+  maxExpressionsPerTick: 2,       // ...and the town as a whole, at most twice a tick
+  maxUtterances: 8,
+  decisionImportance: 0.65,       // weddings (0.7), births (0.85), bereavement (0.9) — not mundane work/illness
 };

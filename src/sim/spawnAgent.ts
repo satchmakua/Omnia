@@ -58,7 +58,10 @@ export function spawnAgent(
   world.addComponent<Lineage>(e, C_LINEAGE, {
     partner: null, parents: opts.parents ?? [], children: [], reproCooldownTicks: 0,
   });
-  world.addComponent<Memory>(e, C_MEMORY, { events: [], beliefs: [], lastReflectTick: -1e9 });
+  world.addComponent<Memory>(e, C_MEMORY, {
+    events: [], beliefs: [], lastReflectTick: -1e9,
+    utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9,
+  });
 
   // Rare innate magic aptitude — scarce by construction, but heritable: children
   // of a mage get a much higher chance (lineage weighting from the design docs).
