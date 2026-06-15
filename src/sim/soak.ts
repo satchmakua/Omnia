@@ -66,6 +66,14 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       if (m.mana < 0 || m.mana > m.maxMana) inv++;
     }
 
+    // M6.5 invariant: no two mobile creatures (folk or fauna) share a tile.
+    const occupied = new Set<number>();
+    for (const e of [...world.query(C_AGENT, C_POSITION), ...world.query(C_FAUNA, C_POSITION)]) {
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      const k = p.y * cfg.gridWidth + p.x;
+      if (occupied.has(k)) inv++; else occupied.add(k);
+    }
+
     // M6 invariants: world-history state stays bounded across the generations.
     const ch = world.getComponent(world.query(C_CHRONICLE)[0], C_CHRONICLE) as { eras: unknown[] } | undefined;
     if (ch && ch.eras.length > cfg.chronicleMaxEras) inv++;

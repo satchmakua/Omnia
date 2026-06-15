@@ -92,7 +92,20 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **DoD:** after many generations, total state stays bounded *and* Legends reads like a story, not a spreadsheet (the qualitative test in `SIMULATION_MODEL.md`). **Met** — 40k-tick soak: 0 violations, eras bounded (≤8, saw 3), strata samples bounded (≤80, saw 38), Chronicle/memory bounded; verified live that Legends opens with named recent legends + a founding-cataclysm era preserved by name + ordinary events as tallies + world-health charts.
 
-## ▶ Milestone 7 — Culture & Language (deep)  *(current)*
+## ▶ Milestone 6.5 — Visual & UI Overhaul  *(current — slice 1 done; human-requested, inserted after M6)*
+
+**Goal:** make the simulation *legible* — recognizable map symbols (map-legend clarity, not invisible per-race outlines), a camera you can zoom/pan, and a more sophisticated UI (menus + hotkey dashboards). Readability before lo-fi polish; D13's aesthetic pass still comes later.
+
+- [x] **Readability core (slice 1):** a **category-first icon set** (dual-coded shape + accent colour, in `render/icons.ts`) replacing the per-race silhouettes — one folk icon (races not distinguished, per the human), folk **state badges** (mage ✦ / ill ✚ / action / child-as-smaller), distinct **animal / plant / ore / timber / crystal / building** icons, and a **dormant hostile** slot reserved for M8. A **camera**: wheel-zoom toward the cursor, drag + arrow-key pan (+/− zoom), clamped to the map; click-to-inspect made camera-aware. An on-screen **legend key** (`render/legend.ts`, `L`). *(S16)*
+- [x] **Menus (slice 2):** a **start menu** (new simulation with a chosen seed, how-to-play) and an in-game **pause menu** (resume, restart-same-seed, quit to menu), via a `menu`/`running`/`paused` state machine in `main.ts` (Esc). The sim is now (re)created on demand, so seeds can be tried without reload. *(S17)*
+- [x] **Liveliness + collision + minimizable panels** (S17, human-requested alongside slice 2): mobile creatures (folk + fauna) **never share a tile** (`Occupancy` in `movementUtil`; soak invariant), which also fixed the *stuck-coworkers-freeze* bug; **social/dialogue moved to adjacency** (the 8-neighbourhood) so company still meets the need under collision; a small **work fidget** keeps employed folk from looking frozen; the always-on overlays (legend, Town Happenings) are now **minimizable** via a shared collapsible header (`panelUtil`).
+- [ ] **Hotkey dashboards (slice 3):** sophisticated info panels brought up by hotkey — population/charts, economy, relationships/**family tree**, search/directory — layered on the existing inspector + Legends. *(plus: a settings panel; more menu options.)*
+
+**DoD:** at a glance you can tell folk from animals from plants from resources from buildings (and, later, hostiles); you can zoom into a household or pull back to the whole town and scroll around; menus and the dashboards make the sim's depth browsable. Slices land one at a time; the aesthetic/audio polish (D13) remains M8.
+
+*Future tweaks noted:* graves on the map (a visible cemetery — needs tombstones to keep a `Position`); optionally distinguish animal species / pull the hostile treatment live in M8; a fuller settings panel.
+
+## Milestone 7 — Culture & Language (deep)
 
 **Goal:** evolving cultures, languages, and names (`CULTURE_AND_LANGUAGE.md`).
 

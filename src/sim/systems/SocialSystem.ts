@@ -19,7 +19,12 @@ import type { ChronicleData } from '../../history/chronicle.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { remember } from '../../ai/memory.ts';
 
-const MAX_TILE_GROUP = 6; // cap pairwise interactions per crowded tile
+const MAX_NEIGHBOURS = 6; // cap pairwise interactions per agent per tick
+// The 8-neighbourhood + own tile: company comes from standing *near* someone, since
+// collision (M6.5) now keeps two folk from sharing a tile.
+const NEIGH: readonly [number, number][] = [
+  [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1],
+];
 
 function edge(rel: Relationships, other: EntityId): RelationEdge {
   let e = rel.edges[other];
@@ -55,19 +60,28 @@ export function runSocialSystem(world: World, cfg: SimConfig, rng: RNG): void {
     }
   }
 
-  // Group agents by tile; co-located agents interact (company + friendship).
+  // Index agents by tile; neighbours (adjacent or same tile) interact (company +
+  // friendship). Each unordered pair interacts once (only when at the smaller id).
   const byTile = new Map<number, EntityId[]>();
   for (const e of agents) {
     const p = world.getComponent<Position>(e, C_POSITION)!;
-    const key = p.y * cfg.gridWidth + p.x;
-    const list = byTile.get(key);
-    if (list) list.push(e); else byTile.set(key, [e]);
+    const list = byTile.get(p.y * cfg.gridWidth + p.x);
+    if (list) list.push(e); else byTile.set(p.y * cfg.gridWidth + p.x, [e]);
   }
-  for (const group of byTile.values()) {
-    if (group.length < 2) continue;
-    const n = Math.min(group.length, MAX_TILE_GROUP);
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) interact(world, cfg, group[i], group[j]);
+  for (const e of agents) {
+    const p = world.getComponent<Position>(e, C_POSITION)!;
+    let met = 0;
+    for (const [dx, dy] of NEIGH) {
+      const nx = p.x + dx, ny = p.y + dy;
+      if (nx < 0 || nx >= cfg.gridWidth || ny < 0 || ny >= cfg.gridHeight) continue;
+      const list = byTile.get(ny * cfg.gridWidth + nx);
+      if (!list) continue;
+      for (const o of list) {
+        if (o <= e) continue;            // pair once, from the lower id
+        interact(world, cfg, e, o);
+        if (++met >= MAX_NEIGHBOURS) break;
+      }
+      if (met >= MAX_NEIGHBOURS) break;
     }
   }
 

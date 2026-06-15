@@ -88,9 +88,14 @@ When the page loads you're looking at a small living world ticking in real time.
 | Input | Effect |
 |-------|--------|
 | **Speed slider** (bottom of the screen) | Drag to set how fast time passes (ticks/second); the ▶/⏸ button pauses |
+| **Esc** | Open the **menu** (start screen → run; in-game → pause / restart / quit) |
 | **Space** | Pause / resume (easiest way to click a specific creature) |
+| **Scroll wheel** | Zoom in / out toward the cursor |
+| **Drag** (mouse) / **arrow keys** | Pan the map; **+ / −** also zoom |
 | **Click** anyone or anything | Open the **inspector** (right-side panel) for that thing |
 | **C** | Open / close the **Legends** view — the Chronicle (recent legends + compressed ages) and the town's world-health charts |
+| **L** | Show / hide the **legend key** (what each map symbol means) |
+| **Panel headers** | Click a panel's title bar (legend, Town Happenings) to **minimize** it |
 | **Live feed** (lower-left) | The **Town Happenings** ticker — births, weddings, deaths, new jobs, spells, spent veins, as they happen |
 | **✕** (top-right of the inspector) | Close the inspector |
 

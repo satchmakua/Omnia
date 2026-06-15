@@ -4,17 +4,18 @@
 // rise/fall population dynamics — and an overgrazed boom can crash (detectable
 // in world-health metrics), which is the M2 DoD.
 import type { World, EntityId } from '../ecs.ts';
-import { C_FAUNA, C_FLORA, C_POSITION, C_TILEMAP } from '../components.ts';
+import { C_AGENT, C_FAUNA, C_FLORA, C_POSITION, C_TILEMAP } from '../components.ts';
 import type { Fauna, Flora, Position } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
-import { makeEnterable, stepToward, wanderStep } from './movementUtil.ts';
+import { makeEnterable, stepToward, wanderStep, buildOccupancy } from './movementUtil.ts';
 
 export function runFaunaSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const mapEnts = world.query(C_TILEMAP);
   const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
   const enterable = makeEnterable(cfg, map);
+  const occ = buildOccupancy(world, cfg.gridWidth, [C_AGENT, C_FAUNA]);
   const breedChance = cfg.faunaBreedChancePerDay / cfg.ticksPerDay;
 
   // Index ripe flora by tile for O(1) graze lookup, and keep a list for nearest-search.
@@ -58,22 +59,23 @@ export function runFaunaSystem(world: World, cfg: SimConfig, rng: RNG): void {
           const d = Math.abs(r.x - pos.x) + Math.abs(r.y - pos.y);
           if (d < best) { best = d; nearest = r; }
         }
-        if (nearest) stepToward(pos, nearest.x, nearest.y, rng, enterable);
-        else wanderStep(pos, rng, enterable);
+        if (nearest) stepToward(pos, nearest.x, nearest.y, rng, enterable, occ);
+        else wanderStep(pos, rng, enterable, occ);
       }
     } else {
       // Well fed: maybe breed, otherwise drift.
       if (fauna.breedCooldownTicks === 0 && faunaCount < cfg.maxFauna && rng() < breedChance) {
         const [dx, dy] = pickDir(rng);
         const nx = pos.x + dx, ny = pos.y + dy;
-        if (enterable(nx, ny)) {
+        if (enterable(nx, ny) && !occ.occupied(nx, ny)) {
           births.push({ x: nx, y: ny, parent: fauna });
+          occ.add(nx, ny);                                 // the newborn now holds that tile
           faunaCount++;
           fauna.hunger = Math.max(0, fauna.hunger - 0.3); // cost of reproduction
           fauna.breedCooldownTicks = Math.floor(cfg.ticksPerDay); // re-armed in ~a day
         }
       } else {
-        wanderStep(pos, rng, enterable);
+        wanderStep(pos, rng, enterable, occ);
       }
     }
   }
