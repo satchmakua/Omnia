@@ -21,7 +21,7 @@ History is central to the concept but must stay cheap. Recent/important is store
 **D5 — Engine architecture: ECS, deterministic seeded core, sim/render decoupled, layered agent brain.** · accepted
 ECS lets each session add features as isolated Components/Systems. A single seeded RNG makes runs reproducible. The renderer only reads sim state. The agent brain is layered by cost: utility (every tick) → planning (as needed) → LLM (rare). LLM access hides behind one `AIProvider`. LLM responses are recorded into the event log so determinism survives nondeterministic generation. See `ARCHITECTURE.md`.
 
-**D6 — Execution vehicle: Claude Code (agentic, in-repo).** · accepted
+**D6 — Execution vehicle: an agentic, in-repo AI coding assistant.** · accepted
 The agent reads the repo, runs the tests, and commits itself, which is what makes "keep going" genuinely self-directed rather than a copy-paste loop. The human checks in occasionally. (The earlier standalone "kickoff prompt" is retired; `CLAUDE.md` is now the agent's entry-point manual.)
 
 **D7 — Document formats: Markdown for prose docs; YAML for tunable config; TypeScript types as the data schema; no XML.** · accepted

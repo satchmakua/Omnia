@@ -179,9 +179,9 @@ finite ore veins are mined out.
 
 # For the AI agent building this
 
-This repository is built to be developed **incrementally by an AI agent (Claude Code)
-over many sessions.** A human checks in occasionally; most of the time the instruction
-is simply "keep going," and the agent should know what to do.
+This repository is built to be developed **incrementally by an AI agent over many
+sessions.** A human checks in occasionally; most of the time the instruction is
+simply "keep going," and the agent should know what to do.
 
 **If you are that agent picking this up, read these in order before doing anything:**
 
@@ -223,4 +223,4 @@ is simply "keep going," and the agent should know what to do.
 - **Language:** TypeScript (simulation core *and* UI).
 - **Pattern:** Entity-Component-System (ECS); content as validated data.
 - **AI:** local LLM via Ollama, behind a swappable `AIProvider` interface.
-- **Tooling:** GitHub (Issues as backlog, Actions for CI), built by Claude Code.
+- **Tooling:** GitHub (Issues as backlog, Actions for CI).
