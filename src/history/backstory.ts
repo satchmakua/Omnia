@@ -30,10 +30,11 @@ export function generateBackstory(rng: RNG, map: TileMapData): ChronicleEntry[] 
   const yearsAgo  = rngInt(rng, 120, 600);
   const landscape = dominantBiomeName(map);
 
-  // importance 1.0 — these are the oldest legends, never forgotten.
+  // importance 1.0 — these are the oldest legends, never forgotten (they survive
+  // Chronicle compression by name because they outrank the legend threshold).
   return [
-    { tick: 0, importance: 1.0, text: `Long ago — some ${yearsAgo} years past — came ${cataclysm}, and the old world ended.` },
-    { tick: 0, importance: 1.0, text: `It began with ${omen}. When it passed, ${lostArt} were gone, and have not been known since.` },
-    { tick: 0, importance: 0.9, text: `What remains is a land of ${landscape.toLowerCase()} and ruins, where a new town now gathers.` },
+    { tick: 0, importance: 1.0, kind: 'founding', text: `Long ago — some ${yearsAgo} years past — came ${cataclysm}, and the old world ended.` },
+    { tick: 0, importance: 1.0, kind: 'founding', text: `It began with ${omen}. When it passed, ${lostArt} were gone, and have not been known since.` },
+    { tick: 0, importance: 0.9, kind: 'founding', text: `What remains is a land of ${landscape.toLowerCase()} and ruins, where a new town now gathers.` },
   ];
 }

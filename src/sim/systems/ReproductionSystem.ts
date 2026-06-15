@@ -81,7 +81,7 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
     remember(world, b.father, tick, `their child ${childName} was born`, 0.85);
     remember(world, child, tick, `was born to ${motherName}`, 0.8);
     if (chronicle) {
-      chronicleAdd(chronicle, { tick, importance: 0.65, text: `${childName} was born to ${motherName}.` });
+      chronicleAdd(chronicle, { tick, importance: 0.65, kind: 'birth', text: `${childName} was born to ${motherName}.` }, cfg.chronicleImportanceThreshold);
     }
   }
 }

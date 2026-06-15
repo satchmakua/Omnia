@@ -19,6 +19,7 @@ export const C_CLOCK     = 'Clock';
 export const C_TILEMAP   = 'TileMap';   // singleton: the terrain grid (src/world/tilemap.ts)
 export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/history/chronicle.ts)
 export const C_EVENTLOG  = 'EventLog';  // singleton: live activity feed (src/history/eventlog.ts)
+export const C_WORLDSTATS = 'WorldStats'; // singleton: statistical strata (src/history/stats.ts)
 
 export interface Position {
   x: number;

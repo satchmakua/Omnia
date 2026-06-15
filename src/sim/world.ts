@@ -1,7 +1,7 @@
 import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
-  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS,
+  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_WORLDSTATS, C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS,
 } from './components.ts';
 import type { Clock, Agent, Lineage, Relationships, AIRecord } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -21,6 +21,8 @@ import type { ChronicleData } from '../history/chronicle.ts';
 import { generateBackstory } from '../history/backstory.ts';
 import { createEventLog } from '../history/eventlog.ts';
 import type { EventLogData } from '../history/eventlog.ts';
+import { createWorldStats } from '../history/stats.ts';
+import type { WorldStatsData } from '../history/stats.ts';
 
 export interface Simulation {
   world: World;
@@ -97,6 +99,10 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // Live activity feed (the day-to-day ticker, distinct from the Chronicle).
   const eventEntity = world.createEntity();
   world.addComponent<EventLogData>(eventEntity, C_EVENTLOG, createEventLog());
+
+  // Statistical strata (world-health running aggregates, sampled on a schedule).
+  const statsEntity = world.createEntity();
+  world.addComponent<WorldStatsData>(statsEntity, C_WORLDSTATS, createWorldStats());
 
   // Recorded LLM responses, for deterministic replay of a live-model run.
   const recordEntity = world.createEntity();

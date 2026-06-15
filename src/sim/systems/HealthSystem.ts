@@ -73,8 +73,9 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
       chronicleAdd(chronicle, {
         tick,
         importance: cause === 'old age' ? 0.75 : 0.7,
+        kind: 'death',
         text: `${tomb.name} died of ${cause} at ${ageYears}.`,
-      });
+      }, cfg.chronicleImportanceThreshold);
     }
   }
 }

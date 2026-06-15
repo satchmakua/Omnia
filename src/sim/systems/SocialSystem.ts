@@ -126,7 +126,7 @@ function matchmake(
     remember(world, m, tick, `wed ${fn}`, 0.7);
     remember(world, f, tick, `wed ${mn}`, 0.7);
     if (chronicle) {
-      chronicleAdd(chronicle, { tick, importance: 0.7, text: `${mn} and ${fn} were wed.` });
+      chronicleAdd(chronicle, { tick, importance: 0.7, kind: 'marriage', text: `${mn} and ${fn} were wed.` }, cfg.chronicleImportanceThreshold);
     }
   }
 }

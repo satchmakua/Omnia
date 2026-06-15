@@ -71,6 +71,14 @@ export interface SimConfig {
   memoryRetainAfterRollup: number;     // raw events kept after a rollup (the rest are digested)
   summaryImportanceThreshold: number;  // events at/above this are named vividly in a digest
   maxSummaries: number;                // episodic summaries per agent; oldest merge when exceeded
+  // Tiered Chronicle + statistical strata (M6 item 2):
+  chronicleImportanceThreshold: number; // gate: only events this notable enter the Chronicle
+  chronicleRecentCap: number;          // recent detailed legends before a compression pass
+  chronicleRetainAfterRollup: number;  // detailed legends kept after compression
+  chronicleLegendImportance: number;   // entries this notable survive compression as named legends
+  chronicleMaxEras: number;            // compressed eras kept; oldest merge when exceeded
+  statsSampleIntervalDays: number;     // how often world-health strata are sampled
+  maxStatSamples: number;              // bounded length of the strata time-series
 }
 
 export function ticksPerYear(cfg: SimConfig): number {
@@ -147,4 +155,11 @@ export const defaultConfig: SimConfig = {
   memoryRetainAfterRollup: 20,    // ...keeping the 20 most-recent raw events sharp
   summaryImportanceThreshold: 0.6, // births/weddings/bereavement stay named; work/wandering dissolve
   maxSummaries: 6,                // a handful of episodic digests; older ones merge to coarser eras
+  chronicleImportanceThreshold: 0.6, // births/weddings/deaths qualify as legends; lesser stuff doesn't
+  chronicleRecentCap: 40,         // keep the last ~40 legends sharp before compressing
+  chronicleRetainAfterRollup: 24,
+  chronicleLegendImportance: 0.85, // the founding cataclysm (1.0) survives compression by name
+  chronicleMaxEras: 8,            // a handful of compressed ages; older ones merge
+  statsSampleIntervalDays: 4,     // sample world-health once a sim-year (daysPerYear)
+  maxStatSamples: 80,             // ~80 years of time-series, then the oldest rolls off
 };
