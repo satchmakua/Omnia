@@ -89,8 +89,9 @@ When the page loads you're looking at a small living world ticking in real time.
 |-------|--------|
 | **Speed slider** (bottom of the screen) | Drag to set how fast time passes (ticks/second); the ▶/⏸ button pauses |
 | **Space** | Pause / resume (easiest way to click a specific creature) |
-| **Click** a dot, diamond, plant, or node | Open the **inspector** (right-side panel) for that thing |
+| **Click** anyone or anything | Open the **inspector** (right-side panel) for that thing |
 | **C** | Open / close the **Chronicle** — the world's invented backstory |
+| **Live feed** (lower-left) | The **Town Happenings** ticker — births, weddings, deaths, new jobs, spells, spent veins, as they happen |
 | **✕** (top-right of the inspector) | Close the inspector |
 
 > Things feel too fast? Drag the speed slider down, or pause with **Space** and
@@ -102,38 +103,42 @@ When the page loads you're looking at a small living world ticking in real time.
   amethyst *crystal flats*, ochre *irradiated wastes*, and deep-blue *drowned ruins*.
   The blue water is **impassable** — nothing spawns or walks on it, and creatures
   route around it.
-- **Round dots = sapient folk** (your townspeople). Fill colour shows what they're
-  doing — white = wandering, orange = seeking food, blue = sleeping — and the
-  coloured ring + size shows their **species** (warm-sand/larger = human,
-  slate/smaller = dwarf).
-- **Diamonds = fauna** (animals: moth grazers, dust hoppers). Instinct-only — they
-  graze plants, breed when well-fed, and die if they starve.
-- **Soft circles = flora** (plants/fungi). They start small and grow; a brighter,
-  larger circle is riper and edible. Folk and fauna forage them.
-- **Small squares = resource nodes** (timber, ore, reactive crystal).
-- **Bordered coloured squares = businesses** — employers (laborer, farmer, miner,
-  artisan, merchant houses, and the rare hedge-witch). Folk take jobs there and
-  gather to work (amber dot).
-- **A small violet pip inside a dot = magic aptitude** — a rare gift most folk
-  never have. These mages can take the hedge-witch profession and cast (conjure
-  food, mend vigour) using mana instead of foraging or sleeping.
+Each kind of thing has its own **silhouette**, so the world reads at a glance:
+
+- **Folk = little "pawns"** (a head over a body) — your townspeople. The **body
+  colour** is their species (warm sand = human, slate-blue = dwarf), the **outline
+  colour** is what they're doing (white = wandering, orange = seeking food, blue =
+  sleeping, gold = working, pink = socialising), and they're drawn **smaller as
+  children, larger as adults**. A small **violet pip** marks the rare **mage**.
+- **Triangles = fauna** (moth grazers, dust hoppers). Instinct-only — they graze
+  plants, breed when well-fed, and die if they starve.
+- **Sprouts (stem + leaf) = flora** (plants/fungi). They grow taller/brighter as
+  they ripen; folk and fauna forage them.
+- **Blocks = resource nodes** (timber, ore, reactive crystal); they dim as they're
+  worked down.
+- **Houses = businesses** — employers (laborer, farmer, miner, artisan, merchant,
+  and the rare hedge-witch), coloured by trade. Folk take jobs there.
 - **The HUD** (top bar) shows the day, a ☀/☾ that flips each half-day, live counts
   of **Folk / Mages / Graves** and **Fauna / Flora**, and the town's **Gini**
   (wealth inequality).
 - Folk **age, befriend each other, marry, have children, fall ill, and die** —
   the dead leave a grave (the **Graves** count climbs over time). Click someone to
   see their age, sex, social need, health, and family (partner + children).
-- **Children are drawn smaller than adults**, so you can watch generations: the
-  population grows toward a cap and then holds steady as births balance deaths,
-  sustaining the town across many lifetimes. Magic **runs in families** (a mage's
+- The town **grows toward a cap and then holds steady** as births balance deaths,
+  sustaining itself across many lifetimes. Magic **runs in families** (a mage's
   children are likelier to be gifted).
+- **Miners and labourers gather resources** — they walk out to ore and timber
+  nodes and work them down. A finite **ore vein eventually runs dry** (and the
+  block vanishes, noted in the feed); renewable timber regrows.
+- **Watch the lower-left feed** for the running story: who was born, who wed, who
+  died and of what, who took a job, who cast a spell.
 
 **Things worth trying**
 
 - Press **C** to read how this particular world ended and began — a different story
   for every seed.
-- **Pause** (Space), then **click a moth grazer** (a diamond) and watch its hunger
-  bar. Click a **plant** to see its maturity and food yield.
+- **Pause** (Space), then **click a moth grazer** (a triangle) and watch its hunger
+  bar. Click a **sprout** to see its maturity and food yield.
 - Watch the HUD **Fauna** count climb as animals breed, then settle as the land
   reaches its carrying capacity.
 - **Click a person** to see their job, gold, and (if any) debt; click a **business**
@@ -163,10 +168,11 @@ npm run soak           # 10,000-tick headless run printing world-health metrics
 npm run lint           # TypeScript type-check (no output = all good)
 ```
 
-**`npm run soak`** is a quick confidence check with no browser: it prints a metrics
-line every 1,000 ticks and ends with **`PASS`**. Watch for `invalid=0` on every line
-(no impossible states), the species mix (dwarves persist longer — they get hungry
-more slowly), and the `flora`/`fauna` counts settling into a stable ecosystem.
+**`npm run soak`** is a quick confidence check with no browser: it runs ~42 sim-years
+and ends with **`PASS`**. Watch `invalid=0` on every line (no impossible states),
+`folk` climbing to the population cap and holding (births balancing deaths),
+`born`/`graves`/`married` rising as generations turn over, and `nodes` dropping as
+finite ore veins are mined out.
 
 ---
 
@@ -203,12 +209,12 @@ is simply "keep going," and the agent should know what to do.
 | On screen | Meaning |
 |-----------|---------|
 | Coloured tile | Biome (deep blue = impassable water) |
-| Round dot | Sapient folk — fill = action, ring = species |
-| Diamond | Fauna (animal, instinct-only) |
-| Soft circle | Flora (plant; bigger/brighter = riper) |
-| Small square | Resource node (timber / ore / crystal) |
-| Bordered square | Business (employer; colour = profession) |
-| Violet pip in a dot | Magic aptitude (rare — a potential mage) |
+| Pawn (head + body) | Sapient folk — body = species, outline = action, small = child |
+| Triangle | Fauna (animal, instinct-only) |
+| Sprout (stem + leaf) | Flora (plant; taller/brighter = riper) |
+| Block (square) | Resource node (timber / ore / crystal); dims as it's worked |
+| House | Business (employer; colour = profession) |
+| Violet pip on a pawn | Magic aptitude (rare — a mage) |
 | **Graves** (HUD count) | Folk who have died and left a tombstone record |
 
 ## Stack at a glance

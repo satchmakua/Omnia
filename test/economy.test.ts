@@ -70,7 +70,7 @@ function makeBusiness(w: World, over: Partial<Business> = {}) {
   w.addComponent<Business>(e, C_BUSINESS, {
     professionId: 'laborer', professionName: 'Laborer', color: '#fff',
     balance: 100, maxEmployees: 2, wagePerTick: 0.5, revenuePerWorkerPerTick: 0.6,
-    requiresAptitude: false, ...over,
+    requiresAptitude: false, gathers: null, ...over,
   });
   w.addComponent(e, C_POSITION, { x: 0, y: 0 });
   return e;
@@ -144,7 +144,7 @@ describe('ActionSystem work choice', () => {
     w.addComponent<Agent>(e, C_AGENT, { name: 'A', action: 'wander', ticksAlive: 20000, wealthGoal: goal, sex: 'female', lifespanTicks: 1_000_000_000 });
     w.addComponent<Needs>(e, C_NEEDS, { hunger: 0.9, energy: 0.9, social: 1 }); // comfortable
     w.addComponent<Wallet>(e, C_WALLET, { gold, debt: 0 });
-    w.addComponent<Job>(e, C_JOB, { professionId: 'laborer', professionName: 'Laborer', employer: 999, wagePerTick: 0.5 });
+    w.addComponent<Job>(e, C_JOB, { professionId: 'laborer', professionName: 'Laborer', employer: 999, wagePerTick: 0.5, gathers: null });
     return { w, e };
   }
 

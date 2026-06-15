@@ -95,7 +95,7 @@ describe('magical-profession hiring', () => {
       professionId: requiresAptitude ? 'hedge_witch' : 'laborer',
       professionName: requiresAptitude ? 'Hedge-Witch' : 'Laborer',
       color: '#fff', balance: 100, maxEmployees: 2, wagePerTick: 0.5,
-      revenuePerWorkerPerTick: 0.6, requiresAptitude,
+      revenuePerWorkerPerTick: 0.6, requiresAptitude, gathers: null,
     });
     w.addComponent(e, C_POSITION, { x: 0, y: 0 });
     return e;

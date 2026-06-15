@@ -16,6 +16,7 @@ export const C_TOMBSTONE     = 'Tombstone';     // a dead agent's compact record
 export const C_CLOCK     = 'Clock';
 export const C_TILEMAP   = 'TileMap';   // singleton: the terrain grid (src/world/tilemap.ts)
 export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/history/chronicle.ts)
+export const C_EVENTLOG  = 'EventLog';  // singleton: live activity feed (src/history/eventlog.ts)
 
 export interface Position {
   x: number;
@@ -62,6 +63,7 @@ export interface Job {
   professionName: string;
   employer: number;     // EntityId of the Business
   wagePerTick: number;
+  gathers: string | null;  // resource id this job harvests from nodes, or null
 }
 
 // An employer/organization entity (D-roadmap "businesses as org entities").
@@ -74,6 +76,7 @@ export interface Business {
   wagePerTick: number;
   revenuePerWorkerPerTick: number;
   requiresAptitude: boolean;  // magical employers hire only agents with magic aptitude
+  gathers: string | null;     // resource id employees harvest from nodes, or null
 }
 
 // Resolved, per-agent species facts baked in at spawn so hot systems don't

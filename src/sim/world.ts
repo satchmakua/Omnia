@@ -1,7 +1,7 @@
 import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
-  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_AGENT, C_LINEAGE, C_RELATIONSHIPS,
+  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_AGENT, C_LINEAGE, C_RELATIONSHIPS,
 } from './components.ts';
 import type { Clock, Agent, Lineage, Relationships } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -19,6 +19,8 @@ import { spawnBusiness } from '../world/spawn.ts';
 import { createChronicle, chronicleAdd } from '../history/chronicle.ts';
 import type { ChronicleData } from '../history/chronicle.ts';
 import { generateBackstory } from '../history/backstory.ts';
+import { createEventLog } from '../history/eventlog.ts';
+import type { EventLogData } from '../history/eventlog.ts';
 
 export interface Simulation {
   world: World;
@@ -91,6 +93,10 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   for (const entry of generateBackstory(rng, tileMap)) chronicleAdd(chronicle, entry);
   const chronicleEntity = world.createEntity();
   world.addComponent<ChronicleData>(chronicleEntity, C_CHRONICLE, chronicle);
+
+  // Live activity feed (the day-to-day ticker, distinct from the Chronicle).
+  const eventEntity = world.createEntity();
+  world.addComponent<EventLogData>(eventEntity, C_EVENTLOG, createEventLog());
 
   // Populate the world with flora, fauna, and resources from biome spawn tables.
   populateWorld(world, rng, cfg, content, tileMap);

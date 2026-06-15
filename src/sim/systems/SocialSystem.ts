@@ -16,6 +16,7 @@ import { ageInYears } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
+import { emitEvent } from '../../history/eventlog.ts';
 
 const MAX_TILE_GROUP = 6; // cap pairwise interactions per crowded tile
 
@@ -118,9 +119,10 @@ function matchmake(
     lf.partner = m;
     world.getComponent<Relationships>(m, C_RELATIONSHIPS)!.edges[f] = { type: 'partner', sentiment: 0.8 };
     world.getComponent<Relationships>(f, C_RELATIONSHIPS)!.edges[m] = { type: 'partner', sentiment: 0.8 };
+    const mn = world.getComponent<Agent>(m, C_AGENT)!.name;
+    const fn = world.getComponent<Agent>(f, C_AGENT)!.name;
+    emitEvent(world, 'marriage', `${mn} and ${fn} were wed.`);
     if (chronicle) {
-      const mn = world.getComponent<Agent>(m, C_AGENT)!.name;
-      const fn = world.getComponent<Agent>(f, C_AGENT)!.name;
       chronicleAdd(chronicle, { tick, importance: 0.7, text: `${mn} and ${fn} were wed.` });
     }
   }
