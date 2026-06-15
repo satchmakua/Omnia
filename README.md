@@ -147,15 +147,16 @@ Each kind of thing has its own **silhouette**, so the world reads at a glance:
 - **Find the mage.** The HUD shows how many **Mages** the town has (the default
   seed has one — look for the violet pip). Click them to see their mana, and
   watch it drain when they cast. No mage in your town? Magic is deliberately rare
-  — change `world.seed` in `config/simulation.yaml` for a different draw.
+  — change `seed` in `src/sim/config.ts` for a different draw.
 - **Watch generations turn over.** Fast-forward with the speed slider: couples
   pair off and have children (small dots), elders pass into **Graves**, and the
   town refills itself. Click a long-lived elder and a child to see the family
   links between them — the town sustains itself across many lifetimes.
 
-> Want a different world? Edit `seed` under `world:` in `config/simulation.yaml`
-> (mirrored in `src/sim/config.ts`) and restart. The same seed always produces the
-> same town, backstory, and run.
+> Want a different world? Edit `seed` in **`src/sim/config.ts`** (the authoritative
+> config) and restart. The same seed always produces the same town, backstory, and
+> run. *(`docs/simulation.yaml` mirrors these knobs as readable reference, but is
+> not loaded yet — wiring it as the live config is on the roadmap.)*
 
 ## Other commands
 
@@ -198,7 +199,7 @@ is simply "keep going," and the agent should know what to do.
 
 ## Tunable knobs
 
-`config/simulation.yaml` holds the simulation constants (world size, tick rate, need-decay, history thresholds, capability rarity, culture/language evolution, LLM settings). Tune behavior here without touching logic.
+`src/sim/config.ts` (`defaultConfig`) is the **authoritative** set of simulation constants (world size, tick rate, need-decay, economy, life cycle, capability rarity, LLM/reflection settings) — edit there and restart. `docs/simulation.yaml` mirrors these as human-readable, commented reference; a YAML loader that makes it the live config is on the roadmap (it is not loaded today).
 
 ## Content
 

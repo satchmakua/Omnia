@@ -133,4 +133,5 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 - Capabilities: **skill/knowledge gating** for technology (learn-by-doing or apprenticeship) — date: 2026-06-13. *(Resource-consuming gathering done 2026-06-14; crafting that consumes them into goods remains.)*
 - Capabilities: **lost arts** — a capability whose last knowledgeable/aptitude-holding practitioner dies becomes "lost" until rediscovered (`MAGIC_AND_TECHNOLOGY.md`) — date: 2026-06-13.
 - Wealth metric: exclude (penniless) children, or weight by adults, so Gini reflects the working economy rather than demographics — date: 2026-06-14.
+- **Wire a YAML config loader**: load `simulation.yaml` (moving it to `config/` per ARCHITECTURE) as the live, authoritative tunables. Today `src/sim/config.ts` is authoritative and the YAML is reference-only — found in the M0–M5 audit — date: 2026-06-14.
 - Family-tree / lineage view UI (browse ancestry + tombstones); tie into the Legends view — date: 2026-06-14 (M6/M8).
