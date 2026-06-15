@@ -188,10 +188,23 @@ export interface Belief {
   text: string;
 }
 
+// A generated line of inner/outer life (M5 part 2): a spoken line ('say'), a dream
+// ('dream'), or a resolution at a turning point ('decide'). Pure flavour — recorded
+// for replay, never fed back into the simulation's mechanical trajectory.
+export type UtteranceKind = 'say' | 'dream' | 'decide';
+export interface Utterance {
+  tick: number;
+  kind: UtteranceKind;
+  text: string;
+}
+
 export interface Memory {
   events: MemoryEntry[];
   beliefs: Belief[];
   lastReflectTick: number;
+  utterances: Utterance[];   // recent dialogue / dreams / resolutions (bounded)
+  lastSpokeTick: number;     // throttles dialogue + decisions for this agent
+  lastDreamTick: number;     // throttles dreams for this agent
 }
 
 // Singleton: every LLM response recorded so a replay reproduces a run exactly

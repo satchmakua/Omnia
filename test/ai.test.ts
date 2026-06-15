@@ -54,7 +54,7 @@ describe('StubProvider', () => {
 
 describe('memory retrieval', () => {
   const mem: Memory = {
-    beliefs: [], lastReflectTick: 0,
+    beliefs: [], lastReflectTick: 0, utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9,
     events: [
       { tick: 1, text: 'took work as a Laborer', importance: 0.3 },
       { tick: 50, text: 'their child was born', importance: 0.9 },
