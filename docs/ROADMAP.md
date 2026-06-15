@@ -82,17 +82,17 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **DoD:** agents converse and reflect believably within budget (rare, throttled); the sim never stalls on a model call; seed-replay reproduces given recorded responses. **Met** — dialogue/dreams/resolutions appear, themed and bounded (40k-tick soak: 0 violations, `utters` climbs to ~287 across 60 folk and stays bounded); the soul runs only on the synchronous deterministic path so the tick never blocks; the replay test reproduces both beliefs and utterances of a non-deterministic run. *(Still deferred to backlog: wiring the async `AIRunner`/Ollama path into the live loop so a real model generates across ticks — the seam + recording are ready; the deterministic stub remains the default.)*
 
-## ▶ Milestone 6 — History & Legends  *(current — part 1 done)*
+## ✅ Milestone 6 — History & Legends  *(done — 2026-06-15)*
 
 **Goal:** the compression pipeline — rich history, bounded cost.
 
 - [x] Importance scoring; scheduled **rollups & pruning** of agent memory (multi-resolution). *(S14: `remember()` is now pure-append; a scheduled `MemorySystem` rolls a working set past `workingMemorySize` down into bounded **episodic summaries** (`ai/consolidation.ts`) — high-importance events stay named/vivid, trivia dissolves into a count, and old summaries merge into coarser eras. Deterministic, no RNG, off the hot path. Three resolutions per agent: raw working memory → episodic summaries → beliefs (M5). Shown in the inspector's Mind (❧).)*
-- [ ] The **Chronicle** (notable events only, itself tiered); **statistical strata** feeding world-health charts.
-- [ ] A **Legends view** UI to browse the town's history.
+- [x] The **Chronicle** (notable events only, itself tiered); **statistical strata** feeding world-health charts. *(S15: `chronicleAdd` now gates on an importance threshold; a scheduled `HistorySystem` compresses the Chronicle (`consolidateChronicle`) — recent legends stay sharp, ancient ones roll into one-line **eras** where the founding cataclysm (importance 1.0) survives by name and ordinary births/weddings/deaths dissolve into a tally; eras merge to stay bounded. **Statistical strata** (`history/stats.ts`): a `WorldStats` singleton sampled yearly with a bounded time-series — population, births/deaths, marriages, mages, Gini, median wealth, avg age — plus a cumulative cause-of-death histogram, all derived from durable state (living agents + tombstones), no coupling, no RNG.)*
+- [x] A **Legends view** UI to browse the town's history. *(S15: `legendsPanel.ts` (replaces the minimal chronicle panel, still the C key) — reads as a story: recent named legends, an "Ages past" section of compressed eras, then "The town in numbers" lo-fi SVG sparklines (population / median wealth / Gini / births-deaths) and a cause-of-death breakdown.)*
 
-**DoD:** after many generations, total state stays bounded *and* Legends reads like a story, not a spreadsheet (the qualitative test in `SIMULATION_MODEL.md`).
+**DoD:** after many generations, total state stays bounded *and* Legends reads like a story, not a spreadsheet (the qualitative test in `SIMULATION_MODEL.md`). **Met** — 40k-tick soak: 0 violations, eras bounded (≤8, saw 3), strata samples bounded (≤80, saw 38), Chronicle/memory bounded; verified live that Legends opens with named recent legends + a founding-cataclysm era preserved by name + ordinary events as tallies + world-health charts.
 
-## Milestone 7 — Culture & Language (deep)
+## ▶ Milestone 7 — Culture & Language (deep)  *(current)*
 
 **Goal:** evolving cultures, languages, and names (`CULTURE_AND_LANGUAGE.md`).
 

@@ -8,6 +8,7 @@ import { loadContentFromDisk } from '../content/fsSource.ts';
 import {
   C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS,
   C_HEALTH, C_LINEAGE, C_TOMBSTONE, C_MEMORY, C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
+  C_CHRONICLE, C_WORLDSTATS,
 } from './components.ts';
 import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -65,6 +66,14 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       if (m.mana < 0 || m.mana > m.maxMana) inv++;
     }
 
+    // M6 invariants: world-history state stays bounded across the generations.
+    const ch = world.getComponent(world.query(C_CHRONICLE)[0], C_CHRONICLE) as { eras: unknown[] } | undefined;
+    if (ch && ch.eras.length > cfg.chronicleMaxEras) inv++;
+    const ws = world.getComponent(world.query(C_WORLDSTATS)[0], C_WORLDSTATS) as { samples: unknown[] } | undefined;
+    if (ws && ws.samples.length > cfg.maxStatSamples) inv++;
+    const eras = ch ? ch.eras.length : 0;
+    const samples = ws ? ws.samples.length : 0;
+
     violations += inv;
     const fauna = world.query(C_FAUNA).length;
     const mages = world.query(C_AGENT, C_MAGIC).length;
@@ -93,7 +102,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `fauna=${fauna} nodes=${nodes}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
+      `fauna=${fauna} nodes=${nodes} eras=${eras} samples=${samples}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
     );
   }
 }

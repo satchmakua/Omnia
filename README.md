@@ -90,7 +90,7 @@ When the page loads you're looking at a small living world ticking in real time.
 | **Speed slider** (bottom of the screen) | Drag to set how fast time passes (ticks/second); the ▶/⏸ button pauses |
 | **Space** | Pause / resume (easiest way to click a specific creature) |
 | **Click** anyone or anything | Open the **inspector** (right-side panel) for that thing |
-| **C** | Open / close the **Chronicle** — the world's invented backstory |
+| **C** | Open / close the **Legends** view — the Chronicle (recent legends + compressed ages) and the town's world-health charts |
 | **Live feed** (lower-left) | The **Town Happenings** ticker — births, weddings, deaths, new jobs, spells, spent veins, as they happen |
 | **✕** (top-right of the inspector) | Close the inspector |
 
