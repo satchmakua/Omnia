@@ -95,9 +95,15 @@ culture_language:
   llmFlavor: true            # let the LLM occasionally gloss a word or name a value (recorded to event log).
 
 llm:
-  provider: ollama
+  provider: stub             # 'stub' = deterministic, offline default (headless/CI/replay). 'ollama' = live model (opt-in).
   baseUrl: http://localhost:11434
   model: llama3.1:8b         # swap freely (e.g. qwen, gemma); access is behind AIProvider.
-  maxConcurrentCalls: 2      # keep low so the local model never becomes a bottleneck.
-  perAgentCooldownDays: 1    # minimum sim-days between "soul" calls for one agent.
-  recordResponses: true      # log LLM outputs into the event log for deterministic replay.
+  maxConcurrentCalls: 2      # AIRunner concurrency cap so the local model never becomes a bottleneck.
+  timeoutMs: 8000            # per-call timeout; a slow/dead model falls back so the tick never stalls.
+  recordResponses: true      # log LLM outputs (AIRecord) for deterministic replay.
+  # Reflection schedule (M5):
+  reflectionIntervalDays: 30 # min sim-days between an agent's reflections.
+  maxReflectionsPerTick: 2   # global throttle so the soul layer stays rare.
+  minMemoriesToReflect: 3    # an agent needs at least this many memories first.
+  reflectMemories: 5         # top memories that feed a reflection prompt.
+  maxBeliefs: 6              # beliefs kept per agent.
