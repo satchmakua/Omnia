@@ -54,6 +54,13 @@ export interface SimConfig {
   childMageAptitudeChance: number;     // aptitude chance for a child with a mage parent (heritable)
   // Resource gathering (M4.5):
   gatherPerDay: number;                // how fast one worker depletes a resource node
+  // The soul / memory (M5):
+  workingMemorySize: number;           // raw memories kept per agent before rollup
+  reflectionIntervalDays: number;      // min sim-days between an agent's reflections
+  maxReflectionsPerTick: number;       // global throttle so the LLM layer stays rare
+  minMemoriesToReflect: number;        // an agent needs at least this many memories first
+  reflectMemories: number;             // how many top memories feed a reflection
+  maxBeliefs: number;                  // beliefs kept per agent
 }
 
 export function ticksPerYear(cfg: SimConfig): number {
@@ -115,4 +122,10 @@ export const defaultConfig: SimConfig = {
   reproMinHealth: 0.5,
   childMageAptitudeChance: 0.25,  // heritable but diluting — magic stays uncommon
   gatherPerDay: 0.3,
+  workingMemorySize: 30,
+  reflectionIntervalDays: 30,
+  maxReflectionsPerTick: 2,
+  minMemoriesToReflect: 3,
+  reflectMemories: 5,
+  maxBeliefs: 6,
 };

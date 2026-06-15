@@ -17,6 +17,7 @@ import type { RNG } from '../rng.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
 import { emitEvent } from '../../history/eventlog.ts';
+import { remember } from '../../ai/memory.ts';
 
 const MAX_TILE_GROUP = 6; // cap pairwise interactions per crowded tile
 
@@ -122,6 +123,8 @@ function matchmake(
     const mn = world.getComponent<Agent>(m, C_AGENT)!.name;
     const fn = world.getComponent<Agent>(f, C_AGENT)!.name;
     emitEvent(world, 'marriage', `${mn} and ${fn} were wed.`);
+    remember(world, m, tick, `wed ${fn}`, 0.7, cfg.workingMemorySize);
+    remember(world, f, tick, `wed ${mn}`, 0.7, cfg.workingMemorySize);
     if (chronicle) {
       chronicleAdd(chronicle, { tick, importance: 0.7, text: `${mn} and ${fn} were wed.` });
     }

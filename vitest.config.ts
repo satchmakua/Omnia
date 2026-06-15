@@ -14,9 +14,10 @@ export default defineConfig({
       // already-tested code.
       include: [
         'src/sim/**/*.ts', 'src/content/**/*.ts', 'src/capability/**/*.ts',
-        'src/world/**/*.ts', 'src/history/**/*.ts',
+        'src/world/**/*.ts', 'src/history/**/*.ts', 'src/ai/**/*.ts',
       ],
-      exclude: ['src/sim/soak.ts'],
+      // soak.ts is a CLI wrapper; ollamaProvider needs a live server (no network in CI).
+      exclude: ['src/sim/soak.ts', 'src/ai/ollamaProvider.ts'],
       thresholds: {
         statements: 90,
         branches: 85,

@@ -1,9 +1,9 @@
 import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
-  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_AGENT, C_LINEAGE, C_RELATIONSHIPS,
+  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS,
 } from './components.ts';
-import type { Clock, Agent, Lineage, Relationships } from './components.ts';
+import type { Clock, Agent, Lineage, Relationships, AIRecord } from './components.ts';
 import type { SimConfig } from './config.ts';
 import { ticksPerYear, ageInYears } from './config.ts';
 import type { EntityId } from './ecs.ts';
@@ -97,6 +97,10 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // Live activity feed (the day-to-day ticker, distinct from the Chronicle).
   const eventEntity = world.createEntity();
   world.addComponent<EventLogData>(eventEntity, C_EVENTLOG, createEventLog());
+
+  // Recorded LLM responses, for deterministic replay of a live-model run.
+  const recordEntity = world.createEntity();
+  world.addComponent<AIRecord>(recordEntity, C_AIRECORD, { entries: [] });
 
   // Populate the world with flora, fauna, and resources from biome spawn tables.
   populateWorld(world, rng, cfg, content, tileMap);
