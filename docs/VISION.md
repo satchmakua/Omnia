@@ -15,7 +15,7 @@ A small town of a few hundred genuinely distinct people whose ordinary and extra
 
 A weird, psychedelic, **post-apocalyptic fantasy**, lighter in tone than it sounds — closer to *Adventure Time* than grimdark. Something fell long ago; ruins and lost arts remain. The world is shared by many kinds of people:
 
-- **Humans are dominant**, but **dwarves, orcs, giants, dragons** and stranger creatures live alongside them. All of these are **flavors of agent** — data archetypes over the same engine (see `CONTENT_AND_DATA.md`), not special-cased systems. There's a spectrum from sapient folk (full minds) through animals (instinct only) to flora and resources (no mind) — see `WORLD_AND_ENVIRONMENT.md`.
+- **Humans are dominant**, but **dwarves, orcs, elves, giants, dragons** and stranger creatures live alongside them. All of these are **flavors of agent** — data archetypes over the same engine (see `CONTENT_AND_DATA.md`), not special-cased systems. There's a spectrum from sapient folk (full minds) through animals (instinct only) to flora and resources (no mind) — see `WORLD_AND_ENVIRONMENT.md`.
 - **Magic is real but rare**, and is the uncommon sibling of **technology** — both run on one underlying capability system, differing mainly in who can access them (`MAGIC_AND_TECHNOLOGY.md`).
 - **Cultures and languages evolve** across generations into families, dialects, and schisms (`CULTURE_AND_LANGUAGE.md`).
 
@@ -23,11 +23,11 @@ Crucially, all of this flavor lives in **content** (YAML), so the world's textur
 
 ## The experience we're aiming for
 
-You open Omnia and see a grid of moving dots. You click one: a panel reveals a person — their species, mood, job, who they love and hate, what they remember, their parents and children, whether they carry a rare spark of magic. You speed time up and watch them court, marry, struggle, prosper, scheme, and die. You open the Legends view and read the town's history: who mattered, what they built, which arts were lost, how a culture split. It should give the unmistakable impression of a world that is alive and has a past.
+You open Omnia and see a grid of moving icons. You click one: a panel reveals a person — their species, mood, job, who they love and hate, what they remember, their parents and children, whether they carry a rare spark of magic. You speed time up and watch them court, marry, struggle, prosper, scheme, fight, conquer, and die. You open the Legends view and read the town's history: who mattered, what they built, which arts were lost, how a culture split. It should give the unmistakable impression of a world that is alive and has a past.
 
 ## Aesthetic direction (deferred — do not build before the simulation is deep)
 
-A **lo-fi, pastel** look — soft, muted color palette; calm, readable, unhurried. Eventually a **lo-fi ambient music** layer to match. This is *presentation*, the lowest priority: the interface stays minimal (dots + inspector) until the simulation has real depth. Captured here so the eventual UI work has direction; see the audio/aesthetic tasks in the final roadmap milestone.
+A **lo-fi, pastel** look — soft, muted color palette; calm, readable, unhurried. Eventually a **lo-fi ambient music** layer to match. This is *presentation*, the lowest priority: the interface stays minimal (icons + inspector) until the simulation has real depth. Captured here so the eventual UI work has direction; see the audio/aesthetic tasks in the final roadmap milestone.
 
 ## Touchstones
 
@@ -37,7 +37,7 @@ A **lo-fi, pastel** look — soft, muted color palette; calm, readable, unhurrie
 
 We are explicitly **not** building, at least not now:
 
-- **Not photorealistic or even pretty graphics.** Dots on a grid plus rich inspector panels. Pastel/lo-fi styling and music are *deferred* polish, not early work.
+- **Not photorealistic or even pretty graphics.** Simple icons on a grid plus rich inspector panels. Pastel/lo-fi styling and music are *deferred* polish, not early work.
 - **Not a massive-scale civilization.** Hundreds of agents, not millions. No aggregate off-screen population machinery. Changing scale is a deliberate future decision recorded in `DECISIONS.md`.
 - **Not a multiplayer game or networked server.** Single-machine simulation.
 - **Not an authored narrative.** No quests, no scripted plot, no win condition. Stories come from emergence.
