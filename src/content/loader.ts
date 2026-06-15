@@ -131,6 +131,12 @@ export function loadContent(files: Map<string, string>): Content {
     check('fauna', fauna, biome.fauna);
     check('resources', resources, biome.resources);
   }
+  // A profession that gathers must name a real resource.
+  for (const prof of professions.all()) {
+    if (prof.gathers !== undefined && !resources.has(prof.gathers)) {
+      refErrors.push(`professions/${prof.id}: gathers unknown resource '${prof.gathers}'`);
+    }
+  }
   if (refErrors.length > 0) {
     throw new Error(
       `Content failed to load (${refErrors.length} problem${refErrors.length > 1 ? 's' : ''}):\n` +

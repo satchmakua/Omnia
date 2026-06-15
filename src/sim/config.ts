@@ -52,6 +52,8 @@ export interface SimConfig {
   reproMinHunger: number;              // parents must be at least this fed to breed
   reproMinHealth: number;              // ...and at least this healthy
   childMageAptitudeChance: number;     // aptitude chance for a child with a mage parent (heritable)
+  // Resource gathering (M4.5):
+  gatherPerDay: number;                // how fast one worker depletes a resource node
 }
 
 export function ticksPerYear(cfg: SimConfig): number {
@@ -112,4 +114,5 @@ export const defaultConfig: SimConfig = {
   reproMinHunger: 0.5,
   reproMinHealth: 0.5,
   childMageAptitudeChance: 0.25,  // heritable but diluting — magic stays uncommon
+  gatherPerDay: 0.3,
 };

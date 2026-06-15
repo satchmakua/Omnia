@@ -14,6 +14,7 @@ import type { Content } from '../../content/loader.ts';
 import { spawnAgent } from '../spawnAgent.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
+import { emitEvent } from '../../history/eventlog.ts';
 
 export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const birthChance = cfg.birthChancePerDay / cfg.ticksPerDay;
@@ -72,9 +73,10 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
     world.getComponent<Lineage>(b.mother, C_LINEAGE)!.reproCooldownTicks =
       Math.floor(cfg.reproCooldownDays * cfg.ticksPerDay);
 
+    const childName = world.getComponent<Agent>(child, C_AGENT)!.name;
+    const motherName = world.getComponent<Agent>(b.mother, C_AGENT)!.name;
+    emitEvent(world, 'birth', `${childName} was born to ${motherName}.`);
     if (chronicle) {
-      const childName = world.getComponent<Agent>(child, C_AGENT)!.name;
-      const motherName = world.getComponent<Agent>(b.mother, C_AGENT)!.name;
       chronicleAdd(chronicle, { tick, importance: 0.65, text: `${childName} was born to ${motherName}.` });
     }
   }

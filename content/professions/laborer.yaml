@@ -4,3 +4,4 @@ name: "Laborer"
 dailyWage: 6
 color: "#b08050"
 maxEmployeesPerBusiness: 6
+gathers: "timber"         # labourers fell timber in the fungal forest (renewable)

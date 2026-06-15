@@ -6,6 +6,7 @@ import { Renderer } from './render/renderer.ts';
 import { Inspector } from './render/inspector.ts';
 import { ChroniclePanel } from './render/chroniclePanel.ts';
 import { SpeedControl } from './render/controls.ts';
+import { EventFeed } from './render/eventFeed.ts';
 
 // Browser content source: Vite bundles every YAML under /content as raw text.
 // (Node code paths use src/content/fsSource.ts instead.)
@@ -25,6 +26,7 @@ const { world, rng, clockEntity } = sim;
 const renderer  = new Renderer(canvas, cfg);
 const inspector = new Inspector();
 const chronicle = new ChroniclePanel();
+const eventFeed = new EventFeed();
 
 renderer.setClickHandler((entity) => inspector.inspect(entity, world));
 
@@ -37,7 +39,7 @@ const controls = new SpeedControl(speed, (v) => { speed = v; });
 // Dev-only debug handle (stripped from production builds by Vite).
 if (import.meta.env.DEV) {
   (window as unknown as { __omnia: unknown }).__omnia = {
-    sim, world, content, renderer, inspector, controls,
+    sim, world, content, renderer, inspector, controls, eventFeed,
     // step() advances the sim manually (useful when a hidden tab throttles rAF).
     step: (n = 1) => { for (let i = 0; i < n; i++) tick(world, rng, cfg, clockEntity, content); },
   };
@@ -61,6 +63,7 @@ function loop(now: number) {
   renderer.render(world, clockEntity);
   renderer.consumeClick(world);
   inspector.update(world);
+  eventFeed.render(world);
   requestAnimationFrame(loop);
 }
 

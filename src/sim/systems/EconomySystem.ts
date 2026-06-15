@@ -9,6 +9,7 @@ import type { Agent, Wallet, Job, Business, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 import { earn, spend } from '../economy.ts';
+import { emitEvent } from '../../history/eventlog.ts';
 
 export function runEconomySystem(world: World, cfg: SimConfig): void {
   const businesses = world.query(C_BUSINESS);
@@ -32,8 +33,10 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
       professionName: biz.professionName,
       employer: b,
       wagePerTick: biz.wagePerTick,
+      gathers: biz.gathers,
     });
     employees.set(b, (employees.get(b) ?? 0) + 1);
+    emitEvent(world, 'work', `${world.getComponent<Agent>(e, C_AGENT)!.name} took work as a ${biz.professionName}.`);
   };
   const hasOpening = (b: EntityId, biz: Business) => (employees.get(b) ?? 0) < biz.maxEmployees;
 

@@ -12,19 +12,18 @@ import type { TileMapData } from '../world/tilemap.ts';
 import { wealthStats } from '../sim/wealth.ts';
 import { ageInYears } from '../sim/config.ts';
 
+// A distinct silhouette per class so the world reads at a glance:
+//   folk = pawn (head + body)    fauna = triangle    flora = sprout
+//   resource = block (square)    business = house (square + roof)
 const ACTION_COLOR: Record<string, string> = {
-  wander:    '#e0e0ff',
+  wander:    '#dfe2ff',
   seek_food: '#ff9944',
-  sleep:     '#7799ff',
+  sleep:     '#6f8bff',
   work:      '#ffd24a',
+  socialize: '#ff86c8',
 };
 
-// Species are visibly distinct by dot radius (size) plus a species-coloured ring.
-const SIZE_RADIUS: Record<string, number> = {
-  small:  0.30,
-  medium: 0.42,
-  large:  0.54,
-};
+const SIZE_RADIUS: Record<string, number> = { small: 0.30, medium: 0.40, large: 0.50 };
 
 export class Renderer {
   private readonly ctx: CanvasRenderingContext2D;
@@ -37,13 +36,9 @@ export class Renderer {
     private readonly cfg: SimConfig,
   ) {
     this.ctx = canvas.getContext('2d')!;
-    this.cellSize = Math.floor(
-      Math.min(canvas.width / cfg.gridWidth, canvas.height / cfg.gridHeight),
-    );
+    this.cellSize = Math.floor(Math.min(canvas.width / cfg.gridWidth, canvas.height / cfg.gridHeight));
 
     canvas.addEventListener('click', (e) => {
-      // Map CSS click coords to canvas-internal pixels (the canvas may be
-      // displayed at a different CSS size than its backing resolution).
       const r = canvas.getBoundingClientRect();
       const scaleX = canvas.width / r.width;
       const scaleY = canvas.height / r.height;
@@ -53,19 +48,17 @@ export class Renderer {
     });
   }
 
-  setClickHandler(cb: (entity: EntityId) => void): void {
-    this.onEntityClick = cb;
-  }
+  setClickHandler(cb: (entity: EntityId) => void): void { this.onEntityClick = cb; }
 
   render(world: World, clockEntity: EntityId): void {
     const { ctx, cellSize, cfg } = this;
-    const W = cfg.gridWidth  * cellSize;
+    const W = cfg.gridWidth * cellSize;
     const H = cfg.gridHeight * cellSize;
 
     ctx.fillStyle = '#10101e';
     ctx.fillRect(0, 0, W, H);
 
-    // Biome terrain background (one fill per tile).
+    // Biome terrain background.
     const mapEnts = world.query(C_TILEMAP);
     const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
     if (map) {
@@ -77,102 +70,122 @@ export class Renderer {
       }
     }
 
-    // Businesses — fixed buildings: a bordered square in the profession's colour.
+    // ── Flora: sprouts (drawn first / lowest) ────────────────────────────────
+    for (const e of world.query(C_FLORA, C_POSITION)) {
+      const f = world.getComponent<Flora>(e, C_FLORA)!;
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      this.drawSprout(p.x, p.y, f.color, f.maturity);
+    }
+
+    // ── Resource nodes: mineral blocks ───────────────────────────────────────
+    for (const e of world.query(C_RESOURCE, C_POSITION)) {
+      const r = world.getComponent<Resource>(e, C_RESOURCE)!;
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      this.drawBlock(p.x, p.y, r.color, r.amount);
+    }
+
+    // ── Businesses: houses ───────────────────────────────────────────────────
     for (const e of world.query(C_BUSINESS, C_POSITION)) {
       const biz = world.getComponent<Business>(e, C_BUSINESS)!;
-      const pos = world.getComponent<Position>(e, C_POSITION)!;
-      const m = cellSize * 0.12;
-      ctx.fillStyle = biz.color;
-      ctx.globalAlpha = 0.85;
-      ctx.fillRect(pos.x * cellSize + m, pos.y * cellSize + m, cellSize - 2 * m, cellSize - 2 * m);
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = '#1a1a2a';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(pos.x * cellSize + m, pos.y * cellSize + m, cellSize - 2 * m, cellSize - 2 * m);
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      this.drawHouse(p.x, p.y, biz.color);
     }
 
-    // Resource nodes — small inset squares (brightness by remaining amount).
-    for (const e of world.query(C_RESOURCE, C_POSITION)) {
-      const r   = world.getComponent<Resource>(e, C_RESOURCE)!;
-      const pos = world.getComponent<Position>(e, C_POSITION)!;
-      const inset = cellSize * 0.28;
-      ctx.globalAlpha = 0.4 + r.amount * 0.6;
-      ctx.fillStyle = r.color;
-      ctx.fillRect(pos.x * cellSize + inset, pos.y * cellSize + inset, cellSize - inset * 2, cellSize - inset * 2);
-      ctx.globalAlpha = 1;
-    }
-
-    // Flora — circle whose size/opacity grows with maturity.
-    for (const e of world.query(C_FLORA, C_POSITION)) {
-      const f   = world.getComponent<Flora>(e, C_FLORA)!;
-      const pos = world.getComponent<Position>(e, C_POSITION)!;
-      const r = cellSize * (0.12 + f.maturity * 0.26);
-      ctx.globalAlpha = 0.35 + f.maturity * 0.5;
-      ctx.fillStyle = f.color;
-      ctx.beginPath();
-      ctx.arc(pos.x * cellSize + cellSize / 2, pos.y * cellSize + cellSize / 2, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-
-    // Fauna — diamonds, to read as distinct from round sapient agents.
+    // ── Fauna: triangles ─────────────────────────────────────────────────────
     for (const e of world.query(C_FAUNA, C_POSITION)) {
-      const fa  = world.getComponent<Fauna>(e, C_FAUNA)!;
-      const pos = world.getComponent<Position>(e, C_POSITION)!;
-      const cx = pos.x * cellSize + cellSize / 2;
-      const cy = pos.y * cellSize + cellSize / 2;
-      const r  = cellSize * 0.32;
-      ctx.fillStyle = fa.color;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy);
-      ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy);
-      ctx.closePath();
-      ctx.fill();
+      const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      this.drawTriangle(p.x, p.y, fa.color);
     }
 
-    // Sapient agents: fill colour = current action, ring colour + radius = species.
+    // ── Folk: pawns (head + body), drawn on top ──────────────────────────────
     for (const e of world.query(C_AGENT, C_POSITION)) {
-      const agent   = world.getComponent<Agent>(e, C_AGENT)!;
-      const pos     = world.getComponent<Position>(e, C_POSITION)!;
-      const species = world.getComponent<SpeciesComp>(e, C_SPECIES);
-
-      const cx = pos.x * cellSize + cellSize / 2;
-      const cy = pos.y * cellSize + cellSize / 2;
-      // Children render smaller than adults, so generations are visible at a glance.
-      const ageFactor = 0.55 + 0.45 * Math.min(1, ageInYears(agent.ticksAlive, this.cfg) / this.cfg.adultAgeYears);
-      const r  = Math.max(2, cellSize * (SIZE_RADIUS[species?.size ?? 'medium'] ?? 0.42) * ageFactor);
-
-      ctx.fillStyle = ACTION_COLOR[agent.action] ?? '#fff';
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (species) {
-        ctx.strokeStyle = species.color;
-        ctx.lineWidth = Math.max(1, cellSize * 0.12);
-        ctx.stroke();
-      }
-
-      // Rare magic aptitude: a small bright violet pip in the centre.
-      if (world.hasComponent(e, C_MAGIC)) {
-        ctx.fillStyle = '#e090ff';
-        ctx.beginPath();
-        ctx.arc(cx, cy, Math.max(1, cellSize * 0.13), 0, Math.PI * 2);
-        ctx.fill();
-      }
+      const agent = world.getComponent<Agent>(e, C_AGENT)!;
+      const sp = world.getComponent<SpeciesComp>(e, C_SPECIES);
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      const ageFactor = 0.55 + 0.45 * Math.min(1, ageInYears(agent.ticksAlive, cfg) / cfg.adultAgeYears);
+      const scale = (SIZE_RADIUS[sp?.size ?? 'medium'] ?? 0.40) * ageFactor;
+      this.drawPawn(p.x, p.y, sp?.color ?? '#ddd', ACTION_COLOR[agent.action] ?? '#fff',
+        scale, world.hasComponent(e, C_MAGIC));
     }
 
-    // HUD overlay
+    this.drawHud(world, clockEntity, W);
+  }
+
+  // ── shape helpers ──────────────────────────────────────────────────────────
+  private drawSprout(gx: number, gy: number, color: string, maturity: number): void {
+    const { ctx, cellSize: c } = this;
+    const cx = gx * c + c / 2, base = gy * c + c * 0.8;
+    const h = c * (0.2 + maturity * 0.4);
+    ctx.globalAlpha = 0.5 + maturity * 0.5;
+    ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, c * 0.08);
+    ctx.beginPath(); ctx.moveTo(cx, base); ctx.lineTo(cx, base - h); ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(cx, base - h, c * (0.1 + maturity * 0.14), 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  private drawBlock(gx: number, gy: number, color: string, amount: number): void {
+    const { ctx, cellSize: c } = this;
+    const m = c * 0.26;
+    ctx.globalAlpha = 0.45 + amount * 0.55;
+    ctx.fillStyle = color;
+    ctx.fillRect(gx * c + m, gy * c + m, c - 2 * m, c - 2 * m);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1;
+    ctx.strokeRect(gx * c + m, gy * c + m, c - 2 * m, c - 2 * m);
+  }
+
+  private drawHouse(gx: number, gy: number, color: string): void {
+    const { ctx, cellSize: c } = this;
+    const x = gx * c, y = gy * c, m = c * 0.14;
+    const left = x + m, right = x + c - m, top = y + c * 0.42, bottom = y + c - m;
+    ctx.fillStyle = color;
+    ctx.fillRect(left, top, right - left, bottom - top);          // body
+    ctx.beginPath();                                              // roof
+    ctx.moveTo(left - c * 0.04, top); ctx.lineTo(x + c / 2, y + m); ctx.lineTo(right + c * 0.04, top);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#15151f'; ctx.lineWidth = 1;
+    ctx.strokeRect(left, top, right - left, bottom - top);
+  }
+
+  private drawTriangle(gx: number, gy: number, color: string): void {
+    const { ctx, cellSize: c } = this;
+    const cx = gx * c + c / 2, cy = gy * c + c / 2, r = c * 0.34;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy + r); ctx.lineTo(cx - r, cy + r);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  private drawPawn(gx: number, gy: number, species: string, action: string, scale: number, mage: boolean): void {
+    const { ctx, cellSize: c } = this;
+    const cx = gx * c + c / 2, cy = gy * c + c / 2;
+    const bodyR = Math.max(2, c * scale);
+    const headR = bodyR * 0.6;
+    ctx.fillStyle = species;
+    ctx.strokeStyle = action;
+    ctx.lineWidth = Math.max(1, c * 0.13);
+    ctx.beginPath(); ctx.arc(cx, cy + bodyR * 0.35, bodyR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();   // body
+    ctx.beginPath(); ctx.arc(cx, cy - bodyR * 0.55, headR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();   // head
+    if (mage) {
+      ctx.fillStyle = '#e090ff';
+      ctx.beginPath(); ctx.arc(cx, cy + bodyR * 0.35, Math.max(1, bodyR * 0.4), 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  private drawHud(world: World, clockEntity: EntityId, W: number): void {
+    const { ctx } = this;
     const clock = world.getComponent<Clock>(clockEntity, C_CLOCK)!;
-    const pop   = world.query(C_AGENT).length;
-    const fauna = world.query(C_FAUNA).length;
-    const flora = world.query(C_FLORA).length;
-    const w = wealthStats(world);
+    const yr = (clock.tick / (this.cfg.ticksPerDay * this.cfg.daysPerYear)).toFixed(0);
+    const pop = world.query(C_AGENT).length;
     const mages = world.query(C_AGENT, C_MAGIC).length;
     const graves = world.query(C_TOMBSTONE).length;
-    const label = `Day ${clock.day}  ${clock.isDay ? '☀' : '☾'}  Hour ${clock.hour}  |  ` +
-      `Folk ${pop}  Mages ${mages}  Graves ${graves}  |  Fauna ${fauna}  Flora ${flora}  |  ` +
-      `median ${Math.round(w.median)}g  Gini ${w.gini.toFixed(2)}`;
+    const fauna = world.query(C_FAUNA).length;
+    const w = wealthStats(world);
+    const label = `Year ${yr}  Day ${clock.day}  ${clock.isDay ? '☀' : '☾'}  |  ` +
+      `Folk ${pop}  Mages ${mages}  Graves ${graves}  |  Fauna ${fauna}  |  Gini ${w.gini.toFixed(2)}`;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, W, 28);
     ctx.fillStyle = '#ccd';
@@ -180,8 +193,7 @@ export class Renderer {
     ctx.fillText(label, 8, 17);
   }
 
-  // Called from main.ts after render. Picks the most interesting entity on the
-  // clicked tile: sapient agent > fauna > resource > flora.
+  // Picks the most interesting entity on the clicked tile: folk > fauna > business > resource > flora.
   consumeClick(world: World): EntityId | null {
     if (!this._pendingClick) return null;
     const { gx, gy } = this._pendingClick;

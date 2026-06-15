@@ -102,6 +102,7 @@ export const ProfessionSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour'),
   maxEmployeesPerBusiness: z.number().int().positive().default(4),
   requiresAptitude: z.boolean().default(false),  // magical professions hire only the aptitude-gifted
+  gathers: z.string().optional(),                // resource id this profession harvests (e.g. "ore")
 }).strict();
 
 export type Profession = z.infer<typeof ProfessionSchema>;

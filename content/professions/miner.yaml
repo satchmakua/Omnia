@@ -4,3 +4,4 @@ name: "Miner"
 dailyWage: 11
 color: "#9090a0"
 maxEmployeesPerBusiness: 4
+gathers: "ore"            # miners haul ore from nodes in the wastes (finite — it runs dry)
