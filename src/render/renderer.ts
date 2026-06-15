@@ -96,6 +96,15 @@ export class Renderer {
     this.clampOffset();
   }
 
+  /** Centre the view on a grid tile (used by the directory "jump to" action). */
+  centerOn(gx: number, gy: number): void {
+    if (this.scale < 2.5) this.scale = 2.5;        // zoom in a little so it's worth jumping
+    const px = (gx + 0.5) * this.cellSize, py = (gy + 0.5) * this.cellSize;
+    this.offsetX = this.canvas.width / 2 - px * this.scale;
+    this.offsetY = this.canvas.height / 2 - py * this.scale;
+    this.clampOffset();
+  }
+
   private bindInput(): void {
     const cv = this.canvas;
     cv.addEventListener('wheel', (e) => {
