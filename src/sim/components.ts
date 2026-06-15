@@ -13,6 +13,8 @@ export const C_HEALTH        = 'Health';        // condition + mortality (M4)
 export const C_RELATIONSHIPS = 'Relationships'; // social graph edges (M4)
 export const C_LINEAGE       = 'Lineage';       // partner / parents / children (M4)
 export const C_TOMBSTONE     = 'Tombstone';     // a dead agent's compact record (M4)
+export const C_MEMORY        = 'Memory';        // memory stream + beliefs (M5)
+export const C_AIRECORD      = 'AIRecord';      // singleton: recorded LLM responses for replay (M5)
 export const C_CLOCK     = 'Clock';
 export const C_TILEMAP   = 'TileMap';   // singleton: the terrain grid (src/world/tilemap.ts)
 export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/history/chronicle.ts)
@@ -172,6 +174,30 @@ export interface Tombstone {
   parents: number[];
   children: number[];
 }
+
+// The agent's inner life (M5). A bounded stream of salient memories plus the
+// durable beliefs that reflection distils from them.
+export interface MemoryEntry {
+  tick: number;
+  text: string;
+  importance: number;  // 0..1; mundane low, life-changing high
+}
+
+export interface Belief {
+  tick: number;
+  text: string;
+}
+
+export interface Memory {
+  events: MemoryEntry[];
+  beliefs: Belief[];
+  lastReflectTick: number;
+}
+
+// Singleton: every LLM response recorded so a replay reproduces a run exactly
+// even though live generation varies (ARCHITECTURE determinism rule).
+export interface AIRecordEntry { tick: number; key: number; response: string; }
+export interface AIRecord { entries: AIRecordEntry[]; }
 
 export interface Clock {
   tick: number;

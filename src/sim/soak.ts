@@ -7,7 +7,7 @@ import { defaultConfig } from './config.ts';
 import { loadContentFromDisk } from '../content/fsSource.ts';
 import {
   C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS,
-  C_HEALTH, C_LINEAGE, C_TOMBSTONE, C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
+  C_HEALTH, C_LINEAGE, C_TOMBSTONE, C_MEMORY, C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
 } from './components.ts';
 import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -67,6 +67,11 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     const mages = world.query(C_AGENT, C_MAGIC).length;
     const graves = world.query(C_TOMBSTONE).length;
     const nodes = world.query(C_RESOURCE).length;
+    let beliefs = 0;
+    for (const e of agents) {
+      const m = world.getComponent(e, C_MEMORY) as { beliefs: unknown[] } | undefined;
+      if (m && m.beliefs.length > 0) beliefs++;
+    }
     // Average age (years), married folk, and the locally-born (have parents).
     let ageSum = 0, married = 0, born = 0;
     for (const e of agents) {
@@ -82,7 +87,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     console.log(
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
-      `married=${married} born=${born} graves=${graves} mages=${mages}  ` +
+      `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs}  ` +
       `fauna=${fauna} nodes=${nodes}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
     );
   }

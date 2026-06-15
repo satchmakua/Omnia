@@ -10,9 +10,12 @@ import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 import { earn, spend } from '../economy.ts';
 import { emitEvent } from '../../history/eventlog.ts';
+import { remember } from '../../ai/memory.ts';
 
 export function runEconomySystem(world: World, cfg: SimConfig): void {
   const businesses = world.query(C_BUSINESS);
+  const clockEntsTop = world.query(C_CLOCK);
+  const now = clockEntsTop.length ? world.getComponent<Clock>(clockEntsTop[0], C_CLOCK)!.tick : 0;
 
   // ── Hiring ──────────────────────────────────────────────────────────────────
   // Drop jobs whose employer no longer exists, then count current staff.
@@ -37,6 +40,7 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
     });
     employees.set(b, (employees.get(b) ?? 0) + 1);
     emitEvent(world, 'work', `${world.getComponent<Agent>(e, C_AGENT)!.name} took work as a ${biz.professionName}.`);
+    remember(world, e, now, `took work as a ${biz.professionName}`, 0.3, cfg.workingMemorySize);
   };
   const hasOpening = (b: EntityId, biz: Business) => (employees.get(b) ?? 0) < biz.maxEmployees;
 
