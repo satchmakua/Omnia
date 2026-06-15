@@ -2,11 +2,11 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS,
-  C_HEALTH, C_LINEAGE, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business,
-  Health, Lineage, Fauna, Flora, Resource,
+  Health, Lineage, Memory, Fauna, Flora, Resource,
 } from '../sim/components.ts';
 import { biomeNameAt, inBounds } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -145,6 +145,20 @@ export class Inspector {
     const healthBlock = health
       ? `<div>Health ${bar(health.value)}${health.ill ? ' <span style="color:#f99">(ill)</span>' : ''}</div>` : '';
 
+    // The inner life: beliefs (from reflection) + a couple of recent memories.
+    const mem = world.getComponent<Memory>(e, C_MEMORY);
+    let mind = '';
+    if (mem && (mem.beliefs.length > 0 || mem.events.length > 0)) {
+      const beliefs = mem.beliefs.length
+        ? mem.beliefs.map(b => `<div style="color:#bcd">“…${b.text}”</div>`).join('')
+        : '<div style="color:#778">no settled beliefs yet</div>';
+      const recent = mem.events.slice(-3).reverse()
+        .map(m => `<div style="color:#99a">· ${m.text}</div>`).join('');
+      mind = `<hr style="${RULE}">
+        <div style="${SECTION}">Mind &nbsp;<span style="color:#789">${mem.events.length} memories</span></div>
+        ${beliefs}${recent}`;
+    }
+
     return `
       ${this.title(agent.name, magic ? 'sapient · folk · mage' : 'sapient · folk')}
       ${speciesLine}
@@ -165,7 +179,8 @@ export class Inspector {
       ${debtLine}
       <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>
       ${family}
-      ${magicBlock}`;
+      ${magicBlock}
+      ${mind}`;
   }
 
   private _business(world: World, e: EntityId, pos: Position): string {

@@ -12,6 +12,7 @@ import { killAgent } from '../death.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
 import { emitEvent } from '../../history/eventlog.ts';
+import { remember } from '../../ai/memory.ts';
 
 export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const tpy = ticksPerYear(cfg);
@@ -35,7 +36,10 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
     if (!health.ill && rng() < illnessChance) {
       health.value = Math.max(0, health.value - cfg.illnessHealthLoss);
       health.ill = true;
-      if (health.value < 0.4) emitEvent(world, 'illness', `${agent.name} fell gravely ill.`);
+      if (health.value < 0.4) {
+        emitEvent(world, 'illness', `${agent.name} fell gravely ill.`);
+        remember(world, e, tick, 'fell gravely ill', 0.5, cfg.workingMemorySize);
+      }
     } else {
       health.value = Math.min(1, health.value + recovery);
       if (health.value >= 0.5) health.ill = false;
@@ -57,6 +61,11 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const lin = world.getComponent<Lineage>(e, C_LINEAGE);
     const ageYears = Math.floor(agent.ticksAlive / tpy);
     const notable = !!(lin && (lin.partner != null || lin.children.length > 0)) || cause === 'old age';
+    // Bereavement: the deceased's kin remember the loss (no-ops for the dead).
+    if (lin) {
+      if (lin.partner != null) remember(world, lin.partner, tick, `lost their spouse ${agent.name}`, 0.9, cfg.workingMemorySize);
+      for (const child of lin.children) remember(world, child, tick, `lost their parent ${agent.name}`, 0.9, cfg.workingMemorySize);
+    }
     const tomb = killAgent(world, e, tick, cause, tpy);
     emitEvent(world, 'death', `${tomb.name} died of ${cause} at ${ageYears}.`);
     // Record notable deaths as small legends.
