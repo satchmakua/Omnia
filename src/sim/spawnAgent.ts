@@ -4,10 +4,10 @@
 import type { World, EntityId } from './ecs.ts';
 import {
   C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_MAGIC, C_HEALTH,
-  C_RELATIONSHIPS, C_LINEAGE,
+  C_RELATIONSHIPS, C_LINEAGE, C_MEMORY,
 } from './components.ts';
 import type {
-  Position, Needs, Wallet, Agent, SpeciesComp, Magic, Health, Relationships, Lineage, Sex,
+  Position, Needs, Wallet, Agent, SpeciesComp, Magic, Health, Relationships, Lineage, Memory, Sex,
 } from './components.ts';
 import type { SimConfig } from './config.ts';
 import { ticksPerYear } from './config.ts';
@@ -58,6 +58,7 @@ export function spawnAgent(
   world.addComponent<Lineage>(e, C_LINEAGE, {
     partner: null, parents: opts.parents ?? [], children: [], reproCooldownTicks: 0,
   });
+  world.addComponent<Memory>(e, C_MEMORY, { events: [], beliefs: [], lastReflectTick: -1e9 });
 
   // Rare innate magic aptitude — scarce by construction, but heritable: children
   // of a mage get a much higher chance (lineage weighting from the design docs).

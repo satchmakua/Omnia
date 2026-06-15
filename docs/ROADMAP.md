@@ -71,16 +71,16 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **DoD:** the town sustains itself across several generations (no collapse/explosion); family trees form; deaths free agents into tombstones; tested. **Met** — population climbs to a carrying-capacity cap and holds there across 100+ sim-years (0 violations); grandchildren (3rd generation) appear; a dedicated multi-generation test asserts bounded population + a 3-deep lineage. Magic aptitude is heritable (runs in families, stays uncommon).
 
-## ▶ Milestone 5 — The Soul (LLM layer)  *(current)*
+## ▶ Milestone 5 — The Soul (LLM layer)  *(current — part 1 done)*
 
 **Goal:** an inner life via the local model, off the hot path.
 
-- [ ] `AIProvider` + Ollama; concurrency cap; timeout fallback.
-- [ ] Memory **stream + retrieval** (recency × importance × relevance); **reflection** into beliefs on a schedule.
-- [ ] LLM-driven **dialogue** at meaningful moments; major-decision prompting; dreams.
-- [ ] **Record LLM responses into the event log** for deterministic replay.
+- [x] `AIProvider` + Ollama; concurrency cap; timeout fallback. *(S12: `AIProvider` interface; deterministic `StubProvider` default (headless/reproducible); `OllamaProvider` opt-in; `AIRunner` queue with concurrency cap + timeout fallback, off the hot path.)*
+- [x] Memory **stream + retrieval** (recency × importance × relevance); **reflection** into beliefs on a schedule. *(S12: `Memory` component; life events captured with importance; embedding-based retrieval; throttled `AISystem` reflection → beliefs.)*
+- [ ] LLM-driven **dialogue** at meaningful moments; major-decision prompting; dreams. *(part 2)*
+- [x] **Record LLM responses into the event log** for deterministic replay. *(S12: responses recorded to an `AIRecord` singleton; `RecordedProvider` replays; a test proves a non-deterministic run replays identically.)*
 
-**DoD:** agents converse and reflect believably within budget (rare, throttled); the sim never stalls on a model call; seed-replay reproduces given recorded responses.
+**DoD:** agents converse and reflect believably within budget (rare, throttled); the sim never stalls on a model call; seed-replay reproduces given recorded responses. *(Reflection + recording/replay + never-stall done & tested; **dialogue/decisions/dreams = part 2**.)*
 
 ## Milestone 6 — History & Legends
 
