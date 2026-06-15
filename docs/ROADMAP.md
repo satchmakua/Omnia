@@ -82,11 +82,11 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **DoD:** agents converse and reflect believably within budget (rare, throttled); the sim never stalls on a model call; seed-replay reproduces given recorded responses. **Met** — dialogue/dreams/resolutions appear, themed and bounded (40k-tick soak: 0 violations, `utters` climbs to ~287 across 60 folk and stays bounded); the soul runs only on the synchronous deterministic path so the tick never blocks; the replay test reproduces both beliefs and utterances of a non-deterministic run. *(Still deferred to backlog: wiring the async `AIRunner`/Ollama path into the live loop so a real model generates across ticks — the seam + recording are ready; the deterministic stub remains the default.)*
 
-## ▶ Milestone 6 — History & Legends  *(current)*
+## ▶ Milestone 6 — History & Legends  *(current — part 1 done)*
 
 **Goal:** the compression pipeline — rich history, bounded cost.
 
-- [ ] Importance scoring; scheduled **rollups & pruning** of agent memory (multi-resolution).
+- [x] Importance scoring; scheduled **rollups & pruning** of agent memory (multi-resolution). *(S14: `remember()` is now pure-append; a scheduled `MemorySystem` rolls a working set past `workingMemorySize` down into bounded **episodic summaries** (`ai/consolidation.ts`) — high-importance events stay named/vivid, trivia dissolves into a count, and old summaries merge into coarser eras. Deterministic, no RNG, off the hot path. Three resolutions per agent: raw working memory → episodic summaries → beliefs (M5). Shown in the inspector's Mind (❧).)*
 - [ ] The **Chronicle** (notable events only, itself tiered); **statistical strata** feeding world-health charts.
 - [ ] A **Legends view** UI to browse the town's history.
 

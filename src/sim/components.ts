@@ -198,10 +198,24 @@ export interface Utterance {
   text: string;
 }
 
+// An episodic summary (M6, SIMULATION_MODEL Mechanism 1): a mid-term digest that
+// older raw events are rolled up into on a schedule. High-importance events stay
+// vivid (named in `text`); trivia dissolves into a count. The raw events are then
+// discarded — so a long life stores a thread of summaries, not every day.
+export interface EpisodicSummary {
+  fromTick: number;
+  toTick: number;
+  text: string;
+  importance: number;  // max importance folded in (keeps notable eras sharp through merges)
+  count: number;       // raw events this digest stands for
+}
+
 export interface Memory {
-  events: MemoryEntry[];
-  beliefs: Belief[];
+  events: MemoryEntry[];          // working memory: recent raw events (high fidelity)
+  summaries: EpisodicSummary[];   // mid-term: rolled-up digests of older events (bounded)
+  beliefs: Belief[];              // long-term: durable reflections
   lastReflectTick: number;
+  lastRollupTick: number;         // schedules the multi-resolution rollup pass
   utterances: Utterance[];   // recent dialogue / dreams / resolutions (bounded)
   lastSpokeTick: number;     // throttles dialogue + decisions for this agent
   lastDreamTick: number;     // throttles dreams for this agent

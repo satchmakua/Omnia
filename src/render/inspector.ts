@@ -158,9 +158,13 @@ export class Inspector {
         .map(u => `<div style="color:#b9c6e6">${glyph[u.kind]} ${u.text}</div>`).join('');
       const recent = mem.events.slice(-3).reverse()
         .map(m => `<div style="color:#99a">· ${m.text}</div>`).join('');
+      // Episodic summaries: the compressed older life, newest era first.
+      const earlier = mem.summaries.slice(-2).reverse()
+        .map(s => `<div style="color:#8a8a9a">❧ ${s.text}</div>`).join('');
+      const memCount = mem.events.length + mem.summaries.reduce((n, s) => n + s.count, 0);
       mind = `<hr style="${RULE}">
-        <div style="${SECTION}">Mind &nbsp;<span style="color:#789">${mem.events.length} memories</span></div>
-        ${beliefs}${said}${recent}`;
+        <div style="${SECTION}">Mind &nbsp;<span style="color:#789">${memCount} memories</span></div>
+        ${beliefs}${said}${recent}${earlier}`;
     }
 
     return `

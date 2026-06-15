@@ -59,7 +59,7 @@ export function spawnAgent(
     partner: null, parents: opts.parents ?? [], children: [], reproCooldownTicks: 0,
   });
   world.addComponent<Memory>(e, C_MEMORY, {
-    events: [], beliefs: [], lastReflectTick: -1e9,
+    events: [], summaries: [], beliefs: [], lastReflectTick: -1e9, lastRollupTick: -1e9,
     utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9,
   });
 

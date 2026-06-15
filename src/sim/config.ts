@@ -55,7 +55,7 @@ export interface SimConfig {
   // Resource gathering (M4.5):
   gatherPerDay: number;                // how fast one worker depletes a resource node
   // The soul / memory (M5):
-  workingMemorySize: number;           // raw memories kept per agent before rollup
+  workingMemorySize: number;           // raw-memory high-water mark; rollup triggers above this
   reflectionIntervalDays: number;      // min sim-days between an agent's reflections
   maxReflectionsPerTick: number;       // global throttle so the LLM layer stays rare
   minMemoriesToReflect: number;        // an agent needs at least this many memories first
@@ -66,6 +66,11 @@ export interface SimConfig {
   maxExpressionsPerTick: number;       // global per-tick cap on utterances (keeps the soul rare)
   maxUtterances: number;               // recent utterances kept per agent
   decisionImportance: number;          // a memory at/above this importance is a "turning point"
+  // Multi-resolution memory rollup (M6):
+  memoryRollupIntervalDays: number;    // how often the scheduled rollup/prune pass runs
+  memoryRetainAfterRollup: number;     // raw events kept after a rollup (the rest are digested)
+  summaryImportanceThreshold: number;  // events at/above this are named vividly in a digest
+  maxSummaries: number;                // episodic summaries per agent; oldest merge when exceeded
 }
 
 export function ticksPerYear(cfg: SimConfig): number {
@@ -138,4 +143,8 @@ export const defaultConfig: SimConfig = {
   maxExpressionsPerTick: 2,       // ...and the town as a whole, at most twice a tick
   maxUtterances: 8,
   decisionImportance: 0.65,       // weddings (0.7), births (0.85), bereavement (0.9) — not mundane work/illness
+  memoryRollupIntervalDays: 2,    // tidy the memory thread every couple of sim-days
+  memoryRetainAfterRollup: 20,    // ...keeping the 20 most-recent raw events sharp
+  summaryImportanceThreshold: 0.6, // births/weddings/bereavement stay named; work/wandering dissolve
+  maxSummaries: 6,                // a handful of episodic digests; older ones merge to coarser eras
 };
