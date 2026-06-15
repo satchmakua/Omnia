@@ -104,15 +104,18 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **DoD:** starting from seed cultures/languages, the sim produces a language family tree and at least one cultural schism over deep time, while staying within the performance budget; tested for tenability (object counts and per-era cost bounded).
 
-## Milestone 8+ — Social Structures, Vice, UI Depth & Refinement
+## Milestone 8+ — Economy Depth, Building, Social Structures, Vice, UI & Refinement
 
-**Goal:** emergent groups, the messier side of life, and durability.
+**Goal:** emergent groups, a deeper tactile economy, the messier side of life, and durability. *(The human-requested interactions are baked in here: resource gathering shipped early in M4.5; trade/market, building, and conflict/vice live below.)*
 
-- [ ] Companies, gangs, families-as-institutions, factions, dynasties; reputation; succession.
-- [ ] Gambling, drinking, crime, affairs/betrayal.
-- [ ] **UI depth:** rich inspector, relationship/family-tree views, charts (population, wealth, mood), event feed, time controls, search.
-- [ ] **Aesthetic/audio:** pastel/lo-fi styling pass; lo-fi ambient music layer.
-- [ ] Save/load; scenario seeds; balance via the world-health dashboard; performance against budget.
+- [ ] **Economy depth** (completes M3's deferred economy): a supply/demand **market** — prices that move with supply/demand, agents buying food/goods, business revenue from real sales (not abstract productivity), and businesses that can go bankrupt and close. *(human pick: trade/market)*
+- [ ] **Resource economy coupling**: gathered ore/timber/crystal feed **crafting** into goods and business revenue, so depletion has real consequences; **skill/knowledge gating** for technology (learn-by-doing / apprenticeship). *(completes M3 capability deferrals)*
+- [ ] **Building**: agents construct homes and businesses from gathered resources over time, instead of being pre-placed — visible growth of the town. *(human pick: building)*
+- [ ] **Social structures**: companies, gangs, families-as-institutions, factions, dynasties; reputation; succession.
+- [ ] **Conflict & vice**: rivalries, **crime, theft, assault/fights**, gambling, drinking, affairs/betrayal. *(human pick: conflict/vice)*
+- [ ] **UI depth:** rich inspector, relationship/**family-tree views** (browse ancestry + tombstones), charts (population, wealth, mood), event feed, time controls, search.
+- [ ] **Aesthetic/audio:** pastel/lo-fi styling pass; lo-fi ambient music layer; smoother motion (interpolate entity positions between ticks).
+- [ ] Save/load; scenario seeds; a **YAML config loader** (make `simulation.yaml` the live tunables); balance via the world-health dashboard; performance against budget.
 - [ ] Optional: procedural regeneration of deep history (`SIMULATION_MODEL.md`, Mechanism 6).
 
 **DoD:** open-ended; "refine" lives here once M0–M7 are done.
