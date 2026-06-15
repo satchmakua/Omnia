@@ -47,6 +47,7 @@ life_cycle:
   reproCooldownDays: 4       # a mother's recovery between births
   fertilityMaxAgeYears: 50   # upper age for bearing children
   childMageAptitudeChance: 0.25 # aptitude chance for a child of a mage (heritable, diluting)
+  gatherPerDay: 0.3          # how fast one worker depletes a resource node (M4.5)
 
 # Economy (see docs/ROADMAP.md M3). Agents earn wages, pay a daily cost of living,
 # and work toward a personal wealth goal (which bounds accumulation).

@@ -1,6 +1,6 @@
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_JOB, C_TILEMAP } from '../components.ts';
-import type { Agent, Needs, Position, Flora, Job } from '../components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_JOB, C_RESOURCE, C_TILEMAP } from '../components.ts';
+import type { Agent, Needs, Position, Flora, Job, Resource } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
@@ -34,6 +34,26 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
     agentList.push({ id: ae, x: p.x, y: p.y });
   }
 
+  // Non-empty resource nodes by type (gatherers walk to these to work).
+  const nodesByType = new Map<string, { x: number; y: number }[]>();
+  for (const re of world.query(C_RESOURCE, C_POSITION)) {
+    const r = world.getComponent<Resource>(re, C_RESOURCE)!;
+    if (r.amount <= 0) continue;
+    const p = world.getComponent<Position>(re, C_POSITION)!;
+    const list = nodesByType.get(r.typeId);
+    if (list) list.push({ x: p.x, y: p.y }); else nodesByType.set(r.typeId, [{ x: p.x, y: p.y }]);
+  }
+  const nearestNode = (type: string, x: number, y: number): { x: number; y: number } | null => {
+    const list = nodesByType.get(type);
+    if (!list) return null;
+    let best = Infinity, found: { x: number; y: number } | null = null;
+    for (const n of list) {
+      const d = Math.abs(n.x - x) + Math.abs(n.y - y);
+      if (d < best) { best = d; found = n; }
+    }
+    return found;
+  };
+
   for (const entity of world.query(C_AGENT, C_NEEDS, C_POSITION)) {
     const agent = world.getComponent<Agent>(entity, C_AGENT)!;
     const pos   = world.getComponent<Position>(entity, C_POSITION)!;
@@ -45,12 +65,22 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
     }
 
     if (agent.action === 'work') {
-      // Walk to the employer's tile; the EconomySystem pays once standing on it.
       const job = world.getComponent<Job>(entity, C_JOB);
+      // A gatherer heads for the nearest non-empty node of its resource; the
+      // GatherSystem depletes it once the worker is standing on it.
+      if (job && job.gathers) {
+        const node = nearestNode(job.gathers, pos.x, pos.y);
+        if (node) {
+          if (pos.x !== node.x || pos.y !== node.y) stepToward(pos, node.x, node.y, rng, enterable);
+          continue;
+        }
+        // Resource exhausted everywhere — fall back to the employer.
+      }
+      // Otherwise walk to the employer's tile and work there.
       const ep = job ? world.getComponent<Position>(job.employer, C_POSITION) : undefined;
       if (ep) {
         if (pos.x !== ep.x || pos.y !== ep.y) stepToward(pos, ep.x, ep.y, rng, enterable);
-        continue; // standing on the workplace: stay put and work
+        continue;
       }
       // No job/employer to walk to — fall through to wander.
     }

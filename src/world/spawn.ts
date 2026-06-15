@@ -82,6 +82,7 @@ export function spawnBusiness(
     wagePerTick,
     revenuePerWorkerPerTick: wagePerTick * (1 + cfg.businessRevenueMargin),
     requiresAptitude: def.requiresAptitude,
+    gathers: def.gathers ?? null,
   });
   return e;
 }

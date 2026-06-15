@@ -126,8 +126,11 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 - More traditions for the capability system (alchemy, bio-engineering, ritual) — date: founding.
 - Domestication of fauna; agriculture depth — date: founding.
 - Renderer: interpolate entity positions between ticks for smooth gliding motion (currently entities snap a cell per tick) — date: 2026-06-13.
-- Economy: a real supply/demand **market** (prices, goods, business revenue from actual sales rather than abstract productivity); businesses that can go bankrupt and close — date: 2026-06-13 (deferred from M3 part 1).
-- Capabilities: **resource-consuming crafting** (tech professions like miner/artisan consume nearby ore/timber as they work) + **skill/knowledge gating** for technology (learn-by-doing or apprenticeship) — date: 2026-06-13 (deferred from M3 part 2).
+- Economy: a real supply/demand **market** (prices, goods, business revenue from actual sales rather than abstract productivity); businesses that can go bankrupt and close — date: 2026-06-13 (deferred from M3 part 1). *(Human-requested next after resource gathering.)*
+- Agents **building** structures (homes/businesses) from gathered resources over time, instead of pre-placed — date: 2026-06-14 (human-requested).
+- **Conflict / vice**: rivalries, crime, theft, fights (M8 theme) — date: 2026-06-14 (human-requested).
+- Resource gathering **economic coupling**: gathered resources feed business revenue / crafting, so depletion has real consequences (currently gathering depletes nodes but wages are unaffected) — date: 2026-06-14.
+- Capabilities: **skill/knowledge gating** for technology (learn-by-doing or apprenticeship) — date: 2026-06-13. *(Resource-consuming gathering done 2026-06-14; crafting that consumes them into goods remains.)*
 - Capabilities: **lost arts** — a capability whose last knowledgeable/aptitude-holding practitioner dies becomes "lost" until rediscovered (`MAGIC_AND_TECHNOLOGY.md`) — date: 2026-06-13.
 - Wealth metric: exclude (penniless) children, or weight by adults, so Gini reflects the working economy rather than demographics — date: 2026-06-14.
 - Family-tree / lineage view UI (browse ancestry + tombstones); tie into the Legends view — date: 2026-06-14 (M6/M8).
