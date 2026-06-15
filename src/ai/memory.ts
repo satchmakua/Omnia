@@ -49,3 +49,28 @@ export function buildReflectionPrompt(name: string, tick: number, memories: Memo
   return `[t${tick}] Reflecting on the life of ${name} so far:\n${lines}\n` +
     `In a short phrase, what does ${name} now believe or value?`;
 }
+
+// The three M5-part-2 prompt shapes. Each carries a distinctive cue word ("dream",
+// "resolve", "say to") so a provider — the deterministic stub or a real model —
+// can answer in the right register. Memories ground the line in the agent's life.
+export function buildDreamPrompt(name: string, tick: number, memories: MemoryEntry[]): string {
+  const lines = memories.map(m => `- ${m.text}`).join('\n');
+  return `[t${tick}] ${name} sleeps, their mind drifting over:\n${lines}\n` +
+    `Describe ${name}'s dream in one vivid line.`;
+}
+
+export function buildDialoguePrompt(
+  name: string, other: string, tick: number, memories: MemoryEntry[],
+): string {
+  const lines = memories.map(m => `- ${m.text}`).join('\n');
+  return `[t${tick}] ${name} stands with ${other}. From ${name}'s life:\n${lines}\n` +
+    `Give one short line ${name} might say to ${other}.`;
+}
+
+export function buildDecisionPrompt(
+  name: string, moment: string, tick: number, memories: MemoryEntry[],
+): string {
+  const lines = memories.map(m => `- ${m.text}`).join('\n');
+  return `[t${tick}] ${name} reaches a turning point — ${moment}. Their life so far:\n${lines}\n` +
+    `In one short line, what does ${name} resolve to do?`;
+}
