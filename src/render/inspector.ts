@@ -145,18 +145,22 @@ export class Inspector {
     const healthBlock = health
       ? `<div>Health ${bar(health.value)}${health.ill ? ' <span style="color:#f99">(ill)</span>' : ''}</div>` : '';
 
-    // The inner life: beliefs (from reflection) + a couple of recent memories.
+    // The inner life: beliefs (from reflection), recent dreams/sayings/resolutions,
+    // and a couple of recent memories.
     const mem = world.getComponent<Memory>(e, C_MEMORY);
     let mind = '';
     if (mem && (mem.beliefs.length > 0 || mem.events.length > 0)) {
       const beliefs = mem.beliefs.length
         ? mem.beliefs.map(b => `<div style="color:#bcd">“…${b.text}”</div>`).join('')
         : '<div style="color:#778">no settled beliefs yet</div>';
+      const glyph = { say: '❝', dream: '☾', decide: '➜' } as const;
+      const said = mem.utterances.slice(-3).reverse()
+        .map(u => `<div style="color:#b9c6e6">${glyph[u.kind]} ${u.text}</div>`).join('');
       const recent = mem.events.slice(-3).reverse()
         .map(m => `<div style="color:#99a">· ${m.text}</div>`).join('');
       mind = `<hr style="${RULE}">
         <div style="${SECTION}">Mind &nbsp;<span style="color:#789">${mem.events.length} memories</span></div>
-        ${beliefs}${recent}`;
+        ${beliefs}${said}${recent}`;
     }
 
     return `

@@ -26,7 +26,10 @@ function soulWorld(events: MemoryEntry[] = familyMemories, name = 'Mara') {
   w.addComponent<AIRecord>(rec, C_AIRECORD, { entries: [] });
   const a = w.createEntity();
   w.addComponent<Agent>(a, C_AGENT, { name, action: 'wander', ticksAlive: 50_000, wealthGoal: 50, sex: 'female', lifespanTicks: 1e9 });
-  w.addComponent<Memory>(a, C_MEMORY, { events: [...events], beliefs: [], lastReflectTick: -1e9 });
+  w.addComponent<Memory>(a, C_MEMORY, {
+    events: [...events], beliefs: [], lastReflectTick: -1e9,
+    utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9,
+  });
   return { w, a, rec };
 }
 
@@ -37,7 +40,9 @@ describe('AISystem reflection', () => {
     const mem = w.getComponent<Memory>(a, C_MEMORY)!;
     expect(mem.beliefs.length).toBe(1);
     expect(mem.lastReflectTick).toBe(100_000);
-    expect(w.getComponent<AIRecord>(rec, C_AIRECORD)!.entries.length).toBe(1);
+    // At least the reflection is recorded (the turning-point memory also prompts a
+    // resolution on the same tick — part 2 — so there may be more than one entry).
+    expect(w.getComponent<AIRecord>(rec, C_AIRECORD)!.entries.length).toBeGreaterThanOrEqual(1);
   });
 
   it('does not reflect again within the interval', () => {
@@ -58,7 +63,10 @@ describe('AISystem reflection', () => {
     // add a second eligible agent
     const b = w.createEntity();
     w.addComponent<Agent>(b, C_AGENT, { name: 'Bryn', action: 'wander', ticksAlive: 50_000, wealthGoal: 50, sex: 'male', lifespanTicks: 1e9 });
-    w.addComponent<Memory>(b, C_MEMORY, { events: [...familyMemories], beliefs: [], lastReflectTick: -1e9 });
+    w.addComponent<Memory>(b, C_MEMORY, {
+      events: [...familyMemories], beliefs: [], lastReflectTick: -1e9,
+      utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9,
+    });
 
     runAISystem(w, { ...cfg, maxReflectionsPerTick: 1 }, stubProvider);
     const total = w.query(C_AGENT, C_MEMORY)
@@ -97,14 +105,16 @@ describe('deterministic replay of recorded LLM responses', () => {
     runTicks(recSim.world, recSim.rng, fast, recSim.clockEntity, content, TICKS, new FlakyProvider());
     const record = recSim.world.getComponent<AIRecord>(recSim.world.query(C_AIRECORD)[0], C_AIRECORD)!;
     const recBeliefs = beliefsByEntity(recSim.world);
-    expect(record.entries.length).toBeGreaterThan(0); // reflections happened
+    const recUtters = uttersByEntity(recSim.world);
+    expect(record.entries.length).toBeGreaterThan(0); // reflections/utterances happened
+    expect(Object.keys(recUtters).length).toBeGreaterThan(0); // part 2 actually fired
 
     // Replay run (same seed) reading the recording.
     const repSim = createSimulation(fast, content);
     runTicks(repSim.world, repSim.rng, fast, repSim.clockEntity, content, TICKS, new RecordedProvider(record));
-    const repBeliefs = beliefsByEntity(repSim.world);
 
-    expect(repBeliefs).toEqual(recBeliefs);
+    expect(beliefsByEntity(repSim.world)).toEqual(recBeliefs);
+    expect(uttersByEntity(repSim.world)).toEqual(recUtters); // dialogue/dreams/decisions replay too
   }, 30_000);
 });
 
@@ -113,6 +123,15 @@ function beliefsByEntity(w: World): Record<number, string[]> {
   for (const e of w.query(C_AGENT, C_MEMORY)) {
     const b = w.getComponent<Memory>(e, C_MEMORY)!.beliefs.map(x => x.text);
     if (b.length) out[e] = b;
+  }
+  return out;
+}
+
+function uttersByEntity(w: World): Record<number, string[]> {
+  const out: Record<number, string[]> = {};
+  for (const e of w.query(C_AGENT, C_MEMORY)) {
+    const u = w.getComponent<Memory>(e, C_MEMORY)!.utterances.map(x => `${x.kind}:${x.text}`);
+    if (u.length) out[e] = u;
   }
   return out;
 }
