@@ -71,7 +71,8 @@ export function ageInYears(ticksAlive: number, cfg: SimConfig): number {
   return ticksAlive / ticksPerYear(cfg);
 }
 
-// Mirrors config/simulation.yaml; the YAML loader wires this in a later milestone.
+// Authoritative simulation config. docs/simulation.yaml mirrors these as readable
+// reference but is NOT loaded yet — wiring a YAML config loader is on the roadmap.
 export const defaultConfig: SimConfig = {
   gridWidth: 64,
   gridHeight: 64,
