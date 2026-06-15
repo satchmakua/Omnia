@@ -71,18 +71,18 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **DoD:** the town sustains itself across several generations (no collapse/explosion); family trees form; deaths free agents into tombstones; tested. **Met** — population climbs to a carrying-capacity cap and holds there across 100+ sim-years (0 violations); grandchildren (3rd generation) appear; a dedicated multi-generation test asserts bounded population + a 3-deep lineage. Magic aptitude is heritable (runs in families, stays uncommon).
 
-## ▶ Milestone 5 — The Soul (LLM layer)  *(current — part 1 done)*
+## ✅ Milestone 5 — The Soul (LLM layer)  *(done — 2026-06-15)*
 
 **Goal:** an inner life via the local model, off the hot path.
 
 - [x] `AIProvider` + Ollama; concurrency cap; timeout fallback. *(S12: `AIProvider` interface; deterministic `StubProvider` default (headless/reproducible); `OllamaProvider` opt-in; `AIRunner` queue with concurrency cap + timeout fallback, off the hot path.)*
 - [x] Memory **stream + retrieval** (recency × importance × relevance); **reflection** into beliefs on a schedule. *(S12: `Memory` component; life events captured with importance; embedding-based retrieval; throttled `AISystem` reflection → beliefs.)*
-- [ ] LLM-driven **dialogue** at meaningful moments; major-decision prompting; dreams. *(part 2)*
-- [x] **Record LLM responses into the event log** for deterministic replay. *(S12: responses recorded to an `AIRecord` singleton; `RecordedProvider` replays; a test proves a non-deterministic run replays identically.)*
+- [x] LLM-driven **dialogue** at meaningful moments; major-decision prompting; dreams. *(S13: `AISystem` expression passes — co-located partners/friends exchange a themed line; a fresh turning-point memory (wedding/birth/bereavement, importance ≥ 0.65) prompts a first-person resolution; sleeping agents at night dream from their memories. All on the deterministic `completeSync` path (no RNG), recorded for replay, throttled by a shared per-tick budget + per-agent interval, bounded per agent. Pure flavour — never fed back into the trajectory. Shown in the feed (❝/☾/➜) + the inspector's Mind.)*
+- [x] **Record LLM responses into the event log** for deterministic replay. *(S12: responses recorded to an `AIRecord` singleton; `RecordedProvider` replays; a test proves a non-deterministic run replays identically — now covering utterances as well as beliefs.)*
 
-**DoD:** agents converse and reflect believably within budget (rare, throttled); the sim never stalls on a model call; seed-replay reproduces given recorded responses. *(Reflection + recording/replay + never-stall done & tested; **dialogue/decisions/dreams = part 2**.)*
+**DoD:** agents converse and reflect believably within budget (rare, throttled); the sim never stalls on a model call; seed-replay reproduces given recorded responses. **Met** — dialogue/dreams/resolutions appear, themed and bounded (40k-tick soak: 0 violations, `utters` climbs to ~287 across 60 folk and stays bounded); the soul runs only on the synchronous deterministic path so the tick never blocks; the replay test reproduces both beliefs and utterances of a non-deterministic run. *(Still deferred to backlog: wiring the async `AIRunner`/Ollama path into the live loop so a real model generates across ticks — the seam + recording are ready; the deterministic stub remains the default.)*
 
-## Milestone 6 — History & Legends
+## ▶ Milestone 6 — History & Legends  *(current)*
 
 **Goal:** the compression pipeline — rich history, bounded cost.
 
@@ -138,3 +138,4 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 - Wealth metric: exclude (penniless) children, or weight by adults, so Gini reflects the working economy rather than demographics — date: 2026-06-14.
 - **Wire a YAML config loader**: load `simulation.yaml` (moving it to `config/` per ARCHITECTURE) as the live, authoritative tunables. Today `src/sim/config.ts` is authoritative and the YAML is reference-only — found in the M0–M5 audit — date: 2026-06-14.
 - Family-tree / lineage view UI (browse ancestry + tombstones); tie into the Legends view — date: 2026-06-14 (M6/M8).
+- **Wire the async live-model path into the live loop**: drive `OllamaProvider` through the `AIRunner` (concurrency cap + timeout fallback) so a real model generates dialogue/dreams/reflections across ticks, applied + recorded off the hot path. The seam, runner, and recording are built & tested; only the live wiring + a results-drain step in `AISystem` remain. The deterministic stub stays the default (headless/CI/replay) — date: 2026-06-15 (deferred from M5 part 2).
