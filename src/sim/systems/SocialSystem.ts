@@ -123,8 +123,8 @@ function matchmake(
     const mn = world.getComponent<Agent>(m, C_AGENT)!.name;
     const fn = world.getComponent<Agent>(f, C_AGENT)!.name;
     emitEvent(world, 'marriage', `${mn} and ${fn} were wed.`);
-    remember(world, m, tick, `wed ${fn}`, 0.7, cfg.workingMemorySize);
-    remember(world, f, tick, `wed ${mn}`, 0.7, cfg.workingMemorySize);
+    remember(world, m, tick, `wed ${fn}`, 0.7);
+    remember(world, f, tick, `wed ${mn}`, 0.7);
     if (chronicle) {
       chronicleAdd(chronicle, { tick, importance: 0.7, text: `${mn} and ${fn} were wed.` });
     }

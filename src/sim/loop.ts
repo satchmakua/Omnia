@@ -16,6 +16,7 @@ import { runSocialSystem }   from './systems/SocialSystem.ts';
 import { runReproductionSystem } from './systems/ReproductionSystem.ts';
 import { runHealthSystem }   from './systems/HealthSystem.ts';
 import { runAISystem }       from './systems/AISystem.ts';
+import { runMemorySystem }   from './systems/MemorySystem.ts';
 import { runFaunaSystem }    from './systems/FaunaSystem.ts';
 import type { AIProvider } from '../ai/provider.ts';
 import { stubProvider } from '../ai/stubProvider.ts';
@@ -39,7 +40,8 @@ export function tick(
   runSocialSystem(world, cfg, rng);      // relationships, social need, courtship → marriage
   runReproductionSystem(world, cfg, rng, content); // births → children + lineage
   runHealthSystem(world, cfg, rng);      // illness, ageing, death → tombstones
-  runAISystem(world, cfg, provider);     // the "soul": reflection → beliefs (rare, off hot path)
+  runAISystem(world, cfg, provider);     // the "soul": reflection / dialogue / dreams / decisions (rare)
+  runMemorySystem(world, cfg);           // multi-resolution rollup: old memories → episodic summaries
   runFaunaSystem(world, cfg, rng);       // fauna instinct (graze / breed / die)
 }
 

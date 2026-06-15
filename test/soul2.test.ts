@@ -49,8 +49,8 @@ function addAgent(w: World, o: AgentOpts): EntityId {
     sex: o.sex ?? 'female', lifespanTicks: 1e9,
   });
   w.addComponent<Memory>(e, C_MEMORY, {
-    events: [...(o.events ?? [])], beliefs: [], lastReflectTick: o.reflectTick ?? NOW, // suppress reflection by default
-    utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9,
+    events: [...(o.events ?? [])], summaries: [], beliefs: [], lastReflectTick: o.reflectTick ?? NOW, // suppress reflection
+    lastRollupTick: -1e9, utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9,
   });
   if (o.pos) w.addComponent<Position>(e, C_POSITION, o.pos);
   if (o.edges) w.addComponent<Relationships>(e, C_RELATIONSHIPS, { edges: o.edges });
