@@ -77,9 +77,9 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
     const childName = world.getComponent<Agent>(child, C_AGENT)!.name;
     const motherName = world.getComponent<Agent>(b.mother, C_AGENT)!.name;
     emitEvent(world, 'birth', `${childName} was born to ${motherName}.`);
-    remember(world, b.mother, tick, `their child ${childName} was born`, 0.85, cfg.workingMemorySize);
-    remember(world, b.father, tick, `their child ${childName} was born`, 0.85, cfg.workingMemorySize);
-    remember(world, child, tick, `was born to ${motherName}`, 0.8, cfg.workingMemorySize);
+    remember(world, b.mother, tick, `their child ${childName} was born`, 0.85);
+    remember(world, b.father, tick, `their child ${childName} was born`, 0.85);
+    remember(world, child, tick, `was born to ${motherName}`, 0.8);
     if (chronicle) {
       chronicleAdd(chronicle, { tick, importance: 0.65, text: `${childName} was born to ${motherName}.` });
     }

@@ -48,8 +48,9 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       if (!isPassable(tileMap, p.x, p.y)) inv++;  // M2 invariant: never on water/blocked
       if (w && (w.gold < 0 || w.debt < 0)) inv++; // M3 invariant: no negative gold/debt
       if (h && (h.value < 0 || h.value > 1)) inv++; // M4 invariant: health in [0,1]
-      const m = world.getComponent(e, C_MEMORY) as { utterances: unknown[] } | undefined;
+      const m = world.getComponent(e, C_MEMORY) as { utterances: unknown[]; summaries: unknown[] } | undefined;
       if (m && m.utterances.length > cfg.maxUtterances) inv++; // M5p2 invariant: utterances bounded
+      if (m && m.summaries.length > cfg.maxSummaries) inv++;   // M6 invariant: episodic summaries bounded
     }
 
     // Fauna must also stay on passable land.
@@ -69,11 +70,12 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     const mages = world.query(C_AGENT, C_MAGIC).length;
     const graves = world.query(C_TOMBSTONE).length;
     const nodes = world.query(C_RESOURCE).length;
-    let beliefs = 0, utters = 0;
+    let beliefs = 0, utters = 0, summ = 0;
     for (const e of agents) {
-      const m = world.getComponent(e, C_MEMORY) as { beliefs: unknown[]; utterances: unknown[] } | undefined;
+      const m = world.getComponent(e, C_MEMORY) as
+        { beliefs: unknown[]; utterances: unknown[]; summaries: unknown[] } | undefined;
       if (m && m.beliefs.length > 0) beliefs++;
-      if (m) utters += m.utterances.length;
+      if (m) { utters += m.utterances.length; summ += m.summaries.length; }
     }
     // Average age (years), married folk, and the locally-born (have parents).
     let ageSum = 0, married = 0, born = 0;
@@ -90,7 +92,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     console.log(
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
-      `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters}  ` +
+      `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
       `fauna=${fauna} nodes=${nodes}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
     );
   }

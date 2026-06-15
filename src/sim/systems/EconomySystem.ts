@@ -40,7 +40,7 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
     });
     employees.set(b, (employees.get(b) ?? 0) + 1);
     emitEvent(world, 'work', `${world.getComponent<Agent>(e, C_AGENT)!.name} took work as a ${biz.professionName}.`);
-    remember(world, e, now, `took work as a ${biz.professionName}`, 0.3, cfg.workingMemorySize);
+    remember(world, e, now, `took work as a ${biz.professionName}`, 0.3);
   };
   const hasOpening = (b: EntityId, biz: Business) => (employees.get(b) ?? 0) < biz.maxEmployees;
 

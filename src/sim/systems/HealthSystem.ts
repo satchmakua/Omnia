@@ -38,7 +38,7 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
       health.ill = true;
       if (health.value < 0.4) {
         emitEvent(world, 'illness', `${agent.name} fell gravely ill.`);
-        remember(world, e, tick, 'fell gravely ill', 0.5, cfg.workingMemorySize);
+        remember(world, e, tick, 'fell gravely ill', 0.5);
       }
     } else {
       health.value = Math.min(1, health.value + recovery);
@@ -63,8 +63,8 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const notable = !!(lin && (lin.partner != null || lin.children.length > 0)) || cause === 'old age';
     // Bereavement: the deceased's kin remember the loss (no-ops for the dead).
     if (lin) {
-      if (lin.partner != null) remember(world, lin.partner, tick, `lost their spouse ${agent.name}`, 0.9, cfg.workingMemorySize);
-      for (const child of lin.children) remember(world, child, tick, `lost their parent ${agent.name}`, 0.9, cfg.workingMemorySize);
+      if (lin.partner != null) remember(world, lin.partner, tick, `lost their spouse ${agent.name}`, 0.9);
+      for (const child of lin.children) remember(world, child, tick, `lost their parent ${agent.name}`, 0.9);
     }
     const tomb = killAgent(world, e, tick, cause, tpy);
     emitEvent(world, 'death', `${tomb.name} died of ${cause} at ${ageYears}.`);

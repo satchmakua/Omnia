@@ -11,15 +11,16 @@ import { cosine } from './provider.ts';
 export interface RetrievalWeights { recency: number; importance: number; relevance: number; }
 const DEFAULT_WEIGHTS: RetrievalWeights = { recency: 1, importance: 1.5, relevance: 1 };
 
-// Append a memory to an agent's stream (no-op if it carries no Memory). Bounded to
-// `cap` most-recent entries — multi-resolution rollup of the rest is M6.
+// Append a memory to an agent's stream (no-op if it carries no Memory). Pure append:
+// the scheduled multi-resolution rollup (MemorySystem, M6) is the sole authority that
+// bounds the stream, folding old/trivial events into episodic summaries rather than
+// dropping them blindly (which would flatten the story — D4).
 export function remember(
-  world: World, e: EntityId, tick: number, text: string, importance: number, cap = 40,
+  world: World, e: EntityId, tick: number, text: string, importance: number,
 ): void {
   const mem = world.getComponent<Memory>(e, C_MEMORY);
   if (!mem) return;
   mem.events.push({ tick, text, importance });
-  if (mem.events.length > cap) mem.events.shift();
 }
 
 // Top-n memories for a query, scored by recency × importance × relevance.

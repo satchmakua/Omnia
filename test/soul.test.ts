@@ -27,7 +27,7 @@ function soulWorld(events: MemoryEntry[] = familyMemories, name = 'Mara') {
   const a = w.createEntity();
   w.addComponent<Agent>(a, C_AGENT, { name, action: 'wander', ticksAlive: 50_000, wealthGoal: 50, sex: 'female', lifespanTicks: 1e9 });
   w.addComponent<Memory>(a, C_MEMORY, {
-    events: [...events], beliefs: [], lastReflectTick: -1e9,
+    events: [...events], summaries: [], beliefs: [], lastReflectTick: -1e9, lastRollupTick: -1e9,
     utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9,
   });
   return { w, a, rec };
@@ -64,7 +64,7 @@ describe('AISystem reflection', () => {
     const b = w.createEntity();
     w.addComponent<Agent>(b, C_AGENT, { name: 'Bryn', action: 'wander', ticksAlive: 50_000, wealthGoal: 50, sex: 'male', lifespanTicks: 1e9 });
     w.addComponent<Memory>(b, C_MEMORY, {
-      events: [...familyMemories], beliefs: [], lastReflectTick: -1e9,
+      events: [...familyMemories], summaries: [], beliefs: [], lastReflectTick: -1e9, lastRollupTick: -1e9,
       utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9,
     });
 
