@@ -1,0 +1,12 @@
+# Drakhan clans — proud, martial, insular folk of the hard tongue. Hold to clan and
+# tradition; individual standing matters; wary of outsiders.
+id: "drakhan_clans"
+name: "Drakhan Clans"
+language: "drakhan"
+values:
+  communal: 0.35      # clan loyalty, but personal standing prized → harder accumulators
+  martial: 0.70
+  traditional: 0.80
+  open: 0.20          # insular
+practices: ["clan-honour", "forge-rite"]
+cohesion: 0.70        # strongly resists drift

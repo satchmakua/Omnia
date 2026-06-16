@@ -16,6 +16,7 @@ import type { RNG } from './rng.ts';
 import type { Species } from '../content/schema.ts';
 import type { Content } from '../content/loader.ts';
 import { personalName, familyName } from '../lang/language.ts';
+import { getCultureStore, getCulture, cultureForLanguage, wealthGoalFactor } from '../culture/cultureStore.ts';
 
 export interface SpawnOpts {
   x: number;
@@ -24,6 +25,7 @@ export interface SpawnOpts {
   parents?: EntityId[];        // empty/undefined for founders
   aptitudeChance?: number;     // overrides the species default (lineage boost for children of mages)
   surname?: string;            // inherited family name (children); founders coin a new one
+  cultureId?: string;          // inherited culture (children); founders take their species' culture
 }
 
 export function spawnAgent(
@@ -33,7 +35,14 @@ export function spawnAgent(
   const isChild = (opts.parents?.length ?? 0) > 0;
   const sex: Sex = rng() < 0.5 ? 'male' : 'female';
   const lifespanTicks = Math.floor(rngFloat(rng, species.lifespanYears.min, species.lifespanYears.max) * tpy);
-  const wealthGoal = rngFloat(rng, cfg.wealthGoalMin, cfg.wealthGoalMax);
+  const wealthGoalBase = rngFloat(rng, cfg.wealthGoalMin, cfg.wealthGoalMax);
+
+  // Culture: founders take their species' culture; children inherit a parent's.
+  // The culture's values causally bias behaviour — communal folk aim for less wealth (D26).
+  const store = getCultureStore(world);
+  const cultureId = opts.cultureId ?? (store ? cultureForLanguage(store, species.language) : undefined);
+  const culture = cultureId && store ? getCulture(store, cultureId) : undefined;
+  const wealthGoal = culture ? wealthGoalBase * wealthGoalFactor(culture.values) : wealthGoalBase;
 
   const e = world.createEntity();
   // Language-derived naming (M7): given name from this agent's tongue + a surname
@@ -59,7 +68,8 @@ export function spawnAgent(
     energyMult: species.needs.energy,
   });
   world.addComponent<Agent>(e, C_AGENT, {
-    name, surname, tongue: lang.name, action: 'wander', ticksAlive: opts.ageTicks, wealthGoal, sex, lifespanTicks,
+    name, surname, tongue: lang.name, cultureId, action: 'wander',
+    ticksAlive: opts.ageTicks, wealthGoal, sex, lifespanTicks,
   });
   world.addComponent<Health>(e, C_HEALTH, { value: 1, ill: false });
   world.addComponent<Relationships>(e, C_RELATIONSHIPS, { edges: {} });

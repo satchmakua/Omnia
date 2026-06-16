@@ -148,6 +148,28 @@ export const LanguageSchema = z.object({
 
 export type Language = z.infer<typeof LanguageSchema>;
 
+// ── Culture ───────────────────────────────────────────────────────────────────
+// A seed culture (CULTURE_AND_LANGUAGE.md, M7): positions on a handful of value
+// axes (each 0..1, the field naming the "high" pole), practices, the tongue it
+// speaks, and a cohesion (resistance to drift, slice 3). Cultures are shared objects
+// agents merely reference — and their values **causally bias behaviour** (D26).
+export const CultureSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  language: z.string().min(1),   // the tongue this culture speaks
+  values: z.object({
+    communal: z.number().min(0).max(1).default(0.5),     // communal ↔ individual
+    martial: z.number().min(0).max(1).default(0.5),      // martial ↔ mercantile
+    traditional: z.number().min(0).max(1).default(0.5),  // traditional ↔ innovative
+    open: z.number().min(0).max(1).default(0.5),         // open ↔ insular
+  }).strict(),
+  practices: z.array(z.string()).default([]),
+  cohesion: z.number().min(0).max(1).default(0.5),       // resistance to value drift (M7 slice 3)
+}).strict();
+
+export type Culture = z.infer<typeof CultureSchema>;
+export type CultureValues = Culture['values'];
+
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
 export const FOLDER_SCHEMAS = {
@@ -159,6 +181,7 @@ export const FOLDER_SCHEMAS = {
   resources: ResourceSchema,
   professions: ProfessionSchema,
   languages: LanguageSchema,
+  cultures: CultureSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

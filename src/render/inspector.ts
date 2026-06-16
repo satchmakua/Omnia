@@ -12,6 +12,7 @@ import { biomeNameAt, inBounds } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { ageInYears } from '../sim/config.ts';
 import { defaultConfig } from '../sim/config.ts';
+import { getCultureStore, getCulture } from '../culture/cultureStore.ts';
 
 function bar(v: number): string {
   const filled = Math.max(0, Math.min(10, Math.round(v * 10)));
@@ -193,8 +194,26 @@ export class Inspector {
       ${debtLine}
       <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>
       ${family}
+      ${this._cultureBlock(world, agent)}
       ${magicBlock}
       ${mind}`;
+  }
+
+  // Culture: the value axes that bias this person's behaviour (M7), shown as bars
+  // with the high pole named, plus their practices.
+  private _cultureBlock(world: World, agent: Agent): string {
+    const store = getCultureStore(world);
+    const c = agent.cultureId && store ? getCulture(store, agent.cultureId) : undefined;
+    if (!c) return '';
+    const axis = (label: string, v: number) => `<div>${label} ${bar(v)}</div>`;
+    return `<hr style="${RULE}">
+      <div style="${SECTION}">Culture</div>
+      <div><b>${c.name}</b></div>
+      ${axis('Communal', c.values.communal)}
+      ${axis('Martial', c.values.martial)}
+      ${axis('Traditional', c.values.traditional)}
+      ${axis('Open', c.values.open)}
+      ${c.practices.length ? `<div style="color:#889;margin-top:3px">${c.practices.join(', ')}</div>` : ''}`;
   }
 
   private _business(world: World, e: EntityId, pos: Position): string {
