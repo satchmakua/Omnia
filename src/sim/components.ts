@@ -21,6 +21,7 @@ export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/hist
 export const C_EVENTLOG  = 'EventLog';  // singleton: live activity feed (src/history/eventlog.ts)
 export const C_WORLDSTATS = 'WorldStats'; // singleton: statistical strata (src/history/stats.ts)
 export const C_CULTURESTORE = 'CultureStore'; // singleton: live cultures (src/culture/cultureStore.ts)
+export const C_LANGUAGESTORE = 'LanguageStore'; // singleton: live languages (src/lang/languageStore.ts)
 
 export interface Position {
   x: number;

@@ -6,6 +6,7 @@ import { C_CULTURESTORE } from '../sim/components.ts';
 import type { World } from '../sim/ecs.ts';
 import type { Content } from '../content/loader.ts';
 import type { Culture, CultureValues } from '../content/schema.ts';
+import type { RNG } from '../sim/rng.ts';
 
 // A live culture: the authored shape plus optional descent bookkeeping (slice 4).
 export interface RuntimeCulture extends Culture {
@@ -15,6 +16,7 @@ export interface RuntimeCulture extends Culture {
 
 export interface CultureStoreData {
   byId: Record<string, RuntimeCulture>;
+  lastEvolveTick: number;   // the generational evolution clock (slice 3)
 }
 
 // Seed from the authored cultures, deep-cloned so runtime drift never mutates the
@@ -24,7 +26,18 @@ export function createCultureStore(content: Content): CultureStoreData {
   for (const c of content.cultures.all()) {
     byId[c.id] = { ...c, values: { ...c.values }, practices: [...c.practices] };
   }
-  return { byId };
+  return { byId, lastEvolveTick: -1e9 };
+}
+
+const AXES: (keyof CultureValues)[] = ['communal', 'martial', 'traditional', 'open'];
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+
+// Drift a culture's values one era (M7 slice 3): a small random walk on each axis,
+// damped by the culture's cohesion (a tight-knit culture resists change). Mutates
+// in place; deterministic via `rng`.
+export function driftValues(c: RuntimeCulture, base: number, rng: RNG): void {
+  const amt = base * (1 - c.cohesion);
+  for (const k of AXES) c.values[k] = clamp01(c.values[k] + (rng() * 2 - 1) * amt);
 }
 
 export function getCultureStore(world: World): CultureStoreData | undefined {

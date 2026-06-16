@@ -79,6 +79,9 @@ export interface SimConfig {
   chronicleMaxEras: number;            // compressed eras kept; oldest merge when exceeded
   statsSampleIntervalDays: number;     // how often world-health strata are sampled
   maxStatSamples: number;              // bounded length of the strata time-series
+  // Culture & language evolution (M7 slice 3):
+  evolutionIntervalDays: number;       // an "era" — how often languages/cultures drift
+  valueDriftPerEra: number;            // base magnitude of a culture's value random walk (damped by cohesion)
 }
 
 export function ticksPerYear(cfg: SimConfig): number {
@@ -162,4 +165,6 @@ export const defaultConfig: SimConfig = {
   chronicleMaxEras: 8,            // a handful of compressed ages; older ones merge
   statsSampleIntervalDays: 4,     // sample world-health once a sim-year (daysPerYear)
   maxStatSamples: 80,             // ~80 years of time-series, then the oldest rolls off
+  evolutionIntervalDays: 20,      // an era ≈ 5 sim-years (daysPerYear×5); several eras over a soak
+  valueDriftPerEra: 0.05,         // gentle value drift; cohesion damps it further
 };

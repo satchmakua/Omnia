@@ -16,6 +16,7 @@ import type { RNG } from './rng.ts';
 import type { Species } from '../content/schema.ts';
 import type { Content } from '../content/loader.ts';
 import { personalName, familyName } from '../lang/language.ts';
+import { getLanguageStore, getLanguage } from '../lang/languageStore.ts';
 import { getCultureStore, getCulture, cultureForLanguage, wealthGoalFactor } from '../culture/cultureStore.ts';
 
 export interface SpawnOpts {
@@ -47,8 +48,10 @@ export function spawnAgent(
   const e = world.createEntity();
   // Language-derived naming (M7): given name from this agent's tongue + a surname
   // inherited down the lineage (founders coin their own). Keyed by entity id, so it
-  // regenerates identically and consumes no simulation RNG.
-  const lang = content.languages.require(species.language);
+  // regenerates identically and consumes no simulation RNG. Resolved from the runtime
+  // store so a drifted tongue names its later-born children differently (slice 3).
+  const langStore = getLanguageStore(world);
+  const lang = (langStore && getLanguage(langStore, species.language)) ?? content.languages.require(species.language);
   const given = personalName(lang, String(e));
   const surname = opts.surname ?? familyName(lang, String(e));
   const name = `${given} ${surname}`;
