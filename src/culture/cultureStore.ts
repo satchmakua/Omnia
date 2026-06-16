@@ -8,10 +8,13 @@ import type { Content } from '../content/loader.ts';
 import type { Culture, CultureValues } from '../content/schema.ts';
 import type { RNG } from '../sim/rng.ts';
 
-// A live culture: the authored shape plus optional descent bookkeeping (slice 4).
+// A live culture: the authored shape plus descent (M7 slice 4) + extinction (M7 slice 5)
+// bookkeeping. A culture with no living members is kept as a compact descent record.
 export interface RuntimeCulture extends Culture {
   parent?: string;       // id of the culture this split from
   foundedTick?: number;  // when a daughter culture formed
+  extinct?: boolean;     // no living members — a lost culture, kept for the family tree
+  diedTick?: number;     // when it died out
 }
 
 export interface CultureStoreData {
