@@ -206,9 +206,10 @@ export class Inspector {
     const c = agent.cultureId && store ? getCulture(store, agent.cultureId) : undefined;
     if (!c) return '';
     const axis = (label: string, v: number) => `<div>${label} ${bar(v)}</div>`;
+    const parent = c.parent && store && store.byId[c.parent] ? store.byId[c.parent].name : null;
     return `<hr style="${RULE}">
       <div style="${SECTION}">Culture</div>
-      <div><b>${c.name}</b></div>
+      <div><b>${c.name}</b>${parent ? ` <span style="color:#889">⟵ ${parent}</span>` : ''}</div>
       ${axis('Communal', c.values.communal)}
       ${axis('Martial', c.values.martial)}
       ${axis('Traditional', c.values.traditional)}

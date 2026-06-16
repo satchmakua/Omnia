@@ -26,7 +26,7 @@ export function createCultureStore(content: Content): CultureStoreData {
   for (const c of content.cultures.all()) {
     byId[c.id] = { ...c, values: { ...c.values }, practices: [...c.practices] };
   }
-  return { byId, lastEvolveTick: -1e9 };
+  return { byId, lastEvolveTick: 0 };  // hold the seed state for the first era
 }
 
 const AXES: (keyof CultureValues)[] = ['communal', 'martial', 'traditional', 'open'];
@@ -38,6 +38,31 @@ const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 export function driftValues(c: RuntimeCulture, base: number, rng: RNG): void {
   const amt = base * (1 - c.cohesion);
   for (const k of AXES) c.values[k] = clamp01(c.values[k] + (rng() * 2 - 1) * amt);
+}
+
+// Fork a daughter culture from a parent (a schism, M7 slice 4): copy it, give it the
+// new daughter tongue and a name tied to it, link the descent, make it a tight new
+// sect (higher cohesion), and nudge its values so it is already distinct.
+export function forkCulture(
+  store: CultureStoreData, parentId: string, langId: string, langName: string,
+  tick: number, nudge: number, rng: RNG,
+): string {
+  const parent = store.byId[parentId];
+  const newId = `${parentId}.d${tick}`;
+  const daughter: RuntimeCulture = {
+    ...parent,
+    id: newId,
+    name: `${langName}-kin`,
+    language: langId,
+    parent: parentId,
+    foundedTick: tick,
+    values: { ...parent.values },
+    practices: [...parent.practices],
+    cohesion: clamp01(parent.cohesion + 0.1),
+  };
+  driftValues(daughter, nudge, rng);
+  store.byId[newId] = daughter;
+  return newId;
 }
 
 export function getCultureStore(world: World): CultureStoreData | undefined {

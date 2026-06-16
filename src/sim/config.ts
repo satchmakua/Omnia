@@ -82,6 +82,10 @@ export interface SimConfig {
   // Culture & language evolution (M7 slice 3):
   evolutionIntervalDays: number;       // an "era" — how often languages/cultures drift
   valueDriftPerEra: number;            // base magnitude of a culture's value random walk (damped by cohesion)
+  // Schism / divergence (M7 slice 4):
+  schismChancePerEra: number;          // per-era chance a culture fractures (damped by cohesion)
+  minSchismMembers: number;            // a culture needs at least this many living members to schism
+  schismValueNudge: number;            // how strongly a daughter culture's values jump from the parent
 }
 
 export function ticksPerYear(cfg: SimConfig): number {
@@ -167,4 +171,7 @@ export const defaultConfig: SimConfig = {
   maxStatSamples: 80,             // ~80 years of time-series, then the oldest rolls off
   evolutionIntervalDays: 20,      // an era ≈ 5 sim-years (daysPerYear×5); several eras over a soak
   valueDriftPerEra: 0.05,         // gentle value drift; cohesion damps it further
+  schismChancePerEra: 0.7,        // ×(1−cohesion); self-limited by minSchismMembers → ~1–2 over a deep run (M7 DoD)
+  minSchismMembers: 8,            // small cultures don't fracture
+  schismValueNudge: 0.2,          // the daughter starts noticeably apart from the parent
 };
