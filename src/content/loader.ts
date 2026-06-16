@@ -6,7 +6,7 @@ import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { FOLDER_SCHEMAS } from './schema.ts';
 import type {
-  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, ContentFolder,
+  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, ContentFolder,
 } from './schema.ts';
 import { Registry } from './registry.ts';
 import { isKnownEffectTag } from '../capability/effects.ts';
@@ -20,6 +20,7 @@ export interface Content {
   resources: Registry<Resource>;
   professions: Registry<Profession>;
   languages: Registry<Language>;
+  cultures: Registry<Culture>;
 }
 
 // Relative path like "species/human.yaml" -> "species".
@@ -43,7 +44,7 @@ function formatZodError(relPath: string, err: z.ZodError): string {
  */
 export function loadContent(files: Map<string, string>): Content {
   const buckets: Record<ContentFolder, unknown[]> = {
-    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [],
+    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [],
   };
   const errors: string[] = [];
 
@@ -103,6 +104,7 @@ export function loadContent(files: Map<string, string>): Content {
   let resources: Registry<Resource>;
   let professions: Registry<Profession>;
   let languages: Registry<Language>;
+  let cultures: Registry<Culture>;
   try {
     species = new Registry(buckets.species as Species[]);
     capabilities = new Registry(buckets.capabilities as Capability[]);
@@ -112,6 +114,7 @@ export function loadContent(files: Map<string, string>): Content {
     resources = new Registry(buckets.resources as Resource[]);
     professions = new Registry(buckets.professions as Profession[]);
     languages = new Registry(buckets.languages as Language[]);
+    cultures = new Registry(buckets.cultures as Culture[]);
   } catch (e) {
     throw new Error(`Content failed to load: ${(e as Error).message}`);
   }
@@ -140,6 +143,12 @@ export function loadContent(files: Map<string, string>): Content {
       refErrors.push(`professions/${prof.id}: gathers unknown resource '${prof.gathers}'`);
     }
   }
+  // A culture must speak a tongue that exists.
+  for (const culture of cultures.all()) {
+    if (!languages.has(culture.language)) {
+      refErrors.push(`cultures/${culture.id}: speaks unknown language '${culture.language}'`);
+    }
+  }
   if (refErrors.length > 0) {
     throw new Error(
       `Content failed to load (${refErrors.length} problem${refErrors.length > 1 ? 's' : ''}):\n` +
@@ -147,5 +156,5 @@ export function loadContent(files: Map<string, string>): Content {
     );
   }
 
-  return { species, capabilities, biomes, flora, fauna, resources, professions, languages };
+  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures };
 }

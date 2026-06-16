@@ -88,11 +88,14 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     const graves = world.query(C_TOMBSTONE).length;
     const nodes = world.query(C_RESOURCE).length;
     let beliefs = 0, utters = 0, summ = 0;
+    const cultureSet = new Set<string>();
     for (const e of agents) {
       const m = world.getComponent(e, C_MEMORY) as
         { beliefs: unknown[]; utterances: unknown[]; summaries: unknown[] } | undefined;
       if (m && m.beliefs.length > 0) beliefs++;
       if (m) { utters += m.utterances.length; summ += m.summaries.length; }
+      const a = world.getComponent(e, C_AGENT) as { cultureId?: string } | undefined;
+      if (a?.cultureId) cultureSet.add(a.cultureId);
     }
     // Average age (years), married folk, and the locally-born (have parents).
     let ageSum = 0, married = 0, born = 0;
@@ -110,7 +113,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `fauna=${fauna} nodes=${nodes} eras=${eras} samples=${samples}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
+      `fauna=${fauna} nodes=${nodes} eras=${eras} samples=${samples} cultures=${cultureSet.size}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
     );
   }
 }

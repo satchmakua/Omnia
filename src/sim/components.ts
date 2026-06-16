@@ -20,6 +20,7 @@ export const C_TILEMAP   = 'TileMap';   // singleton: the terrain grid (src/worl
 export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/history/chronicle.ts)
 export const C_EVENTLOG  = 'EventLog';  // singleton: live activity feed (src/history/eventlog.ts)
 export const C_WORLDSTATS = 'WorldStats'; // singleton: statistical strata (src/history/stats.ts)
+export const C_CULTURESTORE = 'CultureStore'; // singleton: live cultures (src/culture/cultureStore.ts)
 
 export interface Position {
   x: number;
@@ -50,6 +51,7 @@ export interface Agent {
   lifespanTicks: number; // rolled from species lifespan; mortality ramps as age nears it
   surname?: string;     // family name, inherited down a lineage (M7)
   tongue?: string;      // display name of the language they're named from (M7 legibility)
+  cultureId?: string;   // the culture they belong to (M7); its values bias behaviour (D26)
 }
 
 // Innate magic aptitude — present on only the rare agents who rolled it at birth

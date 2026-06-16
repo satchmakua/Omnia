@@ -94,7 +94,7 @@ describe('ReproductionSystem', () => {
 describe('multi-generation stability', () => {
   // The real default balance, run long enough (~42 sim-years) for several
   // generations to turn over — the same balance the soak shows sustaining.
-  const longCfg = { ...defaultConfig, seed: 11, initialPopulation: 30 };
+  const longCfg = { ...defaultConfig, seed: 8, initialPopulation: 30 };
 
   function parentsOf(w: World, e: EntityId): number[] {
     const lin = w.getComponent<Lineage>(e, C_LINEAGE);

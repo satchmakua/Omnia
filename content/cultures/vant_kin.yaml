@@ -1,0 +1,12 @@
+# Vant-kin — settled, communal folk of the soft tongue. Share readily, slow to war,
+# fond of the old ways but not closed to outsiders.
+id: "vant_kin"
+name: "Vant-kin"
+language: "old_vant"
+values:
+  communal: 0.75      # share readily; modest personal ambition
+  martial: 0.30       # mercantile over martial
+  traditional: 0.60
+  open: 0.55
+practices: ["ancestor-veneration", "communal-harvest"]
+cohesion: 0.55
