@@ -63,6 +63,9 @@ export class LegendsPanel {
     if (this.visible) this.render(world);
   }
 
+  hide(): void { this.visible = false; this.panel.style.display = 'none'; }
+  get isOpen(): boolean { return this.visible; }
+
   private get<T>(world: World, comp: string): T | undefined {
     const ents = world.query(comp);
     return ents.length ? world.getComponent<T>(ents[0], comp) : undefined;

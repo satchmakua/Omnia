@@ -6,7 +6,7 @@ import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { FOLDER_SCHEMAS } from './schema.ts';
 import type {
-  Species, Capability, Biome, Flora, Fauna, Resource, Profession, ContentFolder,
+  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, ContentFolder,
 } from './schema.ts';
 import { Registry } from './registry.ts';
 import { isKnownEffectTag } from '../capability/effects.ts';
@@ -19,6 +19,7 @@ export interface Content {
   fauna: Registry<Fauna>;
   resources: Registry<Resource>;
   professions: Registry<Profession>;
+  languages: Registry<Language>;
 }
 
 // Relative path like "species/human.yaml" -> "species".
@@ -42,7 +43,7 @@ function formatZodError(relPath: string, err: z.ZodError): string {
  */
 export function loadContent(files: Map<string, string>): Content {
   const buckets: Record<ContentFolder, unknown[]> = {
-    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [],
+    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [],
   };
   const errors: string[] = [];
 
@@ -101,6 +102,7 @@ export function loadContent(files: Map<string, string>): Content {
   let fauna: Registry<Fauna>;
   let resources: Registry<Resource>;
   let professions: Registry<Profession>;
+  let languages: Registry<Language>;
   try {
     species = new Registry(buckets.species as Species[]);
     capabilities = new Registry(buckets.capabilities as Capability[]);
@@ -109,6 +111,7 @@ export function loadContent(files: Map<string, string>): Content {
     fauna = new Registry(buckets.fauna as Fauna[]);
     resources = new Registry(buckets.resources as Resource[]);
     professions = new Registry(buckets.professions as Profession[]);
+    languages = new Registry(buckets.languages as Language[]);
   } catch (e) {
     throw new Error(`Content failed to load: ${(e as Error).message}`);
   }
@@ -144,5 +147,5 @@ export function loadContent(files: Map<string, string>): Content {
     );
   }
 
-  return { species, capabilities, biomes, flora, fauna, resources, professions };
+  return { species, capabilities, biomes, flora, fauna, resources, professions, languages };
 }

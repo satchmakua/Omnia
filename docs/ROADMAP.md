@@ -92,30 +92,53 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 **DoD:** after many generations, total state stays bounded *and* Legends reads like a story, not a spreadsheet (the qualitative test in `SIMULATION_MODEL.md`). **Met** — 40k-tick soak: 0 violations, eras bounded (≤8, saw 3), strata samples bounded (≤80, saw 38), Chronicle/memory bounded; verified live that Legends opens with named recent legends + a founding-cataclysm era preserved by name + ordinary events as tallies + world-health charts.
 
-## ▶ Milestone 6.5 — Visual & UI Overhaul  *(current — slice 1 done; human-requested, inserted after M6)*
+## ✅ Milestone 6.5 — Visual & UI Overhaul  *(done — 2026-06-15; human-requested, inserted after M6)*
 
 **Goal:** make the simulation *legible* — recognizable map symbols (map-legend clarity, not invisible per-race outlines), a camera you can zoom/pan, and a more sophisticated UI (menus + hotkey dashboards). Readability before lo-fi polish; D13's aesthetic pass still comes later.
 
 - [x] **Readability core (slice 1):** a **category-first icon set** (dual-coded shape + accent colour, in `render/icons.ts`) replacing the per-race silhouettes — one folk icon (races not distinguished, per the human), folk **state badges** (mage ✦ / ill ✚ / action / child-as-smaller), distinct **animal / plant / ore / timber / crystal / building** icons, and a **dormant hostile** slot reserved for M8. A **camera**: wheel-zoom toward the cursor, drag + arrow-key pan (+/− zoom), clamped to the map; click-to-inspect made camera-aware. An on-screen **legend key** (`render/legend.ts`, `L`). *(S16)*
 - [x] **Menus (slice 2):** a **start menu** (new simulation with a chosen seed, how-to-play) and an in-game **pause menu** (resume, restart-same-seed, quit to menu), via a `menu`/`running`/`paused` state machine in `main.ts` (Esc). The sim is now (re)created on demand, so seeds can be tried without reload. *(S17)*
 - [x] **Liveliness + collision + minimizable panels** (S17, human-requested alongside slice 2): mobile creatures (folk + fauna) **never share a tile** (`Occupancy` in `movementUtil`; soak invariant), which also fixed the *stuck-coworkers-freeze* bug; **social/dialogue moved to adjacency** (the 8-neighbourhood) so company still meets the need under collision; a small **work fidget** keeps employed folk from looking frozen; the always-on overlays (legend, Town Happenings) are now **minimizable** via a shared collapsible header (`panelUtil`).
-- [ ] **Hotkey dashboards (slice 3):** sophisticated info panels brought up by hotkey — population/charts, economy, relationships/**family tree**, search/directory — layered on the existing inspector + Legends. *(plus: a settings panel; more menu options.)*
+- [x] **Hotkey dashboards (slice 3):** a shared modal base (`modalPanel`) drives three live, mutually-exclusive dashboards — **Economy** (E: wealth distribution, employment, every business with staff/balance/wage), **Directory** (F: searchable roster of all folk; click a row to inspect + jump the camera there via `renderer.centerOn`), **Family tree** (T: four-generation lineage of the inspected person, resolving the dead through tombstones; click relatives to browse the line). Population/wealth **charts** already live in the Legends view (C). A basic **Settings** (seed) was added to the pause menu. Esc backs out of a dashboard before pausing. *(S18)*
 
-**DoD:** at a glance you can tell folk from animals from plants from resources from buildings (and, later, hostiles); you can zoom into a household or pull back to the whole town and scroll around; menus and the dashboards make the sim's depth browsable. Slices land one at a time; the aesthetic/audio polish (D13) remains M8.
+**DoD:** at a glance you can tell folk from animals from plants from resources from buildings (and, later, hostiles); you can zoom into a household or pull back to the whole town and scroll around; menus and the dashboards make the sim's depth browsable. **Met** — verified live: readable category-first map + camera (slice 1), start/pause menus (slice 2), and the Economy/Directory/Family dashboards (slice 3), all green & no console errors. The aesthetic/audio polish (D13) remains M8.
 
-*Future tweaks noted:* graves on the map (a visible cemetery — needs tombstones to keep a `Position`); optionally distinguish animal species / pull the hostile treatment live in M8; a fuller settings panel.
+*Future tweaks noted:* graves on the map (a visible cemetery — needs tombstones to keep a `Position`); distinguish animal species / pull the hostile treatment live in M8; a fuller settings panel + more menu options.
 
-## Milestone 7 — Culture & Language (deep)
+## ▶ Milestone 7 — Culture & Language (deep)  *(current)*
 
-**Goal:** evolving cultures, languages, and names (`CULTURE_AND_LANGUAGE.md`).
+**Goal:** evolving cultures and languages that **causally shape behaviour** (D26) and are **visibly legible** to the player (D27) — names, dialects, value drift, divergence, schism (`CULTURE_AND_LANGUAGE.md`). The keystone of the "two loops" thesis (D25).
 
-- [ ] Language model (phonology, phonotactics, on-demand lexicon, light morphology) from seed YAML.
-- [ ] Evolution on a generational schedule: sound change, drift, **divergence into families**, contact/borrowing.
-- [ ] Culture model (value axes, practices) with drift, **schism**, and blend.
-- [ ] Replace the M1 placeholder naming with **language-derived naming**; names drift over time.
-- [ ] Dead languages/cultures compress to descent-trees; the Chronicle remembers schisms and lost tongues.
+Slices land one at a time, holding the **D12 tenability line** (few shared objects, slow generational schedule, procedural not LLM, generate-on-demand lexicons, compress the dead, deliberately **light grammar** — never a full syntax engine):
 
-**DoD:** starting from seed cultures/languages, the sim produces a language family tree and at least one cultural schism over deep time, while staying within the performance budget; tested for tenability (object counts and per-era cost bounded).
+- [ ] **Slice 1 — Seed language model + language-derived naming.** A `languages` content type (phonemes, syllable shapes, name patterns, light morphology, sound-change rate) + a deterministic, on-demand word/name generator (regenerates identically from rules + seed; no stored lexicons). Retire the M1 placeholder namer so names *sound like their tongue*.
+- [ ] **Slice 2 — Seed culture model (CAUSAL).** A `cultures` content type (value axes, practices, cohesion, language ref); cultures are shared objects agents reference (single digits, not per-agent). **Value axes bias behaviour** (D26) — introduced *small + soak-gated* (e.g. communal↔individual → sharing / wealth-goal; martial seeds future conflict). Surfaced in the inspector + a culture panel.
+- [ ] **Slice 3 — Evolution engine.** A generational scheduled pass (reusing the M6 pattern): probabilistic sound change drifts a language into a daughter; cultural values drift slowly and in response to events (famine→thrift, war→militarism). Deterministic, procedural, off the hot path.
+- [ ] **Slice 4 — Divergence → families & schism.** A population split / cohesion drop forks a daughter language/culture that accumulates *independent* drift → a **family tree**; the Chronicle records schisms and lost tongues. Contact/borrowing as a stretch.
+- [ ] **Slice 5 — Compression + the legibility lens.** Dead tongues/cultures compress to compact descent records (like tombstones); a **"lineages of tongues & cultures" lens** (D27) lets the player *see* the evolution — the family tree, a name's then-vs-now, a culture's value bars shifting across the years.
+
+**DoD:** from seed cultures/languages the sim produces a **language family tree** and **≥1 cultural schism** over deep time; **culture measurably changes behaviour** (a test shows a value axis shifting an action/outcome distribution); the evolution is **visible in-app**, not just in the data; within the performance budget; tenability tested (object counts + per-era cost bounded).
+
+## Milestone 7.5 — Live Model Integration (the real soul, opt-in)  *(D28)*
+
+**Goal:** wire the live local model (Ollama) through the existing `AIRunner` as an **opt-in mode** so dialogue, dreams, reflection, and language/culture **glosses** become genuinely novel — the deterministic stub stays the default for headless/CI/replay.
+
+- [ ] Drive `OllamaProvider` async off the hot path; apply results across ticks; **record** every response (replay stays exact).
+- [ ] A drain/apply step in `AISystem`; graceful timeout fallback to the stub.
+- [ ] A toggle (config/menu) for stub vs. live; document the local-model setup.
+
+**DoD:** with a model installed, agents converse/gloss in genuinely varied language within budget, never stalling the tick; the run records and replays identically via `RecordedProvider`; with no model installed, nothing changes (stub default).
+
+## Milestone 7.7 — Science & Instrumentation  *(D29)*
+
+**Goal:** cash in the perfect determinism as real experiment tooling — turn "it didn't crash" (verification) into "it reproduces a known pattern" (validation).
+
+- [ ] **Measure** emergent structure: wealth/Pareto fit, social-network metrics (clustering, path length, small-worldness), demographic curves, Zipfian word/name frequency, language-family shape.
+- [ ] **Sweep** parameters to locate phase transitions / tipping points (e.g. population-collapse and overgrazing thresholds).
+- [ ] **Export/diff** runs: event-log/CSV export, run manifests (seed + config), a run-diff.
+- [ ] Surface key metrics in the Legends / charts views.
+
+**DoD:** a documented analysis showing ≥1 emergent statistical regularity (e.g. an approximately power-law wealth tail or a small-world social graph) and ≥1 located phase transition, reproducible from an exported manifest.
 
 ## Milestone 8+ — Economy Depth, Building, Social Structures, Vice, UI & Refinement
 
@@ -139,6 +162,7 @@ Each milestone has a **Goal** and a **Definition of Done (DoD)**. A milestone is
 
 *(Append new ideas here with a date. Do not build directly from this list.)*
 
+- **God-sim fork (future direction, D30):** give the player in-sim agency — nudges, triggered events, set goals. Designed-*for* now (a player intervention is just another recordable event in the deterministic log) but **not built**; the human may fork here once the observed world is compelling enough — date: 2026-06-15.
 - More traditions for the capability system (alchemy, bio-engineering, ritual) — date: founding.
 - Domestication of fauna; agriculture depth — date: founding.
 - Renderer: interpolate entity positions between ticks for smooth gliding motion (currently entities snap a cell per tick) — date: 2026-06-13.

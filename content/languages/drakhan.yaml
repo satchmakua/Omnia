@@ -1,0 +1,11 @@
+# Drakhan — a hard, clustered tongue (closed syllables, stops and gutturals).
+id: "drakhan"
+name: "Drakhan"
+phonemes:
+  consonants: ["g", "d", "b", "k", "r", "z", "th", "gr", "dr", "kh", "rk"]
+  vowels: ["a", "o", "u"]
+syllableShapes: ["CVC", "CV", "CCV"]
+namePatterns:
+  personal: ["{syl}{syl}", "{syl}{syl}{syl}"]
+  family: ["{syl}-{syl}"]
+soundChangeRate: 0.2

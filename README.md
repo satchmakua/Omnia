@@ -94,6 +94,9 @@ When the page loads you're looking at a small living world ticking in real time.
 | **Drag** (mouse) / **arrow keys** | Pan the map; **+ / −** also zoom |
 | **Click** anyone or anything | Open the **inspector** (right-side panel) for that thing |
 | **C** | Open / close the **Legends** view — the Chronicle (recent legends + compressed ages) and the town's world-health charts |
+| **E** | **Economy** dashboard — wealth distribution, employment, every business |
+| **F** | **Find** — searchable directory of every soul; click a row to inspect them and jump the camera there |
+| **T** | **Family** tree of the inspected person (click anyone first); click relatives to browse the line |
 | **L** | Show / hide the **legend key** (what each map symbol means) |
 | **Panel headers** | Click a panel's title bar (legend, Town Happenings) to **minimize** it |
 | **Live feed** (lower-left) | The **Town Happenings** ticker — births, weddings, deaths, new jobs, spells, spent veins, as they happen |

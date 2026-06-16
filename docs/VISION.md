@@ -11,6 +11,15 @@ A small town of a few hundred genuinely distinct people whose ordinary and extra
 3. **History matters.** Generations stack up. The town remembers its legends — the founder of the first guild, the gang war of the third generation, the family that rose and fell. Most ordinary lives blur into the background, exactly as in real history. (How we keep this rich but cheap is the subject of `SIMULATION_MODEL.md`.)
 4. **Emergence over scripting.** Companies, gangs, dynasties, rivalries, and reputations should *emerge* from agents pursuing their needs and goals — not be hand-authored storylines.
 
+## The guiding thesis — close two loops *(added 2026-06-15)*
+
+The engine substrate is strong (determinism, ECS, validated content, bounded history, a real test bar); the **life on top must now become causal and legible.** Two loops to close — they fix the science and the art at once:
+
+1. **Cognition → consequence.** The inner life must *steer behaviour*, not merely narrate it. The **procedural** cognitive layers — a culture's value axes, and beliefs distilled to numbers — feed back into what agents *do*, deterministically, so seed-replay still holds. (LLM *generation* stays off the deterministic trajectory and recorded, per D19/D20; it is the procedural distillate that is causal — see **D26**.)
+2. **Mechanism → meaning.** The world's emergent patterns must be *measurable as findings* — distributions, social-network structure, phase transitions, exportable runs (**D29**) — and the verisimilitude machinery must be *visible to the player*: a real lens onto how language and culture evolve, not a buried family tree (**D27**). And the human–AI collaboration that builds this is itself part of the artifact.
+
+Milestone 7 (culture & language) is the keystone — language is where a thought becomes a habit becomes a culture becomes history. The settled calls behind this direction are **D25–D30**.
+
 ## Setting & flavor
 
 A weird, psychedelic, **post-apocalyptic fantasy**, lighter in tone than it sounds — closer to *Adventure Time* than grimdark. Something fell long ago; ruins and lost arts remain. The world is shared by many kinds of people:
@@ -23,7 +32,7 @@ Crucially, all of this flavor lives in **content** (YAML), so the world's textur
 
 ## The experience we're aiming for
 
-You open Omnia and see a grid of moving icons. You click one: a panel reveals a person — their species, mood, job, who they love and hate, what they remember, their parents and children, whether they carry a rare spark of magic. You speed time up and watch them court, marry, struggle, prosper, scheme, fight, conquer, and die. You open the Legends view and read the town's history: who mattered, what they built, which arts were lost, how a culture split. It should give the unmistakable impression of a world that is alive and has a past.
+You open Omnia and see a grid of moving icons. You click one: a panel reveals a person — their species, mood, job, who they love and hate, what they remember, their parents and children, whether they carry a rare spark of magic. You speed time up and watch them court, marry, struggle, prosper, scheme, fight, conquer, and die. You open the Legends view and read the town's history: who mattered, what they built, which arts were lost, how a culture split. You open the **lens onto language and culture** and watch the tongue itself drift — names turning archaic, a dialect diverging, a value shifting after a hard winter. It should give the unmistakable impression of a world that is alive, has a past, and is *visibly changing* — not just bounded behind the scenes.
 
 ## Aesthetic direction (deferred — do not build before the simulation is deep)
 
@@ -41,7 +50,8 @@ We are explicitly **not** building, at least not now:
 - **Not a massive-scale civilization.** Hundreds of agents, not millions. No aggregate off-screen population machinery. Changing scale is a deliberate future decision recorded in `DECISIONS.md`.
 - **Not a multiplayer game or networked server.** Single-machine simulation.
 - **Not an authored narrative.** No quests, no scripted plot, no win condition. Stories come from emergence.
-- **Not a chatbot.** The LLM gives agents a "soul" (dialogue, reflection, occasional big decisions); it is never a user-facing assistant and never on the hot path.
+- **Not a chatbot.** The LLM gives agents a "soul" (dialogue, reflection, occasional big decisions); it is never a user-facing assistant and never on the hot path. The deterministic stub is the default; the **live local model (Ollama) is an opt-in mode** for richer text (D28), always recorded so replay stays exact.
+- **Not a god-game (yet).** For now the player *observes* — no direct intervention. A "god-sim" fork (player nudges, events, goals) is a real **future possibility we design for but do not build now** (D30).
 - **Not a full generative grammar / linguistics engine.** Language evolution is deep but bounded (phonology, lexicon, light morphology) — full syntax evolution is out of scope (`CULTURE_AND_LANGUAGE.md`).
 - **Not modder-scriptable behavior (yet).** Content is data; new *behaviors* are code. Player/modder scripting is a far-future maybe.
 
