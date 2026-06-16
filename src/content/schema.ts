@@ -19,12 +19,7 @@ export const SpeciesSchema = z.object({
     energy: z.number().positive(),
   }).strict(),
   magicAptitudeChance: z.number().min(0).max(1).default(0),  // reserved for M3
-  nameSounds: z.object({
-    onsets: z.array(z.string()).min(1),
-    nuclei: z.array(z.string()).min(1),
-    codas: z.array(z.string()).min(1),
-    syllables: Range,
-  }).strict(),
+  language: z.string().min(1),   // id of the tongue this folk are named from (M7); resolved at spawn
 }).strict();
 
 export type Species = z.infer<typeof SpeciesSchema>;

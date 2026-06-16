@@ -10,8 +10,4 @@ needs:                  # multipliers on the base need-decay rates in config
   hunger: 1.0
   energy: 1.0
 magicAptitudeChance: 0.03   # reserved for M3; validated and stored now
-nameSounds:             # curated sound pools for the placeholder name generator
-  onsets: ["b", "d", "g", "h", "j", "k", "l", "m", "n", "r", "s", "t", "w"]
-  nuclei: ["a", "e", "i", "o", "u", "ae", "ia", "ou"]
-  codas: ["", "n", "r", "s", "l", "th", "ric", "wen"]
-  syllables: { min: 2, max: 3 }
+language: "old_vant"        # humans are named from the soft, flowing tongue (M7)

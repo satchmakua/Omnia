@@ -12,11 +12,7 @@ lifespanYears: { min: 300, max: 500 }
 size: "medium"
 color: "#88ff88"
 needs: { hunger: 1.0, energy: 1.0 }
-nameSounds:
-  onsets: ["a", "e"]
-  nuclei: ["i", "o"]
-  codas: [""]
-  syllables: { min: 2, max: 3 }
+language: "old_vant"
 `;
 
 const VALID_CAP = `

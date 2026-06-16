@@ -42,12 +42,14 @@ export type AgentAction = 'wander' | 'seek_food' | 'sleep' | 'work' | 'socialize
 export type Sex = 'male' | 'female';
 
 export interface Agent {
-  name: string;
+  name: string;         // full display name, "Given Surname" (M7: language-derived)
   action: AgentAction;
   ticksAlive: number;   // also the agent's age, in ticks
   wealthGoal: number;   // gold level the agent works toward; bounds wealth, varies by agent
   sex: Sex;
   lifespanTicks: number; // rolled from species lifespan; mortality ramps as age nears it
+  surname?: string;     // family name, inherited down a lineage (M7)
+  tongue?: string;      // display name of the language they're named from (M7 legibility)
 }
 
 // Innate magic aptitude — present on only the rare agents who rolled it at birth

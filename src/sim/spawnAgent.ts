@@ -14,7 +14,8 @@ import { ticksPerYear } from './config.ts';
 import { rngFloat } from './rng.ts';
 import type { RNG } from './rng.ts';
 import type { Species } from '../content/schema.ts';
-import { generateName } from '../content/names.ts';
+import type { Content } from '../content/loader.ts';
+import { personalName, familyName } from '../lang/language.ts';
 
 export interface SpawnOpts {
   x: number;
@@ -22,19 +23,26 @@ export interface SpawnOpts {
   ageTicks: number;
   parents?: EntityId[];        // empty/undefined for founders
   aptitudeChance?: number;     // overrides the species default (lineage boost for children of mages)
+  surname?: string;            // inherited family name (children); founders coin a new one
 }
 
 export function spawnAgent(
-  world: World, cfg: SimConfig, rng: RNG, species: Species, opts: SpawnOpts,
+  world: World, cfg: SimConfig, rng: RNG, species: Species, content: Content, opts: SpawnOpts,
 ): EntityId {
   const tpy = ticksPerYear(cfg);
   const isChild = (opts.parents?.length ?? 0) > 0;
   const sex: Sex = rng() < 0.5 ? 'male' : 'female';
-  const name = generateName(rng, species);
   const lifespanTicks = Math.floor(rngFloat(rng, species.lifespanYears.min, species.lifespanYears.max) * tpy);
   const wealthGoal = rngFloat(rng, cfg.wealthGoalMin, cfg.wealthGoalMax);
 
   const e = world.createEntity();
+  // Language-derived naming (M7): given name from this agent's tongue + a surname
+  // inherited down the lineage (founders coin their own). Keyed by entity id, so it
+  // regenerates identically and consumes no simulation RNG.
+  const lang = content.languages.require(species.language);
+  const given = personalName(lang, String(e));
+  const surname = opts.surname ?? familyName(lang, String(e));
+  const name = `${given} ${surname}`;
   world.addComponent<Position>(e, C_POSITION, { x: opts.x, y: opts.y });
   world.addComponent<Needs>(e, C_NEEDS, {
     hunger: rngFloat(rng, 0.6, 1.0),
@@ -51,7 +59,7 @@ export function spawnAgent(
     energyMult: species.needs.energy,
   });
   world.addComponent<Agent>(e, C_AGENT, {
-    name, action: 'wander', ticksAlive: opts.ageTicks, wealthGoal, sex, lifespanTicks,
+    name, surname, tongue: lang.name, action: 'wander', ticksAlive: opts.ageTicks, wealthGoal, sex, lifespanTicks,
   });
   world.addComponent<Health>(e, C_HEALTH, { value: 1, ill: false });
   world.addComponent<Relationships>(e, C_RELATIONSHIPS, { edges: {} });
