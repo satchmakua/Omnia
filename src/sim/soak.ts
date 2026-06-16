@@ -8,7 +8,7 @@ import { loadContentFromDisk } from '../content/fsSource.ts';
 import {
   C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS,
   C_HEALTH, C_LINEAGE, C_TOMBSTONE, C_MEMORY, C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
-  C_CHRONICLE, C_WORLDSTATS,
+  C_CHRONICLE, C_WORLDSTATS, C_LANGUAGESTORE,
 } from './components.ts';
 import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -81,6 +81,8 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     if (ws && ws.samples.length > cfg.maxStatSamples) inv++;
     const eras = ch ? ch.eras.length : 0;
     const samples = ws ? ws.samples.length : 0;
+    const ls = world.getComponent(world.query(C_LANGUAGESTORE)[0], C_LANGUAGESTORE) as { soundChanges: number } | undefined;
+    const drifts = ls ? ls.soundChanges : 0;
 
     violations += inv;
     const fauna = world.query(C_FAUNA).length;
@@ -113,7 +115,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `fauna=${fauna} nodes=${nodes} eras=${eras} samples=${samples} cultures=${cultureSet.size}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
+      `fauna=${fauna} nodes=${nodes} eras=${eras} samples=${samples} cultures=${cultureSet.size} drifts=${drifts}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
     );
   }
 }
