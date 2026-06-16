@@ -117,6 +117,8 @@ export class Inspector {
     const job     = world.getComponent<Job>(e, C_JOB);
     const speciesLine = species
       ? `<div><b>Species</b> <span style="color:${species.color}">${species.name}</span> (${species.size})</div>` : '';
+    const tongueLine = agent.tongue
+      ? `<div><b>Tongue</b> <span style="color:#bcd">${agent.tongue}</span></div>` : '';
     const jobLine = job
       ? `<div><b>Job</b> ${job.professionName}</div>`
       : `<div><b>Job</b> <span style="color:#a99">unemployed</span></div>`;
@@ -173,6 +175,7 @@ export class Inspector {
     return `
       ${this.title(agent.name, magic ? 'sapient · folk · mage' : 'sapient · folk')}
       ${speciesLine}
+      ${tongueLine}
       ${this.terrainLine(world, pos)}
       <div><b>Sex / Age</b> ${sexGlyph} · ${ageYears}y</div>
       <div><b>Action</b> ${agent.action}</div>

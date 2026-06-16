@@ -130,7 +130,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
     const { x, y } = findPassableTile(rng, tileMap);
     // Founders have a spread of ages so the town starts with a real generation mix.
     const ageTicks = Math.floor(rngFloat(rng, cfg.initialAgeMinYears, cfg.initialAgeMaxYears) * tpy);
-    spawnAgent(world, cfg, rng, species, { x, y, ageTicks });
+    spawnAgent(world, cfg, rng, species, content, { x, y, ageTicks });
   }
 
   // Pre-pair adult founders into couples so the first generation can start

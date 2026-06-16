@@ -10,8 +10,4 @@ needs:
   hunger: 0.7           # dwarves get hungry more slowly than humans
   energy: 1.1           # but tire a little faster
 magicAptitudeChance: 0.01   # rarer than humans (reserved for M3)
-nameSounds:             # harder, gutturally-clustered sounds — distinct from humans
-  onsets: ["br", "dr", "gr", "kr", "thr", "dur", "bal", "th", "kh", "vr"]
-  nuclei: ["a", "o", "u", "ur", "or", "ai"]
-  codas: ["", "n", "r", "k", "g", "in", "li", "rim", "dur"]
-  syllables: { min: 2, max: 2 }
+language: "drakhan"         # dwarves are named from the hard, clustered tongue (M7)

@@ -65,8 +65,10 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
     const parentMage = world.hasComponent(b.mother, C_MAGIC) || world.hasComponent(b.father, C_MAGIC);
     const aptitudeChance = parentMage ? cfg.childMageAptitudeChance : species.magicAptitudeChance;
 
-    const child = spawnAgent(world, cfg, rng, species, {
-      x: b.x, y: b.y, ageTicks: 0, parents: [b.mother, b.father], aptitudeChance,
+    // Patrilineal surname: the child takes the father's family name.
+    const surname = world.getComponent<Agent>(b.father, C_AGENT)!.surname;
+    const child = spawnAgent(world, cfg, rng, species, content, {
+      x: b.x, y: b.y, ageTicks: 0, parents: [b.mother, b.father], aptitudeChance, surname,
     });
 
     world.getComponent<Lineage>(b.mother, C_LINEAGE)!.children.push(child);
