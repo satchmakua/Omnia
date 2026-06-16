@@ -5,6 +5,7 @@
 export interface PauseActions {
   onResume: () => void;
   onRestart: () => void;
+  onSettings: () => void;
   onQuit: () => void;
 }
 
@@ -100,11 +101,47 @@ export class Menu {
     this.card.appendChild(this.title('Paused', 'time is held'));
     const resume = styledButton('▶  Resume', true);
     const restart = styledButton('↻  Restart (same seed)');
+    const settings = styledButton('⚙  Settings');
     const quit = styledButton('⏏  Quit to menu');
     resume.addEventListener('click', () => { this.hide(); a.onResume(); });
     restart.addEventListener('click', () => { this.hide(); a.onRestart(); });
+    settings.addEventListener('click', () => a.onSettings());
     quit.addEventListener('click', () => a.onQuit());
-    this.card.append(resume, restart, quit);
+    this.card.append(resume, restart, settings, quit);
     this.open();
   }
+
+  showSettings(currentSeed: number, currentSpeed: number, a: SettingsActions): void {
+    this.card.innerHTML = '';
+    this.card.appendChild(this.title('Settings', 'tunables for a fresh run'));
+
+    const seedRow = document.createElement('div');
+    Object.assign(seedRow.style, { display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0 14px' });
+    const seedInput = document.createElement('input');
+    seedInput.type = 'number'; seedInput.value = String(currentSeed);
+    Object.assign(seedInput.style, {
+      flex: '1', background: '#10101e', color: '#eee', border: '1px solid rgba(255,255,255,0.15)',
+      borderRadius: '6px', padding: '8px', font: '13px monospace',
+    } as Partial<CSSStyleDeclaration>);
+    const seedLabel = document.createElement('span');
+    seedLabel.textContent = 'Seed'; seedLabel.style.color = '#99a';
+    seedRow.append(seedLabel, seedInput);
+
+    const note = document.createElement('div');
+    note.innerHTML = `Starting speed is the bottom slider (now ${currentSpeed}/s). A new seed needs a restart.`;
+    Object.assign(note.style, { color: '#9ab', fontSize: '12px', margin: '0 2px 14px', lineHeight: '1.6' });
+
+    const apply = styledButton('↻  Apply & restart', true);
+    const back = styledButton('←  Back');
+    apply.addEventListener('click', () => a.onApply(Math.floor(Number(seedInput.value)) || currentSeed));
+    back.addEventListener('click', () => a.onBack());
+
+    this.card.append(seedRow, note, apply, back);
+    this.open();
+  }
+}
+
+export interface SettingsActions {
+  onApply: (seed: number) => void;
+  onBack: () => void;
 }

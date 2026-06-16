@@ -53,6 +53,9 @@ export class Inspector {
     this._render(entity, world);
   }
 
+  /** The currently-inspected entity, if any (used by the family-tree dashboard). */
+  get selectedEntity(): EntityId | null { return this.selected; }
+
   update(world: World): void {
     if (this.selected === null) return;
     if (!world.isAlive(this.selected)) {

@@ -131,6 +131,28 @@ export const BiomeSchema = z.object({
 export type Biome = z.infer<typeof BiomeSchema>;
 export type SpawnTableEntry = z.infer<typeof SpawnEntry>;
 
+// ── Language ──────────────────────────────────────────────────────────────────
+// A seed language (CULTURE_AND_LANGUAGE.md, M7): a phoneme inventory, the syllable
+// shapes that combine them (C=consonant, V=vowel), the patterns names follow, and a
+// per-era sound-change rate. Words/names are generated on demand from these rules +
+// a seed and regenerate identically — we never store whole lexicons (D12).
+export const LanguageSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  phonemes: z.object({
+    consonants: z.array(z.string().min(1)).min(1),
+    vowels: z.array(z.string().min(1)).min(1),
+  }).strict(),
+  syllableShapes: z.array(z.string().regex(/^[CV]+$/, 'syllable shape must be C/V letters only')).min(1),
+  namePatterns: z.object({
+    personal: z.array(z.string().min(1)).min(1),  // tokens: {syl}; other chars are literals
+    family: z.array(z.string().min(1)).min(1),
+  }).strict(),
+  soundChangeRate: z.number().min(0).max(1).default(0.1),  // per era; higher = faster drift (M7 slice 3)
+}).strict();
+
+export type Language = z.infer<typeof LanguageSchema>;
+
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
 export const FOLDER_SCHEMAS = {
@@ -141,6 +163,7 @@ export const FOLDER_SCHEMAS = {
   fauna: FaunaSchema,
   resources: ResourceSchema,
   professions: ProfessionSchema,
+  languages: LanguageSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

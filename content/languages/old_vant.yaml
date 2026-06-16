@@ -1,0 +1,11 @@
+# Old Vant — a soft, flowing tongue (open syllables, liquids and nasals).
+id: "old_vant"
+name: "Old Vant"
+phonemes:
+  consonants: ["p", "t", "k", "v", "n", "r", "s", "l", "m"]
+  vowels: ["a", "i", "u", "e", "o"]
+syllableShapes: ["CV", "CVC", "VC"]   # C = consonant, V = vowel
+namePatterns:
+  personal: ["{syl}{syl}", "{syl}{syl}{syl}"]
+  family: ["{syl}{syl}"]
+soundChangeRate: 0.15
