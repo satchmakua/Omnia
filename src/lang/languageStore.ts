@@ -8,22 +8,31 @@ import type { Content } from '../content/loader.ts';
 import type { Language } from '../content/schema.ts';
 import { rngChoice } from '../sim/rng.ts';
 import type { RNG } from '../sim/rng.ts';
+import { word } from './language.ts';
+
+// A live tongue: the authored shape plus descent bookkeeping (slice 4 family tree).
+export interface RuntimeLanguage extends Language {
+  parent?: string;       // id of the tongue this split from
+  foundedTick?: number;  // when this daughter tongue formed
+}
 
 export interface LanguageStoreData {
-  byId: Record<string, Language>;
+  byId: Record<string, RuntimeLanguage>;
   soundChanges: number;   // cumulative count, for metrics / legibility
 }
 
+function cloneLanguage(l: Language): RuntimeLanguage {
+  return {
+    ...l,
+    phonemes: { consonants: [...l.phonemes.consonants], vowels: [...l.phonemes.vowels] },
+    syllableShapes: [...l.syllableShapes],
+    namePatterns: { personal: [...l.namePatterns.personal], family: [...l.namePatterns.family] },
+  };
+}
+
 export function createLanguageStore(content: Content): LanguageStoreData {
-  const byId: Record<string, Language> = {};
-  for (const l of content.languages.all()) {
-    byId[l.id] = {
-      ...l,
-      phonemes: { consonants: [...l.phonemes.consonants], vowels: [...l.phonemes.vowels] },
-      syllableShapes: [...l.syllableShapes],
-      namePatterns: { personal: [...l.namePatterns.personal], family: [...l.namePatterns.family] },
-    };
-  }
+  const byId: Record<string, RuntimeLanguage> = {};
+  for (const l of content.languages.all()) byId[l.id] = cloneLanguage(l);
   return { byId, soundChanges: 0 };
 }
 
@@ -32,8 +41,26 @@ export function getLanguageStore(world: World): LanguageStoreData | undefined {
   return ents.length ? world.getComponent<LanguageStoreData>(ents[0], C_LANGUAGESTORE) : undefined;
 }
 
-export function getLanguage(store: LanguageStoreData, id: string): Language | undefined {
+export function getLanguage(store: LanguageStoreData, id: string): RuntimeLanguage | undefined {
   return store.byId[id];
+}
+
+// Fork a daughter tongue from a parent (a diverging dialect, M7 slice 4): copy it,
+// name it with a freshly-coined word that still *sounds* like the parent, link the
+// descent, and apply a couple of immediate sound changes so it's already distinct.
+export function forkLanguage(store: LanguageStoreData, parentId: string, tick: number, rng: RNG): string {
+  const parent = store.byId[parentId];
+  const newId = `${parentId}.d${tick}`;
+  const coined = word(parent, newId);
+  const daughter = cloneLanguage(parent);
+  daughter.id = newId;
+  daughter.name = coined.charAt(0).toUpperCase() + coined.slice(1);
+  daughter.parent = parentId;
+  daughter.foundedTick = tick;
+  if (applySoundChange(daughter, rng)) store.soundChanges++;
+  if (applySoundChange(daughter, rng)) store.soundChanges++;
+  store.byId[newId] = daughter;
+  return newId;
 }
 
 // A small table of historically-plausible shifts (within a category): voicing,

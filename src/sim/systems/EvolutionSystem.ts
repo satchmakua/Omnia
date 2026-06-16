@@ -10,6 +10,7 @@ import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { getCultureStore, driftValues } from '../../culture/cultureStore.ts';
 import { getLanguageStore, applySoundChange } from '../../lang/languageStore.ts';
+import { maybeSchism } from '../../culture/schism.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
@@ -47,5 +48,21 @@ export function runEvolutionSystem(world: World, cfg: SimConfig, rng: RNG): void
   // Cultures: a small random-walk drift per culture, damped by cohesion.
   for (const c of Object.values(cstore.byId)) {
     driftValues(c, cfg.valueDriftPerEra, rng);
+  }
+
+  // Schism: a large, loosely-cohesive culture may fracture into a daughter that
+  // takes a diverging dialect — recorded as a legend (the family tree grows).
+  const schism = maybeSchism(world, cstore, lstore, cfg, rng, tick);
+  if (schism) {
+    const pc = cstore.byId[schism.parentCulture];
+    const dc = cstore.byId[schism.daughterCulture];
+    const dl = lstore.byId[schism.daughterLanguage];
+    emitEvent(world, 'culture', `${dc.name} broke away from the ${pc.name} (${schism.moved} folk), speaking ${dl.name}.`);
+    if (chronicle) {
+      chronicleAdd(chronicle, {
+        tick, importance: 0.9, kind: 'culture',
+        text: `The ${pc.name} schismed: the ${dc.name} broke away, and the ${dl.name} tongue was born.`,
+      }, cfg.chronicleImportanceThreshold);
+    }
   }
 }
