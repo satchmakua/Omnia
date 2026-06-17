@@ -16,6 +16,7 @@ import { ageInYears } from './config.ts';
 import { isPassable } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { wealthStats } from './wealth.ts';
+import { measureWorld } from '../analysis/metrics.ts';
 
 const SOAK_TICKS = 40_000; // ~42 sim-years — long enough to see several generations
 const cfg: SimConfig = { ...defaultConfig, seed: 8 }; // seed 8 includes a couple of mages
@@ -128,6 +129,38 @@ const finalPop = world.query(C_AGENT).length;
 const clock = world.getComponent<Clock>(clockEntity, C_CLOCK)!;
 
 console.log(`\nDone in ${elapsed}ms | final day=${clock.day} pop=${finalPop}`);
+
+// Science & Instrumentation (M7.7, D29): measure the emergent structure of the run.
+// Pure reads of durable state — no RNG, no mutation, so this never perturbs the run.
+if (finalPop > 0) {
+  const m = measureWorld(world, cfg);
+  const f = (x: number, d = 2) => x.toFixed(d);
+  console.log('\nScience — emergent structure (measured from final state):');
+  console.log(
+    `  wealth:   gini=${f(m.wealthGini)}  power-law tail α=${f(m.wealthTail.alpha)} ` +
+    `(over top ${m.wealthTail.k}, r²=${f(m.wealthTail.r2)})`,
+  );
+  console.log(
+    `  social:   n=${m.social.nodes} edges=${m.social.edges} <k>=${f(m.social.avgDegree)} ` +
+    `C=${f(m.social.clustering)} L=${f(m.social.avgPathLength)} ` +
+    `σ(small-world)=${f(m.social.smallWorldSigma)} comps=${m.social.components}/${m.social.largestComponent}`,
+  );
+  console.log(
+    `  ages:     n=${m.ages.count} median=${f(m.ages.median, 1)}y mean=${f(m.ages.mean, 1)}y ` +
+    `children=${f(m.ages.childFraction * 100, 0)}%`,
+  );
+  console.log(
+    `  names:    surname Zipf s=${f(m.surnameZipf.exponent)} (r²=${f(m.surnameZipf.r2)}, ` +
+    `vocab=${m.surnameZipf.vocab}, top=${f(m.surnameZipf.topShare * 100, 0)}%) ` +
+    `| given s=${f(m.givenZipf.exponent)} (vocab=${m.givenZipf.vocab})`,
+  );
+  if (m.family) {
+    console.log(
+      `  tongues:  total=${m.family.total} living=${m.family.living} lost=${m.family.extinct} ` +
+      `roots=${m.family.roots} depth=${m.family.maxDepth} breadth=${m.family.maxBreadth}`,
+    );
+  }
+}
 
 if (violations > 0) {
   console.error(`FAILED: ${violations} invariant violation(s)`);
