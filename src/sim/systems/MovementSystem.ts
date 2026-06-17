@@ -7,6 +7,7 @@ import type { Content } from '../../content/loader.ts';
 import { invokeCapability } from '../../capability/invoke.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
 import { makeEnterable, stepToward, wanderStep, buildOccupancy } from './movementUtil.ts';
+import { SpatialGrid } from '../spatialGrid.ts';
 
 // Mobile creatures never share a tile; a content agent at its workplace fidgets a
 // little so it looks alive rather than frozen on the spot.
@@ -20,44 +21,43 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
   const enterable = makeEnterable(cfg, map);
   const occ = buildOccupancy(world, cfg.gridWidth, [C_AGENT, C_FAUNA]);
 
-  // Ripe flora available to forage, indexed by tile + listed for nearest-search.
+  // Perception via spatial grids (M8): rebuilt each tick, queried for the nearest
+  // target without scanning every entity. Insertion order follows the component
+  // queries, so `nearest` (min Manhattan, ties by insertion) matches the old linear
+  // scans exactly — the trajectory is unchanged.
+
+  // Ripe flora to forage: a per-tile lookup (am I standing on food?) + a grid (where's
+  // the nearest food?).
   const florae = world.query(C_FLORA, C_POSITION);
   const ripeAt = new Map<string, EntityId>();
-  const ripeList: { x: number; y: number }[] = [];
+  const floraGrid = new SpatialGrid(cfg.gridWidth, cfg.gridHeight);
   for (const fe of florae) {
     const f = world.getComponent<Flora>(fe, C_FLORA)!;
     if (f.maturity < f.edibleAt) continue;
     const p = world.getComponent<Position>(fe, C_POSITION)!;
     ripeAt.set(`${p.x},${p.y}`, fe);
-    ripeList.push({ x: p.x, y: p.y });
+    floraGrid.insert(p.x, p.y, fe);
   }
 
   // Agent positions (for socialising: walking toward the nearest other person).
-  const agentList: { id: EntityId; x: number; y: number }[] = [];
+  const agentGrid = new SpatialGrid(cfg.gridWidth, cfg.gridHeight);
   for (const ae of world.query(C_AGENT, C_POSITION)) {
     const p = world.getComponent<Position>(ae, C_POSITION)!;
-    agentList.push({ id: ae, x: p.x, y: p.y });
+    agentGrid.insert(p.x, p.y, ae);
   }
 
-  // Non-empty resource nodes by type (gatherers walk to these to work).
-  const nodesByType = new Map<string, { x: number; y: number }[]>();
+  // Non-empty resource nodes, one grid per type (gatherers walk to the nearest).
+  const nodeGrids = new Map<string, SpatialGrid>();
   for (const re of world.query(C_RESOURCE, C_POSITION)) {
     const r = world.getComponent<Resource>(re, C_RESOURCE)!;
     if (r.amount <= 0) continue;
     const p = world.getComponent<Position>(re, C_POSITION)!;
-    const list = nodesByType.get(r.typeId);
-    if (list) list.push({ x: p.x, y: p.y }); else nodesByType.set(r.typeId, [{ x: p.x, y: p.y }]);
+    let grid = nodeGrids.get(r.typeId);
+    if (!grid) { grid = new SpatialGrid(cfg.gridWidth, cfg.gridHeight); nodeGrids.set(r.typeId, grid); }
+    grid.insert(p.x, p.y, re);
   }
-  const nearestNode = (type: string, x: number, y: number): { x: number; y: number } | null => {
-    const list = nodesByType.get(type);
-    if (!list) return null;
-    let best = Infinity, found: { x: number; y: number } | null = null;
-    for (const n of list) {
-      const d = Math.abs(n.x - x) + Math.abs(n.y - y);
-      if (d < best) { best = d; found = n; }
-    }
-    return found;
-  };
+  const nearestNode = (type: string, x: number, y: number): { x: number; y: number } | null =>
+    nodeGrids.get(type)?.nearest(x, y) ?? null;
 
   for (const entity of world.query(C_AGENT, C_NEEDS, C_POSITION)) {
     const agent = world.getComponent<Agent>(entity, C_AGENT)!;
@@ -95,13 +95,7 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
     if (agent.action === 'socialize') {
       // Walk toward the nearest other person; converging onto a shared tile lets
       // the SocialSystem strike up an interaction.
-      let nearest: { x: number; y: number } | null = null;
-      let best = Infinity;
-      for (const o of agentList) {
-        if (o.id === entity) continue;
-        const d = Math.abs(o.x - pos.x) + Math.abs(o.y - pos.y);
-        if (d > 0 && d < best) { best = d; nearest = o; }
-      }
+      const nearest = agentGrid.nearest(pos.x, pos.y, (id) => id !== entity);
       if (nearest) { stepToward(pos, nearest.x, nearest.y, rng, enterable, occ); continue; }
       // Alone in the world — wander.
     }
@@ -119,12 +113,7 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
         continue;
       }
       // Move toward the nearest ripe flora; wander if none exists yet.
-      let nearest: { x: number; y: number } | null = null;
-      let best = Infinity;
-      for (const r of ripeList) {
-        const d = Math.abs(r.x - pos.x) + Math.abs(r.y - pos.y);
-        if (d < best) { best = d; nearest = r; }
-      }
+      const nearest = floraGrid.nearest(pos.x, pos.y);
       if (nearest) { stepToward(pos, nearest.x, nearest.y, rng, enterable, occ); continue; }
     }
 
