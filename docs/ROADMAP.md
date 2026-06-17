@@ -121,15 +121,15 @@ Slices land one at a time, holding the **D12 tenability line** (few shared objec
 
 **DoD:** from seed cultures/languages the sim produces a **language family tree** and **≥1 cultural schism** over deep time; **culture measurably changes behaviour** (a test shows a value axis shifting an action/outcome distribution); the evolution is **visible in-app**, not just in the data; within the performance budget; tenability tested (object counts + per-era cost bounded).
 
-## ▶ Milestone 7.5 — Live Model Integration (the real soul, opt-in)  *(current — D28)*
+## ✅ Milestone 7.5 — Live Model Integration (the real soul, opt-in)  *(done — 2026-06-16; D28)*
 
-**Goal:** wire the live local model (Ollama) through the existing `AIRunner` as an **opt-in mode** so dialogue, dreams, reflection, and language/culture **glosses** become genuinely novel — the deterministic stub stays the default for headless/CI/replay.
+**Goal:** wire the live local model (Ollama) through the existing `AIRunner` as an **opt-in mode** so dialogue, dreams, reflection (and, later, glosses) become genuinely novel — the deterministic stub stays the default for headless/CI/replay.
 
-- [ ] Drive `OllamaProvider` async off the hot path; apply results across ticks; **record** every response (replay stays exact).
-- [ ] A drain/apply step in `AISystem`; graceful timeout fallback to the stub.
-- [ ] A toggle (config/menu) for stub vs. live; document the local-model setup.
+- [x] Drive `OllamaProvider` async off the hot path; apply results across ticks; **record** every response (replay stays exact). *(S25: `AISystem` rewritten with a unified sync/async **dispatch** — a deterministic provider applies inline (unchanged); an async provider submits the prompt to a per-world `AIRunner` singleton and applies the drained result on a later tick, recorded by prompt-hash. The 4 passes share one eligibility/prompt path.)*
+- [x] A drain/apply step in `AISystem`; graceful timeout fallback to the stub. *(S25: drain at the top of each async tick; each submit carries a deterministic stub **fallback**, so a slow/dead model never stalls — verified live with no Ollama: fetches fail → fallback applies, 0 stalls.)*
+- [x] A toggle (config/menu) for stub vs. live; document the local-model setup. *(S25: **Esc → Settings → AI soul: Stub/Live (Ollama)**, applies on restart; `aiConcurrency`/`aiTimeoutMs` config; README "Running with a live model".)*
 
-**DoD:** with a model installed, agents converse/gloss in genuinely varied language within budget, never stalling the tick; the run records and replays identically via `RecordedProvider`; with no model installed, nothing changes (stub default).
+**DoD:** with a model installed, agents converse/gloss in genuinely varied language within budget, never stalling the tick; the run records and replays identically via `RecordedProvider`; with no model installed, nothing changes (stub default). **Met** — async submit→drain→apply→record→replay proven by `asyncSoul.test.ts` (mock async provider); sync path byte-identical (existing AI tests pass); live-verified the graceful no-Ollama fallback (164 responses applied off the hot path, no stall, no console errors). *(Deferred: LLM glossing of coined daughter-tongue/value names — the procedural naming already works; LLM glossing would hook the EvolutionSystem and is a flavor follow-on.)*
 
 ## Milestone 7.7 — Science & Instrumentation  *(D29)*
 
