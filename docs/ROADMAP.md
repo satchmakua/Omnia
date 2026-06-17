@@ -161,7 +161,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **Goal:** the substrate for a big, dense, *uncapped* world.
 
-- [ ] **Spatial index** (hashed grid cells / buckets) for cheap nearest-queries; agents perceive resources/kin/hostiles through it.
+- [x] **Spatial index** (hashed grid cells / buckets) for cheap nearest-queries; agents perceive resources/kin/hostiles through it. *(S30: `src/sim/spatialGrid.ts` — a tile-granular hash grid with `nearest(x,y,accept?)` (expanding-ring search, global-min Manhattan, ties by insertion order) + `within(x,y,r)` + `at`. Wired into `MovementSystem`'s three per-tick linear scans (nearest ripe flora / nearest other folk / nearest resource node), replacing O(n) scans. **Behaviour-preserving:** the insertion-order tie-break reproduces the old scans exactly — 40k soak byte-identical, determinism + reproduction tests pass unchanged. The substrate for A*, the big map, LOD, and combat targeting. Coarser cells are a later perf knob (API unchanged).)*
 - [ ] **A\*** pathfinding replacing greedy `stepToward`, under a perception/movement budget.
 - [ ] **Big, configurable map** (target 10–20× area); world-gen, camera, renderer scale to it.
 - [ ] **LOD brain tiers (D32):** foreground agents fully simulated; distant/background agents a cheap deterministic approximation; bounded per-tick cost.
