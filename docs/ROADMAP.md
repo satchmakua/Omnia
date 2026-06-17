@@ -142,27 +142,165 @@ Slices land one at a time, holding the **D12 tenability line** (few shared objec
 
 **DoD:** a documented analysis showing ≥1 emergent statistical regularity (e.g. an approximately power-law wealth tail or a small-world social graph) and ≥1 located phase transition, reproducible from an exported manifest. **Met** — `docs/FINDINGS.md` documents two results: (1) **surnames are Zipfian** (s≈1.15, r²≈0.86) while per-id given names stay flat — an emergent regularity from patrilineal inheritance; (2) a **food-scarcity survival phase transition** at `floraDensity ≈ 0.0175` (order parameter: mean surviving population). Both are **reproducible from an exported manifest** (`npm run export` → re-run is byte-exact). Metrics are surfaced in-app (Legends "Emergent structure"). 273 tests; tooling is pure reads/orchestration over the deterministic loop (no sim changes). Done across S26–S28.
 
-## Milestone 8+ — Economy Depth, Building, Social Structures, Vice, UI & Refinement
+---
 
-**Goal:** emergent groups, a deeper tactile economy, the messier side of life, and durability. *(The human-requested interactions are baked in here: resource gathering shipped early in M4.5; trade/market, building, and conflict/vice live below.)*
+# The M8–M19 arc — toward a living world
 
-- [ ] **Economy depth** (completes M3's deferred economy): a supply/demand **market** — prices that move with supply/demand, agents buying food/goods, business revenue from real sales (not abstract productivity), and businesses that can go bankrupt and close. *(human pick: trade/market)*
-- [ ] **Resource economy coupling**: gathered ore/timber/crystal feed **crafting** into goods and business revenue, so depletion has real consequences; **skill/knowledge gating** for technology (learn-by-doing / apprenticeship). *(completes M3 capability deferrals)*
-- [ ] **Building**: agents construct homes and businesses from gathered resources over time, instead of being pre-placed — visible growth of the town. *(human pick: building)*
-- [ ] **Social structures**: companies, gangs, families-as-institutions, factions, dynasties; reputation; succession.
-- [ ] **Conflict & vice**: rivalries, **crime, theft, assault/fights**, gambling, drinking, affairs/betrayal. *(human pick: conflict/vice)*
-- [ ] **UI depth:** rich inspector, relationship/**family-tree views** (browse ancestry + tombstones), charts (population, wealth, mood), event feed, time controls, search.
-- [ ] **Aesthetic/audio:** pastel/lo-fi styling pass; lo-fi ambient music layer; smoother motion (interpolate entity positions between ticks).
-- [ ] Save/load; scenario seeds; a **YAML config loader** (make `simulation.yaml` the live tunables); balance via the world-health dashboard; performance against budget.
-- [ ] Optional: procedural regeneration of deep history (`SIMULATION_MODEL.md`, Mechanism 6).
+*Planned 2026-06-16 from the human's vision notes (see `VISION.md` "The living-world arc"). The wishlist (D&D agents, tribes/factions/governments, markets, combat, crime, tech+magic trees, religion, events, history/legend, a sci-fi tech ceiling, a 10–20× LOD world, save/load, a bestiary) collapses onto a few reusable **engines**, built foundation-first. Decisions D32–D35 set the architecture; the human chose: **foundation-first ordering**, the **full sci-fi tech ceiling** (framed as re-ascending the fallen world's lost tech, per D8), and a **level-of-detail (LOD)** scale model with **no artificial population caps**.*
 
-**DoD:** open-ended; "refine" lives here once M0–M7 are done.
+**Standing rules for every milestone below** (sharpened from the vision pass):
+- **Legibility is a gate (D35, elevates D27):** no system ships without an inspector/view that makes it visible. "Invisible complexity is wasted."
+- **Behaviour stays procedural & causal (D26/D19):** traits/alignment/values/beliefs steer behaviour *deterministically*; the LLM only narrates (recorded, off-trajectory).
+- **Content-driven breadth (D9):** creatures, buildings, events, tech/magic nodes, religions are authored YAML + a code-side effect — adding more is data.
+- **Tenable at scale (D12 + D32):** bounded state, compress the dead, and an LOD tier so a big world doesn't cost a full brain per distant agent per tick.
+- **Engineering bar (note #0):** the unified `Organization` / `Heredity` / `Event` engines (D33), a spatial index for perception, A* for movement — proper abstractions, data structures, algorithms.
+
+Each milestone ships its **own content + its own inspector view**; M18 (bestiary/icons) and M19 (UI overhaul) are the breadth/overhaul passes, not the first introduction.
+
+## ▶ Milestone 8 — Foundations II: Scale, Perception & Ecology  *(next)*
+
+**Goal:** the substrate for a big, dense, *uncapped* world.
+
+- [ ] **Spatial index** (hashed grid cells / buckets) for cheap nearest-queries; agents perceive resources/kin/hostiles through it.
+- [ ] **A\*** pathfinding replacing greedy `stepToward`, under a perception/movement budget.
+- [ ] **Big, configurable map** (target 10–20× area); world-gen, camera, renderer scale to it.
+- [ ] **LOD brain tiers (D32):** foreground agents fully simulated; distant/background agents a cheap deterministic approximation; bounded per-tick cost.
+- [ ] **Uncap populations → ecological limits (D32):** remove `maxFauna`/`maxPopulation` hard caps; add **predators + agent hunting** so fauna self-regulate; folk capacity emerges from food/space.
+
+**DoD:** a 10–20× map sustains a large *uncapped* population within the per-tick budget; fauna self-regulate via predation (no artificial cap, no swarm — fixes the moth-grazer flood); movement is A*-based; deterministic; soak green at the new scale.
+
+## Milestone 9 — World Setup & Save/Load
+
+**Goal:** start a world your way, and never lose it.
+
+- [ ] **Setup screen:** seed, **starting population (10–100)**, map size, options.
+- [ ] **Save/Load:** deterministic save = the M7.7 run-manifest (seed+config) + recorded events + a state snapshot; load restores exactly (replay is the correctness baseline, snapshot for speed).
+- [ ] Wire the **YAML config loader** so `simulation.yaml` is authoritative (long-deferred).
+
+**DoD:** a run saves and loads to a byte-identical state; setup options take effect; config is YAML-authoritative.
+
+## Milestone 10 — Agent Depth: Body, Mind & Inventory
+
+**Goal:** agents become storytelling-rich and mechanically deep — all inherited and legible.
+
+- [ ] **Ability scores** (STR/DEX/CON/INT/WIS/CHA), content-driven, rolled + species-modified.
+- [ ] **9-alignment (dynamic, D26-causal):** baseline neutral-leaning-good; trauma/events/environment shift it; it biases behaviour (evil → lying/stealing/violence; good → cooperation).
+- [ ] **Personality** archetypes/traits (coward / ambitious / greedy / loyal / curious / sadistic …); mid-life drift from trauma.
+- [ ] **One Heredity system:** physical traits (height/weight/eye/hair/voice) + ability scores + alignment-lean + magic aptitude all inherit (parental mean + variation), *visibly*.
+- [ ] **Inventory** + meaningful uses for gold; **status/health** (HP, exhaustion, starvation, sickness, poverty) as real states.
+- [ ] Inspector: a rich **agent sheet** (stats, alignment, traits, inventory, status, kin resemblance).
+
+**DoD:** light-eyed parents tend to light-eyed children (traits visibly inherited); alignment shifts with experience and changes behaviour; ability scores feed later combat/skills; all legible; determinism + soak hold.
+
+## Milestone 11 — Institutions: Tribes, Factions & Governments
+
+**Goal:** the unified social-structure engine — the biggest "world feels alive" jump.
+
+- [ ] One **`Organization` entity (D33):** members, values, treasury, leadership + **succession**, procedural **colour** (hue-spaced, never red), territory, descent + **schism** (reusing the culture/language fork machinery).
+- [ ] **Group dynamics:** cluster with kin/allies, defend territory, compete for resources; few agents → fuse, large groups → schism; new tribes emerge *with* new cultures/languages.
+- [ ] **Governments** emerge from culture/values (chiefdom / council / theocracy / …); **social class**; a **reputation** graph.
+- [ ] Faction membership **tints the folk icon** (the human's colour idea).
+- [ ] Inspector: an **organization/faction** view + per-agent class/reputation/allegiance.
+
+**DoD:** tribes/factions form, hold cohesion, and schism over deep time alongside language/culture, and visibly govern themselves; faction colours are distinct (never red); all legible; determinism + soak hold.
+
+## Milestone 12 — Economy Depth: Markets, Property & Class
+
+**Goal:** a tactile economy where gold matters and fortunes rise and fall *(completes M3's deferrals)*.
+
+- [ ] **Supply/demand market:** prices move with supply/demand; agents buy food/goods; business revenue from **real sales**; businesses can **go bankrupt**.
+- [ ] **Resource → craft → goods** coupling so depletion bites; **skill/knowledge gating** (learn-by-doing / apprenticeship).
+- [ ] **Homes:** own / sleep / raise-family / store-goods + a mood bonus; **landlords** (multi-home owners).
+- [ ] **Banking/loans/debt** rebalance (agents shouldn't sink into debt so fast); caravans; stockpiles; boom/bust cycles.
+- [ ] Inspector: a **market/prices** view; per-agent wealth/property/holdings.
+
+**DoD:** prices respond to scarcity; agents trade and accumulate/lose property; some become landlords; businesses open and fail; debt is balanced; legible; soak-stable.
+
+## Milestone 13 — Conflict: Combat, Hunting, Crime & War
+
+**Goal:** the messier side of life — and a real threat model.
+
+- [ ] **D&D-style combat:** HP, attack/defense, armour, weapons (ability-score-driven); agent-vs-agent **and** agent-vs-monster; **hunting** fauna for food/hides.
+- [ ] **Wounds:** scars, dismemberment, poison; **veterans** (combat permanently marks an agent).
+- [ ] **Crime & vice (alignment-driven):** theft, assault, murder; gangs/underworld; smuggling, assassination, corruption; **prisons, slavery, drugs, brothels**.
+- [ ] **War:** raids/sieges, military hierarchy (recruit→general), mercenaries; orgs war over territory/resources.
+- [ ] Inspector: combat/health detail; a **crime/justice** view.
+
+**DoD:** agents fight, hunt, and commit crimes consistent with alignment; wounds persist and show; organized conflict (gangs/wars) emerges and is recorded as legends; legible; soak-stable.
+
+## Milestone 14 — Knowledge: Tech Tree, Magic & Research
+
+**Goal:** civilizations climb the full ladder — and magic finally earns its place.
+
+- [ ] **Tech tree (D34), full ladder:** tribal → bronze → iron → medieval → industrial → **modern → sci-fi** (machines, vehicles, robots, **power plants**), framed as *re-ascending the fallen world's lost tech* (D8); **power sources** (fire/steam/coal/solar/magic/…).
+- [ ] **Research by Organizations** unlocks capabilities/recipes (armour/tools/weapons/materials/machines) for the tribe/faction.
+- [ ] **Magic tree + schools** (necromancy/illusion/elementalism/divination); **spells, magic items, golems** (advanced mages only); **mages made legible** — a clear, inspectable role + effects (the human's explicit ask).
+- [ ] **Lost tech / dark ages / rediscovery** (reuses the compression machinery); **achievements** (civ + agent: Iron Age, Steam Power, …) with a view.
+
+**DoD:** an org researches up a visible tech *and* magic tree across the ages incl. the sci-fi tier; mages do something inspectable and useful; knowledge can be lost and rediscovered; achievements fire and are viewable; determinism + soak hold.
+
+## Milestone 15 — Religion & Belief
+
+**Goal:** living faiths that evolve and split like languages.
+
+- [ ] Religions emerge from culture/values + **founding myths**; **schism** alongside culture/language/tribe (reuse the `Organization` engine).
+- [ ] Beliefs bias behaviour (D26); **holidays**, **cults**, **living gods** (rare, possibly embodied), divine effects.
+- [ ] Inspector: a **religion** view (deity, tenets, followers, descent) + per-agent faith.
+
+**DoD:** ≥1 religion founds, spreads, and schisms over deep time tied to culture; faith visibly affects behaviour and events; legible; soak-stable.
+
+## Milestone 16 — Events, Seasons & the Paranormal
+
+**Goal:** things *happen* — the world has weather, holidays, and the occasional ghost.
+
+- [ ] A **content-driven Event pipeline (D9):** deterministic scheduled + triggered events → Chronicle/feed; effects are code, definitions are data.
+- [ ] **Seasons** (ecology/farming/top-bar); **holidays**, bountiful harvests, great discoveries.
+- [ ] **Disasters** (famine/plague/quake/fire/storm) — feeds the deferred famine→thrift culture hook.
+- [ ] **Paranormal** (alien abductions, ghost encounters, magical catastrophes) — uncommon, nontrivial, with consequences.
+- [ ] Inspector: an **events/timeline** view.
+
+**DoD:** seasons cycle and affect the world; disasters and rare paranormal events occur, leave consequences, and enter the Chronicle; adding an event is data-only; legible; soak-stable.
+
+## Milestone 17 — History, Legend & Quest
+
+**Goal:** the capstone of emergent storytelling — the world remembers.
+
+- [ ] **Historical figures** emerge from the importance/Chronicle machinery (conqueror/inventor/prophet/tyrant/hero); **dynasties** from lineage.
+- [ ] **World-history generator** / ages-of-civilization narration; **legendary artifacts** with histories; **archaeology** (uncover ruins/dungeons of extinct civs).
+- [ ] **Procedural quests/goals** agents pursue (recover heirloom, hunt monster, avenge kin, explore ruin); **wonders** (mega-projects incl. the space elevator).
+
+**DoD:** named historical figures and dynasties accrue and are referenced for generations; artifacts carry histories; ruins of fallen civs are discoverable; agents pursue procedural goals; all browsable; soak-stable.
+
+## Milestone 18 — Content & Bestiary Expansion
+
+**Goal:** a world that isn't all humans, dwarves, and moth grazers.
+
+- [ ] **4 more base languages** (distinct families) — all still evolving.
+- [ ] **Common races** (orc/elf/goblin/…); **real animals** (wolf/cow/chicken/horse/…) with predator/prey roles (feeds M8 ecology).
+- [ ] **Monsters** (iconic D&D, world-flavoured) and **special agents** (vampire/undead/ghost/alien/dragon) as agents with **unique icons** and content-defined behaviour.
+- [ ] **Building types** (school/market/constable/prison/hospital/theatre/town-hall/court/bar/brothel/outpost/guard-tower/mage-enclave + special: floating city/dungeon/science-lab/power-plant) with functions.
+- [ ] A **rich icon library** (buildings/resources/professions/events/creatures/status/religions/tech/governments).
+
+**DoD:** the map shows many distinct races/animals/monsters/special agents and building types, each with a clear icon and a content-defined role; adding more is data-only; soak-stable.
+
+## Milestone 19 — UI, Inspectors & Legibility Overhaul
+
+**Goal:** make all the depth perceivable (RimWorld / Dwarf Fortress / Kenshi / Sims-grade).
+
+- [ ] **Inspector overhaul:** audit existing views; add the missing ones (agent sheet, organization, government, religion, tech/magic, events, achievements, world/misc).
+- [ ] **Conversation tab** (active + past conversations).
+- [ ] **On-screen help / game guide**; **controls → Esc → Controls** (off the main screen); **top bar minimal** (day / year / season / folk) with the rest moved into views.
+- [ ] Fix the **finder "f"-typed-into-search bug**; aesthetic/lo-fi pass (D13); optional ambient audio.
+
+**DoD:** every system from M8–M18 is inspectable; the top bar is minimal and controls/help live under Esc; the finder bug is gone; the UI reads richly; soak-stable.
 
 ---
 
 ## Backlog (unsorted — promote into a milestone before building)
 
 *(Append new ideas here with a date. Do not build directly from this list.)*
+
+> **Note (2026-06-17):** most older backlog items below are now **promoted into M8–M19** above (market → M12, building → M11/M12, conflict/vice → M13, skill gating + lost arts → M14, YAML config loader → M9, family-tree view + tween motion → M19, async live-model is already done in M7.5). They're left here as the historical trail; build from the milestones, not this list.
 
 - **God-sim fork (future direction, D30):** give the player in-sim agency — nudges, triggered events, set goals. Designed-*for* now (a player intervention is just another recordable event in the deterministic log) but **not built**; the human may fork here once the observed world is compelling enough — date: 2026-06-15.
 - More traditions for the capability system (alchemy, bio-engineering, ritual) — date: founding.
