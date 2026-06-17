@@ -12,11 +12,15 @@ import { Menu } from './render/menu.ts';
 import { EconomyDashboard } from './render/economyDashboard.ts';
 import { DirectoryDashboard } from './render/directoryDashboard.ts';
 import { FamilyDashboard } from './render/familyDashboard.ts';
+import { LineagesDashboard } from './render/lineagesDashboard.ts';
 import { SpeedControl } from './render/controls.ts';
 import { EventFeed } from './render/eventFeed.ts';
 import { C_AGENT, C_POSITION } from './sim/components.ts';
 import type { Position } from './sim/components.ts';
 import type { EntityId } from './sim/ecs.ts';
+import { stubProvider } from './ai/stubProvider.ts';
+import { OllamaProvider } from './ai/ollamaProvider.ts';
+import type { AIProvider } from './ai/provider.ts';
 
 // Browser content source: Vite bundles every YAML under /content as raw text.
 const rawFiles = import.meta.glob('/content/**/*.{yaml,yml}', {
@@ -48,12 +52,20 @@ function focusOn(e: EntityId): void {
 const economy   = new EconomyDashboard();
 const directory = new DirectoryDashboard(focusOn);
 const family    = new FamilyDashboard(focusOn);
+const lineages  = new LineagesDashboard();
 
 // The currently running simulation (null while the start menu is up).
 let active: Simulation | null = null;
 let activeCfg: SimConfig = baseCfg;
 let lastSeed = baseCfg.seed;
 let state: 'menu' | 'running' | 'paused' = 'menu';
+
+// The "soul" provider: the deterministic stub by default; the live local model
+// (Ollama) when toggled on in Settings (applies on the next run). The async path is
+// driven off the hot path by the AISystem and recorded for exact replay (M7.5).
+let liveModel = false;
+let activeProvider: AIProvider = stubProvider;
+const OLLAMA = { baseUrl: 'http://localhost:11434', model: 'llama3.2' };
 
 renderer.setClickHandler((entity) => { if (active) inspector.inspect(entity, active.world); });
 
@@ -63,6 +75,7 @@ const controls = new SpeedControl(speed, (v) => { speed = v; });
 function newSimulation(seed: number): void {
   activeCfg = { ...baseCfg, seed };
   active = createSimulation(activeCfg, content);
+  activeProvider = liveModel ? new OllamaProvider(OLLAMA) : stubProvider;
   lastSeed = seed;
   inspector.close();
   state = 'running';
@@ -72,8 +85,9 @@ function showPauseMenu(): void {
   menu.showPause({
     onResume: () => { state = 'running'; },
     onRestart: () => newSimulation(lastSeed),
-    onSettings: () => menu.showSettings(lastSeed, speed, {
+    onSettings: () => menu.showSettings(lastSeed, speed, liveModel, {
       onApply: (seed) => { menu.hide(); newSimulation(seed); },
+      onToggleLive: () => { liveModel = !liveModel; },
       onBack: () => showPauseMenu(),
     }),
     onQuit: () => { active = null; state = 'menu'; openStart(); },
@@ -93,23 +107,25 @@ function openStart(): void {
 
 // ── hotkey dashboards (mutually exclusive; one open at a time) ──────────────────
 function anyDashOpen(): boolean {
-  return legends.isOpen || directory.visible || economy.visible || family.visible;
+  return legends.isOpen || directory.visible || economy.visible || family.visible || lineages.visible;
 }
 function closeDashboards(): void {
-  legends.hide(); directory.hide(); economy.hide(); family.hide();
+  legends.hide(); directory.hide(); economy.hide(); family.hide(); lineages.hide();
 }
-function toggleDashboard(kind: 'legends' | 'directory' | 'economy' | 'family'): void {
+function toggleDashboard(kind: 'legends' | 'directory' | 'economy' | 'family' | 'lineages'): void {
   if (!active) return;
   const w = active.world;
   const wasOpen =
     kind === 'legends' ? legends.isOpen :
     kind === 'directory' ? directory.visible :
-    kind === 'economy' ? economy.visible : family.visible;
+    kind === 'economy' ? economy.visible :
+    kind === 'lineages' ? lineages.visible : family.visible;
   closeDashboards();
   if (wasOpen) return;
   if (kind === 'legends') legends.toggle(w);
   else if (kind === 'directory') directory.toggle(w);
   else if (kind === 'economy') economy.toggle(w);
+  else if (kind === 'lineages') lineages.toggle(w);
   else family.toggle(w, inspector.selectedEntity);
 }
 
@@ -119,8 +135,10 @@ if (import.meta.env.DEV) {
     get sim() { return active; },
     get world() { return active?.world; },
     content, renderer, inspector, controls, eventFeed, legends, legend, menu,
-    economy, directory, family, newSimulation, toggleDashboard,
-    step: (n = 1) => { if (active) for (let i = 0; i < n; i++) tick(active.world, active.rng, activeCfg, active.clockEntity, content); },
+    economy, directory, family, lineages, newSimulation, toggleDashboard,
+    setLiveModel: (v: boolean) => { liveModel = v; },
+    get provider() { return activeProvider; },
+    step: (n = 1) => { if (active) for (let i = 0; i < n; i++) tick(active.world, active.rng, activeCfg, active.clockEntity, content, activeProvider); },
   };
 }
 
@@ -136,7 +154,7 @@ function loop(now: number) {
     tickAccumulator += dtSeconds * speed;
     const steps = Math.min(Math.floor(tickAccumulator), 30);
     tickAccumulator -= Math.floor(tickAccumulator);
-    for (let i = 0; i < steps; i++) tick(active.world, active.rng, activeCfg, active.clockEntity, content);
+    for (let i = 0; i < steps; i++) tick(active.world, active.rng, activeCfg, active.clockEntity, content, activeProvider);
   }
 
   if (active) {
@@ -149,6 +167,7 @@ function loop(now: number) {
       economy.refresh(active.world);
       directory.refresh(active.world);
       family.refresh(active.world);
+      lineages.refresh(active.world);
     }
   }
   requestAnimationFrame(loop);
@@ -169,6 +188,7 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'e' || e.key === 'E') { toggleDashboard('economy'); }
   else if (e.key === 'f' || e.key === 'F') { toggleDashboard('directory'); }
   else if (e.key === 't' || e.key === 'T') { toggleDashboard('family'); }
+  else if (e.key === 'g' || e.key === 'G') { toggleDashboard('lineages'); }
   else if (e.key === 'l' || e.key === 'L') { legend.toggle(); }
   else if (e.key === 'ArrowLeft')  { renderer.panBy(-0.12, 0); e.preventDefault(); }
   else if (e.key === 'ArrowRight') { renderer.panBy(0.12, 0); e.preventDefault(); }

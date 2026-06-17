@@ -86,6 +86,10 @@ export interface SimConfig {
   schismChancePerEra: number;          // per-era chance a culture fractures (damped by cohesion)
   minSchismMembers: number;            // a culture needs at least this many living members to schism
   schismValueNudge: number;            // how strongly a daughter culture's values jump from the parent
+  maxLineages: number;                 // cap on stored cultures / tongues; oldest dead branches prune (slice 5)
+  // Live-model integration (M7.5; only used when an async provider is in play):
+  aiConcurrency: number;               // max in-flight model calls
+  aiTimeoutMs: number;                 // per-call timeout before falling back to the deterministic stub
 }
 
 export function ticksPerYear(cfg: SimConfig): number {
@@ -174,4 +178,7 @@ export const defaultConfig: SimConfig = {
   schismChancePerEra: 0.7,        // ×(1−cohesion); self-limited by minSchismMembers → ~1–2 over a deep run (M7 DoD)
   minSchismMembers: 8,            // small cultures don't fracture
   schismValueNudge: 0.2,          // the daughter starts noticeably apart from the parent
+  maxLineages: 24,                // a handful of living lineages + their ancestry; dead branches prune
+  aiConcurrency: 2,               // at most 2 live model calls in flight
+  aiTimeoutMs: 8000,              // fall back to the stub after 8s so a slow model never stalls
 };

@@ -15,6 +15,7 @@ export const C_LINEAGE       = 'Lineage';       // partner / parents / children 
 export const C_TOMBSTONE     = 'Tombstone';     // a dead agent's compact record (M4)
 export const C_MEMORY        = 'Memory';        // memory stream + beliefs (M5)
 export const C_AIRECORD      = 'AIRecord';      // singleton: recorded LLM responses for replay (M5)
+export const C_AIRUNNER      = 'AIRunner';      // singleton: async live-model queue + pending jobs (M7.5)
 export const C_CLOCK     = 'Clock';
 export const C_TILEMAP   = 'TileMap';   // singleton: the terrain grid (src/world/tilemap.ts)
 export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/history/chronicle.ts)
@@ -51,8 +52,8 @@ export interface Agent {
   sex: Sex;
   lifespanTicks: number; // rolled from species lifespan; mortality ramps as age nears it
   surname?: string;     // family name, inherited down a lineage (M7)
-  tongue?: string;      // display name of the language they're named from (M7 legibility)
   cultureId?: string;   // the culture they belong to (M7); its values bias behaviour (D26)
+                        // (their displayed tongue is derived live from this culture's language)
 }
 
 // Innate magic aptitude — present on only the rare agents who rolled it at birth

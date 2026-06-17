@@ -11,6 +11,7 @@ import type { RNG } from '../rng.ts';
 import { getCultureStore, driftValues } from '../../culture/cultureStore.ts';
 import { getLanguageStore, applySoundChange } from '../../lang/languageStore.ts';
 import { maybeSchism } from '../../culture/schism.ts';
+import { compressLineages } from '../../culture/lineage.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
@@ -65,4 +66,8 @@ export function runEvolutionSystem(world: World, cfg: SimConfig, rng: RNG): void
       }, cfg.chronicleImportanceThreshold);
     }
   }
+
+  // Compress the dead: extinct cultures/tongues become compact descent records;
+  // ancient dead side-branches are pruned so the family tree stays bounded.
+  compressLineages(world, cstore, lstore, cfg, tick, chronicle);
 }

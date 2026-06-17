@@ -111,12 +111,12 @@ export class Menu {
     this.open();
   }
 
-  showSettings(currentSeed: number, currentSpeed: number, a: SettingsActions): void {
+  showSettings(currentSeed: number, currentSpeed: number, liveModel: boolean, a: SettingsActions): void {
     this.card.innerHTML = '';
     this.card.appendChild(this.title('Settings', 'tunables for a fresh run'));
 
     const seedRow = document.createElement('div');
-    Object.assign(seedRow.style, { display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0 14px' });
+    Object.assign(seedRow.style, { display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0 12px' });
     const seedInput = document.createElement('input');
     seedInput.type = 'number'; seedInput.value = String(currentSeed);
     Object.assign(seedInput.style, {
@@ -127,21 +127,26 @@ export class Menu {
     seedLabel.textContent = 'Seed'; seedLabel.style.color = '#99a';
     seedRow.append(seedLabel, seedInput);
 
+    const aiToggle = styledButton(`🧠  AI soul: ${liveModel ? 'Live model (Ollama)' : 'Stub (default)'}`);
+    aiToggle.addEventListener('click', () => { a.onToggleLive(); this.showSettings(currentSeed, currentSpeed, !liveModel, a); });
+
     const note = document.createElement('div');
-    note.innerHTML = `Starting speed is the bottom slider (now ${currentSpeed}/s). A new seed needs a restart.`;
-    Object.assign(note.style, { color: '#9ab', fontSize: '12px', margin: '0 2px 14px', lineHeight: '1.6' });
+    note.innerHTML = `Starting speed is the bottom slider (now ${currentSpeed}/s). A new seed or AI change needs a restart.` +
+      (liveModel ? '<br><span style="color:#c9a">Live mode needs a local Ollama server running.</span>' : '');
+    Object.assign(note.style, { color: '#9ab', fontSize: '12px', margin: '10px 2px 14px', lineHeight: '1.6' });
 
     const apply = styledButton('↻  Apply & restart', true);
     const back = styledButton('←  Back');
     apply.addEventListener('click', () => a.onApply(Math.floor(Number(seedInput.value)) || currentSeed));
     back.addEventListener('click', () => a.onBack());
 
-    this.card.append(seedRow, note, apply, back);
+    this.card.append(seedRow, aiToggle, note, apply, back);
     this.open();
   }
 }
 
 export interface SettingsActions {
   onApply: (seed: number) => void;
+  onToggleLive: () => void;
   onBack: () => void;
 }
