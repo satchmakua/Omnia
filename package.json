@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "soak": "tsx src/sim/soak.ts",
+    "sweep": "tsx src/analysis/sweepMain.ts",
     "lint": "tsc --noEmit"
   },
   "devDependencies": {
