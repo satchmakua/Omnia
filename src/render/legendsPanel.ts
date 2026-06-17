@@ -10,6 +10,8 @@ import { chronicleRecent } from '../history/chronicle.ts';
 import type { ChronicleData } from '../history/chronicle.ts';
 import type { WorldStatsData, StatSample } from '../history/stats.ts';
 import { defaultConfig, ticksPerYear } from '../sim/config.ts';
+import { measureWorld } from '../analysis/metrics.ts';
+import type { WorldMetrics } from '../analysis/metrics.ts';
 
 const TPY = ticksPerYear(defaultConfig);
 const yearOf = (tick: number) => Math.floor(tick / TPY);
@@ -82,7 +84,40 @@ export class LegendsPanel {
        <div style="color:#99a;margin-bottom:12px">the town's history, in year ${year}</div>
        ${this.chronicleHtml(chronicle)}
        ${this.strataHtml(stats)}
+       ${this.scienceHtml(world)}
        <div style="margin-top:16px;color:#666">press C to close</div>`;
+  }
+
+  // Emergent structure (M7.7, D29): the same measurements `npm run soak` prints,
+  // surfaced live so the player can *see* the patterns the world produces — not just
+  // read history, but read its shape. A pure read of state (`measureWorld`).
+  private scienceHtml(world: World): string {
+    const m: WorldMetrics = measureWorld(world, defaultConfig);
+    if (m.ages.count === 0) return '';
+
+    const row = (label: string, value: string, note = ''): string =>
+      `<div style="display:flex;justify-content:space-between;gap:10px;margin:3px 0">
+        <span style="color:#aab">${label}</span>
+        <span style="color:#cfe;text-align:right">${value}${note ? ` <span style="color:#778">${note}</span>` : ''}</span></div>`;
+
+    const sw = m.social.smallWorldSigma;
+    const swNote = sw >= 1 ? 'small-world' : sw > 0 ? 'dense/clustered' : '';
+    const surn = m.surnameZipf;
+    const zipfNote = surn.exponent > 0.6 && surn.r2 > 0.6 ? "≈ Zipf's law" : '';
+    const fam = m.family;
+
+    return `<hr style="border-color:rgba(255,255,255,0.1);margin:14px 0">
+      <div style="color:#9fd6ff;text-transform:uppercase;font-size:11px;letter-spacing:1px;margin-bottom:4px">Emergent structure</div>
+      ${row('Wealth inequality (Gini)', m.wealthGini.toFixed(2))}
+      ${row('Wealth power-law tail α', m.wealthTail.alpha > 0 ? m.wealthTail.alpha.toFixed(2) : '—',
+        m.wealthTail.alpha > 0 ? `r²=${m.wealthTail.r2.toFixed(2)}` : '')}
+      ${row('Friendships per person', m.social.avgDegree.toFixed(1),
+        `clustering ${m.social.clustering.toFixed(2)}`)}
+      ${row('Small-world σ', sw > 0 ? sw.toFixed(2) : '—', swNote)}
+      ${row('Surname Zipf exponent', surn.exponent.toFixed(2), `r²=${surn.r2.toFixed(2)} ${zipfNote}`)}
+      ${row('Given-name Zipf exponent', m.givenZipf.exponent.toFixed(2), 'flat (no inheritance)')}
+      ${fam ? row('Language family', `${fam.living} living / ${fam.extinct} lost`,
+        `depth ${fam.maxDepth}, breadth ${fam.maxBreadth}`) : ''}`;
   }
 
   private chronicleHtml(c: ChronicleData | undefined): string {

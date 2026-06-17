@@ -10,6 +10,7 @@
     "test:coverage": "vitest run --coverage",
     "soak": "tsx src/sim/soak.ts",
     "sweep": "tsx src/analysis/sweepMain.ts",
+    "export": "tsx src/analysis/exportMain.ts",
     "lint": "tsc --noEmit"
   },
   "devDependencies": {
