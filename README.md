@@ -97,6 +97,7 @@ When the page loads you're looking at a small living world ticking in real time.
 | **E** | **Economy** dashboard — wealth distribution, employment, every business |
 | **F** | **Find** — searchable directory of every soul; click a row to inspect them and jump the camera there |
 | **T** | **Family** tree of the inspected person (click anyone first); click relatives to browse the line |
+| **G** | **Lineages** of tongues & cultures — the language/culture family trees (living vs lost), with a sample name in each tongue so you can hear the drift |
 | **L** | Show / hide the **legend key** (what each map symbol means) |
 | **Panel headers** | Click a panel's title bar (legend, Town Happenings) to **minimize** it |
 | **Live feed** (lower-left) | The **Town Happenings** ticker — births, weddings, deaths, new jobs, spells, spent veins, as they happen |
@@ -104,6 +105,16 @@ When the page loads you're looking at a small living world ticking in real time.
 
 > Things feel too fast? Drag the speed slider down, or pause with **Space** and
 > click at your leisure. The starting speed is intentionally gentle.
+
+**Running with a live model (optional).** By default the "soul" (reflection, dialogue,
+dreams, resolutions) runs on a **deterministic offline stub** — no model, no network,
+fully reproducible, and what CI uses. To have a real local model write those lines
+instead: install [Ollama](https://ollama.com), `ollama pull llama3.2`, make sure it's
+serving on `localhost:11434`, then open **Esc → Settings → AI soul: Live model (Ollama)**
+and restart. The model runs **off the hot path** (async, throttled, with an 8s timeout
+that falls back to the stub) so it never stalls the simulation, and every response is
+**recorded** so the run still replays exactly. With no Ollama running it simply falls
+back to the stub — nothing breaks.
 
 **What you're looking at**
 

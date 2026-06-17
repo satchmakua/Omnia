@@ -81,8 +81,11 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     if (ws && ws.samples.length > cfg.maxStatSamples) inv++;
     const eras = ch ? ch.eras.length : 0;
     const samples = ws ? ws.samples.length : 0;
-    const ls = world.getComponent(world.query(C_LANGUAGESTORE)[0], C_LANGUAGESTORE) as { soundChanges: number } | undefined;
+    const ls = world.getComponent(world.query(C_LANGUAGESTORE)[0], C_LANGUAGESTORE) as
+      { soundChanges: number; byId: Record<string, { extinct?: boolean }> } | undefined;
     const drifts = ls ? ls.soundChanges : 0;
+    const tongues = ls ? Object.keys(ls.byId).length : 0;
+    const lostTongues = ls ? Object.values(ls.byId).filter(l => l.extinct).length : 0;
 
     violations += inv;
     const fauna = world.query(C_FAUNA).length;
@@ -115,7 +118,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `fauna=${fauna} nodes=${nodes} eras=${eras} samples=${samples} cultures=${cultureSet.size} drifts=${drifts}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
+      `fauna=${fauna} nodes=${nodes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) drifts=${drifts}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
     );
   }
 }

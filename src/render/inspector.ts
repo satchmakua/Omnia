@@ -13,6 +13,7 @@ import type { TileMapData } from '../world/tilemap.ts';
 import { ageInYears } from '../sim/config.ts';
 import { defaultConfig } from '../sim/config.ts';
 import { getCultureStore, getCulture } from '../culture/cultureStore.ts';
+import { getLanguageStore, getLanguage } from '../lang/languageStore.ts';
 
 function bar(v: number): string {
   const filled = Math.max(0, Math.min(10, Math.round(v * 10)));
@@ -118,8 +119,14 @@ export class Inspector {
     const job     = world.getComponent<Job>(e, C_JOB);
     const speciesLine = species
       ? `<div><b>Species</b> <span style="color:${species.color}">${species.name}</span> (${species.size})</div>` : '';
-    const tongueLine = agent.tongue
-      ? `<div><b>Tongue</b> <span style="color:#bcd">${agent.tongue}</span></div>` : '';
+    // Tongue: derived live from the agent's culture's language, so a schism that
+    // moves them to a daughter culture shows the new dialect (not the birth name's).
+    const cstore0 = getCultureStore(world);
+    const lstore0 = getLanguageStore(world);
+    const culture0 = agent.cultureId && cstore0 ? getCulture(cstore0, agent.cultureId) : undefined;
+    const tongueName = culture0 && lstore0 ? getLanguage(lstore0, culture0.language)?.name : undefined;
+    const tongueLine = tongueName
+      ? `<div><b>Tongue</b> <span style="color:#bcd">${tongueName}</span></div>` : '';
     const jobLine = job
       ? `<div><b>Job</b> ${job.professionName}</div>`
       : `<div><b>Job</b> <span style="color:#a99">unemployed</span></div>`;

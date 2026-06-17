@@ -36,10 +36,10 @@ export class SpeedControl {
     this.slider = document.createElement('input');
     this.slider.type = 'range';
     this.slider.min = '0';
-    this.slider.max = '40';
+    this.slider.max = '100';
     this.slider.step = '1';
     this.slider.value = String(initial);
-    this.slider.style.width = '160px';
+    this.slider.style.width = '200px';
     this.slider.style.cursor = 'pointer';
     this.slider.addEventListener('input', () => this.setSpeed(Number(this.slider.value)));
 

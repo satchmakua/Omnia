@@ -10,10 +10,13 @@ import { rngChoice } from '../sim/rng.ts';
 import type { RNG } from '../sim/rng.ts';
 import { word } from './language.ts';
 
-// A live tongue: the authored shape plus descent bookkeeping (slice 4 family tree).
+// A live tongue: the authored shape plus descent (slice 4) + extinction (slice 5)
+// bookkeeping. A tongue no living culture speaks is kept as a compact descent record.
 export interface RuntimeLanguage extends Language {
   parent?: string;       // id of the tongue this split from
   foundedTick?: number;  // when this daughter tongue formed
+  extinct?: boolean;     // no living speakers — a lost tongue, kept for the family tree
+  diedTick?: number;     // when it fell silent
 }
 
 export interface LanguageStoreData {

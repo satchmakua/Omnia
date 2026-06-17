@@ -71,7 +71,7 @@ export function spawnAgent(
     energyMult: species.needs.energy,
   });
   world.addComponent<Agent>(e, C_AGENT, {
-    name, surname, tongue: lang.name, cultureId, action: 'wander',
+    name, surname, cultureId, action: 'wander',
     ticksAlive: opts.ageTicks, wealthGoal, sex, lifespanTicks,
   });
   world.addComponent<Health>(e, C_HEALTH, { value: 1, ill: false });
