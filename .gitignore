@@ -1,5 +1,6 @@
 node_modules/
 dist/
 coverage/
+runs/
 .DS_Store
 *.local

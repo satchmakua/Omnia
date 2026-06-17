@@ -6,8 +6,10 @@ known pattern" (validation). Everything here is deterministic — reproducible f
 listed command + seed. Measurement is a pure read of durable state (D31), so observing
 never perturbs a run.
 
-Tools: `npm run soak` (one long run + a measured "Science" block, `src/analysis/metrics.ts`)
-and `npm run sweep` (parameter sweeps that locate phase transitions, `src/analysis/sweep.ts`).
+Tools: `npm run soak` (one long run + a measured "Science" block, `src/analysis/metrics.ts`),
+`npm run sweep` (parameter sweeps that locate phase transitions, `src/analysis/sweep.ts`),
+and `npm run export` (run manifests + CSV + run-diff, `src/analysis/manifest.ts`). The same
+metrics are surfaced live in the in-app **Legends view (C) → "Emergent structure"**.
 
 ---
 
@@ -64,9 +66,15 @@ Reproduce: `npm run sweep`.
 
 ---
 
-## Still open (milestone DoD)
+## Reproducing these findings from a manifest
 
-The M7.7 DoD wants the documented analysis to be **reproducible from an exported manifest**
-(seed + config). Manifests / run export + diff are the next bullet; once they land, each
-finding above gets a one-file manifest that regenerates it exactly. Surfacing key metrics in
-the in-app Legends/charts views is the final bullet.
+A **run manifest** (`runs/*.manifest.json` from `npm run export`) is just `{ version, ticks,
+config }` — config includes the seed. Because the sim is deterministic, `runManifest` regenerates
+the run and its measurements exactly: `npm run export` re-runs the canonical seed-8 manifest and
+confirms **0 metrics changed (EXACT)**. So Finding 1 (the surname-Zipf regularity) ships with a
+one-file manifest that anyone can replay; the CSV (`runs/seed8.stats.csv`) is the world-health
+time-series for plotting. Finding 2 (the phase transition) is a sweep of manifests differing only
+in `floraDensity`. Run-diff (`diffRecords`) shows what moved between two runs (e.g. seed 8 vs 1).
+
+This closes the M7.7 DoD: ≥1 emergent regularity **and** ≥1 located phase transition, both
+**reproducible from an exported manifest**, with the metrics surfaced in-app.
