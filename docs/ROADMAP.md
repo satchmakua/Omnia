@@ -131,7 +131,7 @@ Slices land one at a time, holding the **D12 tenability line** (few shared objec
 
 **DoD:** with a model installed, agents converse/gloss in genuinely varied language within budget, never stalling the tick; the run records and replays identically via `RecordedProvider`; with no model installed, nothing changes (stub default). **Met** — async submit→drain→apply→record→replay proven by `asyncSoul.test.ts` (mock async provider); sync path byte-identical (existing AI tests pass); live-verified the graceful no-Ollama fallback (164 responses applied off the hot path, no stall, no console errors). *(Deferred: LLM glossing of coined daughter-tongue/value names — the procedural naming already works; LLM glossing would hook the EvolutionSystem and is a flavor follow-on.)*
 
-## Milestone 7.7 — Science & Instrumentation  *(D29)*
+## ▶ Milestone 7.7 — Science & Instrumentation  *(current — D29)*
 
 **Goal:** cash in the perfect determinism as real experiment tooling — turn "it didn't crash" (verification) into "it reproduces a known pattern" (validation).
 
