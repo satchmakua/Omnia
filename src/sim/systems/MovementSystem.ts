@@ -6,8 +6,9 @@ import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
 import { invokeCapability } from '../../capability/invoke.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
-import { makeEnterable, stepToward, wanderStep, buildOccupancy } from './movementUtil.ts';
+import { makeEnterable, wanderStep, buildOccupancy } from './movementUtil.ts';
 import { SpatialGrid } from '../spatialGrid.ts';
+import { pathToward } from '../pathfinding.ts';
 
 // Mobile creatures never share a tile; a content agent at its workplace fidgets a
 // little so it looks alive rather than frozen on the spot.
@@ -76,7 +77,7 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       if (job && job.gathers) {
         const node = nearestNode(job.gathers, pos.x, pos.y);
         if (node) {
-          if (pos.x !== node.x || pos.y !== node.y) stepToward(pos, node.x, node.y, rng, enterable, occ);
+          if (pos.x !== node.x || pos.y !== node.y) pathToward(pos, node.x, node.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight);
           continue;
         }
         // Resource exhausted everywhere — fall back to the employer.
@@ -85,7 +86,7 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       // occasionally so a working agent looks busy rather than frozen on the spot.
       const ep = job ? world.getComponent<Position>(job.employer, C_POSITION) : undefined;
       if (ep) {
-        if (pos.x !== ep.x || pos.y !== ep.y) stepToward(pos, ep.x, ep.y, rng, enterable, occ);
+        if (pos.x !== ep.x || pos.y !== ep.y) pathToward(pos, ep.x, ep.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight);
         else if (rng() < WORK_FIDGET) wanderStep(pos, rng, enterable, occ);
         continue;
       }
@@ -96,7 +97,7 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       // Walk toward the nearest other person; converging onto a shared tile lets
       // the SocialSystem strike up an interaction.
       const nearest = agentGrid.nearest(pos.x, pos.y, (id) => id !== entity);
-      if (nearest) { stepToward(pos, nearest.x, nearest.y, rng, enterable, occ); continue; }
+      if (nearest) { pathToward(pos, nearest.x, nearest.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight); continue; }
       // Alone in the world — wander.
     }
 
@@ -114,7 +115,7 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       }
       // Move toward the nearest ripe flora; wander if none exists yet.
       const nearest = floraGrid.nearest(pos.x, pos.y);
-      if (nearest) { stepToward(pos, nearest.x, nearest.y, rng, enterable, occ); continue; }
+      if (nearest) { pathToward(pos, nearest.x, nearest.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight); continue; }
     }
 
     wanderStep(pos, rng, enterable, occ);
