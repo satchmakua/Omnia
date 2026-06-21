@@ -96,6 +96,28 @@ export function ticksPerYear(cfg: SimConfig): number {
   return cfg.ticksPerDay * cfg.daysPerYear;
 }
 
+// World-gen quantities (biome seeds, flora/fauna caps, employer count) are tuned for
+// the base 64×64 map; they scale with map AREA so a larger map gets proportionally
+// more of each — identity at 64×64, so the default world is byte-unchanged (M8). Folk
+// counts (initialPopulation, maxPopulation) are deliberately NOT scaled here; large
+// populations wait for the LOD + uncap slices.
+const BASE_GRID_AREA = 64 * 64;
+export function areaScale(cfg: SimConfig): number {
+  return (cfg.gridWidth * cfg.gridHeight) / BASE_GRID_AREA;
+}
+export function scaledBiomeSeeds(cfg: SimConfig): number {
+  return Math.max(1, Math.round(cfg.biomeSeedCount * areaScale(cfg)));
+}
+export function scaledMaxFlora(cfg: SimConfig): number {
+  return Math.round(cfg.maxFlora * areaScale(cfg));
+}
+export function scaledMaxFauna(cfg: SimConfig): number {
+  return Math.round(cfg.maxFauna * areaScale(cfg));
+}
+export function scaledBusinessCount(cfg: SimConfig): number {
+  return Math.max(1, Math.round(cfg.businessCount * areaScale(cfg)));
+}
+
 export function ageInYears(ticksAlive: number, cfg: SimConfig): number {
   return ticksAlive / ticksPerYear(cfg);
 }

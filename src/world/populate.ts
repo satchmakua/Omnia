@@ -3,6 +3,7 @@
 // come from config so the world starts lively but bounded.
 import type { World } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
+import { scaledMaxFlora, scaledMaxFauna } from '../sim/config.ts';
 import type { RNG } from '../sim/rng.ts';
 import type { Content } from '../content/loader.ts';
 import type { SpawnTableEntry } from '../content/schema.ts';
@@ -27,6 +28,7 @@ export function populateWorld(
 ): PopulateResult {
   // Resolve each biome index once.
   const biomeByIndex = map.biomeIds.map(id => content.biomes.require(id));
+  const maxFlora = scaledMaxFlora(cfg), maxFauna = scaledMaxFauna(cfg);
   let flora = 0, fauna = 0, resources = 0;
 
   for (let y = 0; y < map.height; y++) {
@@ -35,11 +37,11 @@ export function populateWorld(
       const biome = biomeByIndex[biomeIndexAt(map, x, y)];
 
       // Roll order is fixed (flora, fauna, resource) for determinism.
-      if (flora < cfg.maxFlora && biome.flora.length > 0 && rng() < cfg.floraDensity) {
+      if (flora < maxFlora && biome.flora.length > 0 && rng() < cfg.floraDensity) {
         spawnFlora(world, x, y, content.flora.require(pickWeighted(rng, biome.flora).id), cfg, rng);
         flora++;
       }
-      if (fauna < cfg.maxFauna && biome.fauna.length > 0 && rng() < cfg.faunaDensity) {
+      if (fauna < maxFauna && biome.fauna.length > 0 && rng() < cfg.faunaDensity) {
         spawnFauna(world, x, y, content.fauna.require(pickWeighted(rng, biome.fauna).id), cfg, rng);
         fauna++;
       }
