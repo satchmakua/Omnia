@@ -1,0 +1,8 @@
+# Stocky grey ram of the crystal flats and high plains. Hardy, even-tempered grazer.
+id: "crag_ram"
+name: "Crag Ram"
+color: "#a8a090"
+size: "medium"
+hungerDecayPerDay: 0.55
+breedThreshold: 0.72
+breedCooldownDays: 3

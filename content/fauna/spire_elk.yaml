@@ -1,0 +1,9 @@
+# Towering tan elk that drifts between plains and forest, antlers like broken spires.
+# Large and slow to breed, so it never swarms.
+id: "spire_elk"
+name: "Spire Elk"
+color: "#c9a86a"
+size: "large"
+hungerDecayPerDay: 0.5
+breedThreshold: 0.78
+breedCooldownDays: 4

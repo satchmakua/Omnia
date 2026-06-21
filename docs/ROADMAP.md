@@ -276,10 +276,10 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 **Goal:** a world that isn't all humans, dwarves, and moth grazers.
 
 - [ ] **4 more base languages** (distinct families) — all still evolving.
-- [ ] **Common races** (orc/elf/goblin/…); **real animals** (wolf/cow/chicken/horse/…) with predator/prey roles (feeds M8 ecology).
+- [~] **Common races** (orc/elf/goblin/…); **real animals** (wolf/cow/chicken/horse/…) with predator/prey roles (feeds M8 ecology). *(S33, pulled forward — flora/fauna diversity pass: +6 flora (emberwheat/bruisewort/lantern_moss/saltvine/cinderbud/prism_lily → 10 total) and +6 fauna (spire_elk/glow_moth/crag_ram/dust_beetle/ember_hound/thistle_doe → 8 total), distributed so each passable biome has a distinct ecology; the renderer now tints fauna by their own **colour + size** (no longer one amber blob), so the map reads varied. Races + predator/prey behaviour still to come.)*
 - [ ] **Monsters** (iconic D&D, world-flavoured) and **special agents** (vampire/undead/ghost/alien/dragon) as agents with **unique icons** and content-defined behaviour.
 - [ ] **Building types** (school/market/constable/prison/hospital/theatre/town-hall/court/bar/brothel/outpost/guard-tower/mage-enclave + special: floating city/dungeon/science-lab/power-plant) with functions.
-- [ ] A **rich icon library** (buildings/resources/professions/events/creatures/status/religions/tech/governments).
+- [~] A **rich icon library** (buildings/resources/professions/events/creatures/status/religions/tech/governments). *(S33: redrew the crude animal (clean quadruped: body/head/ears/legs/tail/eye) and timber (log-stack with growth rings) icons; fauna are now per-species coloured/sized on the map. The broad library is still to come.)*
 
 **DoD:** the map shows many distinct races/animals/monsters/special agents and building types, each with a clear icon and a content-defined role; adding more is data-only; soak-stable.
 
@@ -287,12 +287,13 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **Goal:** make all the depth perceivable (RimWorld / Dwarf Fortress / Kenshi / Sims-grade).
 
-- [ ] **Inspector overhaul:** audit existing views; add the missing ones (agent sheet, organization, government, religion, tech/magic, events, achievements, world/misc).
+- [~] **Inspector overhaul:** audit existing views; add the missing ones (agent sheet, organization, government, religion, tech/magic, events, achievements, world/misc). *(S33, pulled forward: fixed the **stuck-open card** — the ✕ button is now persistent (was rebuilt every frame and destroyed mid-click) and Esc closes the card. Full overhaul still pending.)*
 - [ ] **Conversation tab** (active + past conversations).
-- [ ] **On-screen help / game guide**; **controls → Esc → Controls** (off the main screen); **top bar minimal** (day / year / season / folk) with the rest moved into views.
-- [ ] Fix the **finder "f"-typed-into-search bug**; aesthetic/lo-fi pass (D13); optional ambient audio.
+- [ ] **Master tabbed view** *(human idea, S33)*: one hotkey opens a master panel holding **all** views as scrollable tabs; per-view hotkeys jump to a tab. Replaces the growing flat hotkey list and makes "Town Happenings" just another view. **Deferred** — a sizeable refactor of the five modal dashboards (legends/economy/directory/family/lineages) + the always-on panels into a tab host; worth its own focused pass.
+- [x] **On-screen help / game guide**; **controls → Esc → Controls** (off the main screen); **top bar minimal** (day / year / season / folk) with the rest moved into views. *(S33: removed the always-on `#hud` controls strip; added **Esc → Controls** (one keymap source); the **top banner is now minimal** — day/night, Year · Season · Month, Folk, and real-world watch-time (⏱) — Gini/Mages/Graves/Fauna moved off (Gini → Economy with a plain-English explanation). New **time model**: a legible Year/Season/Month calendar (cosmetic subdivision of the aging year, so dates & ages agree) replacing the confusing cumulative "day"; the **speed slider is now exponential up to 1000 ticks/s ≈ 1 sim-year/second** (was capped at 100, with a 30-tick/frame loop cap raised to 500). Zoom % is labelled and tucked bottom-right. **Town Happenings** is now hideable (H), like the Legend (L). The **Legend** explains every symbol (incl. the `|||` = seeking-food badge) and shows the child folk at actual reduced scale.)*
+- [x] Fix the **finder "f"-typed-into-search bug** *(S33: `preventDefault` on the letter hotkeys, so the F that opens Find isn't typed into its search field)*; aesthetic/lo-fi pass (D13); optional ambient audio.
 
-**DoD:** every system from M8–M18 is inspectable; the top bar is minimal and controls/help live under Esc; the finder bug is gone; the UI reads richly; soak-stable.
+**DoD:** every system from M8–M18 is inspectable; the top bar is minimal and controls/help live under Esc; the finder bug is gone; the UI reads richly; soak-stable. *(Top-bar/controls/finder/time/legend done S33; inspector overhaul + master tabbed view + conversation tab remain.)*
 
 ---
 

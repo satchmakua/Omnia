@@ -1,0 +1,8 @@
+# Soft-brown doe of the plains, ever skittish, grazing the emberwheat at dawn.
+id: "thistle_doe"
+name: "Thistle Doe"
+color: "#b98f6a"
+size: "small"
+hungerDecayPerDay: 0.6
+breedThreshold: 0.72
+breedCooldownDays: 3

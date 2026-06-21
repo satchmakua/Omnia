@@ -9,7 +9,11 @@ genWeight: 4
 flora:
   - { id: "glowcap", weight: 5 }
   - { id: "spore_fern", weight: 4 }
+  - { id: "bruisewort", weight: 3 }
+  - { id: "lantern_moss", weight: 3 }
 fauna:
-  - { id: "moth_grazer", weight: 3 }
+  - { id: "glow_moth", weight: 4 }
+  - { id: "moth_grazer", weight: 2 }
+  - { id: "spire_elk", weight: 2 }
 resources:
   - { id: "timber", weight: 4 }

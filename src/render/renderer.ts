@@ -3,15 +3,22 @@ import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
   C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS,
-  C_TOMBSTONE, C_CLOCK, C_TILEMAP,
+  C_CLOCK, C_TILEMAP,
 } from '../sim/components.ts';
 import type {
   Position, Agent, Health, Flora, Fauna, Resource, Business, Clock,
 } from '../sim/components.ts';
 import type { TileMapData } from '../world/tilemap.ts';
-import { wealthStats } from '../sim/wealth.ts';
-import { ageInYears } from '../sim/config.ts';
+import { ageInYears, calendarOf } from '../sim/config.ts';
 import { CATEGORY_COLOR, resourceIcon } from './icons.ts';
+
+// Real-world watch time as H:MM:SS (or M:SS under an hour).
+function formatElapsed(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+  const p = (n: number) => String(n).padStart(2, '0');
+  return hh > 0 ? `${hh}:${p(mm)}:${p(ss)}` : `${mm}:${p(ss)}`;
+}
 
 // A category-first map vocabulary (M6.5): one clear icon per *kind* of thing, dual-
 // coded by shape AND accent colour so it reads even when small. Folk are one icon
@@ -138,7 +145,7 @@ export class Renderer {
   }
 
   // ── render ───────────────────────────────────────────────────────────────────
-  render(world: World, clockEntity: EntityId): void {
+  render(world: World, clockEntity: EntityId, elapsedMs = 0): void {
     const { ctx, cellSize, cfg } = this;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#0b0b14';                   // void beyond the map edge
@@ -173,8 +180,9 @@ export class Renderer {
       this.iconBuilding(p.x, p.y, biz.color);
     }
     for (const e of world.query(C_FAUNA, C_POSITION)) {
+      const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      this.iconAnimal(p.x, p.y, CATEGORY_COLOR.animal);
+      this.iconAnimal(p.x, p.y, fa.color, fa.size);   // species colour + size
     }
     for (const e of world.query(C_AGENT, C_POSITION)) {
       const agent = world.getComponent<Agent>(e, C_AGENT)!;
@@ -189,7 +197,7 @@ export class Renderer {
     }
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.drawHud(world, clockEntity);
+    this.drawHud(world, clockEntity, elapsedMs);
   }
 
   // ── icon primitives (drawn in a ±11 design space, scaled to the cell) ─────────
@@ -235,16 +243,22 @@ export class Renderer {
     ctx.fill();
   }
 
-  private iconAnimal(gx: number, gy: number, color: string): void {
+  private iconAnimal(gx: number, gy: number, color: string, size: 'small' | 'medium' | 'large' = 'medium'): void {
     const ctx = this.ctx;
-    this.at(gx, gy, 1, () => {
-      ctx.fillStyle = color; ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.ellipse(-1, 2, 8, 4, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(7, -1, 3, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(-5, 5); ctx.lineTo(-5, 9); ctx.moveTo(-1, 6); ctx.lineTo(-1, 10);
-      ctx.moveTo(3, 6); ctx.lineTo(3, 10); ctx.moveTo(6, 5); ctx.lineTo(6, 9);
-      ctx.moveTo(-8, 1); ctx.quadraticCurveTo(-11, -1, -10, -4); ctx.stroke();
+    const scale = size === 'large' ? 1.3 : size === 'small' ? 0.82 : 1;
+    this.at(gx, gy, scale, () => {
+      ctx.fillStyle = color; ctx.strokeStyle = color; ctx.lineWidth = 1.7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.ellipse(-1, 0, 7.5, 4.2, 0, 0, Math.PI * 2); ctx.fill();   // body
+      ctx.beginPath(); ctx.arc(6.5, -2, 3.2, 0, Math.PI * 2); ctx.fill();             // head
+      ctx.beginPath();                                                                // pointed ears
+      ctx.moveTo(4.7, -4.5); ctx.lineTo(4.2, -7.2); ctx.lineTo(6.1, -5.3); ctx.closePath();
+      ctx.moveTo(8.3, -4.5); ctx.lineTo(9.3, -7.0); ctx.lineTo(7.0, -5.3); ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();                                                                // four legs + tail
+      ctx.moveTo(-6, 3.5); ctx.lineTo(-6, 8); ctx.moveTo(-2, 4); ctx.lineTo(-2, 8.2);
+      ctx.moveTo(2, 4); ctx.lineTo(2, 8.2); ctx.moveTo(5, 3.5); ctx.lineTo(5, 7.8);
+      ctx.moveTo(-8, -0.5); ctx.quadraticCurveTo(-11.5, -1.5, -10.8, -5.5); ctx.stroke();
+      ctx.fillStyle = '#0c0c14'; ctx.beginPath(); ctx.arc(7.4, -2.4, 0.9, 0, Math.PI * 2); ctx.fill(); // eye
     });
   }
 
@@ -274,10 +288,13 @@ export class Renderer {
       ctx.globalAlpha = 0.5 + amount * 0.5;
       ctx.fillStyle = color; ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 0.8;
       if (kind === 'timber') {
-        if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(-9, -4, 16, 8, 4); ctx.fill(); }
-        else { ctx.fillRect(-9, -4, 16, 8); }
-        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-        ctx.beginPath(); ctx.arc(6, 0, 2.6, 0, Math.PI * 2); ctx.stroke();
+        // A stack of cut log-ends, each with a growth ring (a small woodpile).
+        ctx.lineWidth = 0.9;
+        for (const [lx, ly] of [[-4, 2.5], [4, 2.5], [0, -3.5]] as const) {
+          ctx.fillStyle = color; ctx.beginPath(); ctx.arc(lx, ly, 3.6, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.arc(lx, ly, 3.6, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(lx, ly, 1.5, 0, Math.PI * 2); ctx.stroke();
+        }
       } else if (kind === 'crystal') {
         ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(5, -1); ctx.lineTo(2, 8); ctx.lineTo(-2, 8); ctx.lineTo(-5, -1); ctx.closePath(); ctx.fill();
         ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(0, 8); ctx.moveTo(-5, -1); ctx.lineTo(5, -1); ctx.stroke();
@@ -301,23 +318,31 @@ export class Renderer {
     });
   }
 
-  private drawHud(world: World, clockEntity: EntityId): void {
+  private drawHud(world: World, clockEntity: EntityId, elapsedMs: number): void {
     const { ctx } = this;
     const clock = world.getComponent<Clock>(clockEntity, C_CLOCK)!;
-    const yr = (clock.tick / (this.cfg.ticksPerDay * this.cfg.daysPerYear)).toFixed(0);
+    const { year, season, month } = calendarOf(clock.tick, this.cfg);
     const pop = world.query(C_AGENT).length;
-    const mages = world.query(C_AGENT, C_MAGIC).length;
-    const graves = world.query(C_TOMBSTONE).length;
-    const fauna = world.query(C_FAUNA).length;
-    const w = wealthStats(world);
-    const label = `Year ${yr}  Day ${clock.day}  ${clock.isDay ? '☀' : '☾'}  |  ` +
-      `Folk ${pop}  Mages ${mages}  Graves ${graves}  |  Fauna ${fauna}  |  Gini ${w.gini.toFixed(2)}` +
-      `  |  ${Math.round(this.scale * 100)}%`;
+
+    // Top banner: just the in-sim date, the day/night phase, the headcount, and the
+    // real-world time you've been watching. Everything else lives in the views.
+    const label = `${clock.isDay ? '☀' : '☾'} Year ${year} · ${season} · M${month}` +
+      `   ·   Folk ${pop}   ·   ⏱ ${formatElapsed(elapsedMs)}`;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, this.canvas.width, 28);
     ctx.fillStyle = '#ccd';
     ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
     ctx.fillText(label, 8, 17);
+
+    // Zoom, labelled, tucked into the bottom-right corner (off the top banner).
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    const zoom = `Zoom ${Math.round(this.scale * 100)}%`;
+    ctx.font = '10px monospace';
+    const zw = ctx.measureText(zoom).width + 12;
+    ctx.fillRect(this.canvas.width - zw - 6, this.canvas.height - 22, zw, 16);
+    ctx.fillStyle = '#9aa';
+    ctx.fillText(zoom, this.canvas.width - zw, this.canvas.height - 10);
   }
 
   // Picks the most interesting entity on the clicked tile: folk > fauna > business > resource > flora > grave.

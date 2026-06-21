@@ -1,0 +1,8 @@
+# Tall amber grain of the ashen plains — a staple crop the old farmers left behind.
+id: "emberwheat"
+name: "Emberwheat"
+color: "#d8a94e"
+growthPerDay: 1.0
+edibleAt: 0.6
+foodYield: 0.55
+spreadChancePerDay: 0.12

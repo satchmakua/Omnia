@@ -33,15 +33,16 @@ export class SpeedControl {
     label.textContent = 'Speed';
     label.style.color = '#99a';
 
+    // The slider position is 0..100; speed maps EXPONENTIALLY to 1..1000 ticks/s, so
+    // there's fine control when watching closely AND ~1 sim-year/second at the top.
     this.slider = document.createElement('input');
     this.slider.type = 'range';
     this.slider.min = '0';
     this.slider.max = '100';
     this.slider.step = '1';
-    this.slider.value = String(initial);
     this.slider.style.width = '200px';
     this.slider.style.cursor = 'pointer';
-    this.slider.addEventListener('input', () => this.setSpeed(Number(this.slider.value)));
+    this.slider.addEventListener('input', () => this.setSpeed(speedFromPos(Number(this.slider.value))));
 
     this.readout = document.createElement('span');
     this.readout.style.minWidth = '70px';
@@ -67,9 +68,20 @@ export class SpeedControl {
   }
 
   private refresh(): void {
-    this.slider.value = String(this.speed);
+    this.slider.value = String(posFromSpeed(this.speed));
     this.button.textContent = this.speed > 0 ? '⏸' : '▶';
     this.readout.textContent = this.speed > 0 ? `${this.speed} ticks/s` : 'Paused';
     this.readout.style.color = this.speed > 0 ? '#dde' : '#f9a';
   }
+}
+
+// Exponential map between the 0..100 slider position and 1..1000 ticks/s.
+const MAX_SPEED = 1000;
+function speedFromPos(pos: number): number {
+  if (pos <= 0) return 0;
+  return Math.round(Math.pow(MAX_SPEED, (pos - 1) / 99));
+}
+function posFromSpeed(speed: number): number {
+  if (speed <= 0) return 0;
+  return Math.max(1, Math.min(100, Math.round(1 + 99 * Math.log(speed) / Math.log(MAX_SPEED))));
 }

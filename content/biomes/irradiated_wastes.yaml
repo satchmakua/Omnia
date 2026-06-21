@@ -8,8 +8,12 @@ passable: true
 genWeight: 3
 flora:
   - { id: "ash_grass", weight: 2 }
+  - { id: "cinderbud", weight: 3 }
+  - { id: "saltvine", weight: 1 }
 fauna:
-  - { id: "dust_hopper", weight: 4 }
+  - { id: "dust_hopper", weight: 3 }
+  - { id: "dust_beetle", weight: 3 }
+  - { id: "ember_hound", weight: 1 }
 resources:
   - { id: "ore", weight: 3 }
   - { id: "reactive_crystal", weight: 1 }

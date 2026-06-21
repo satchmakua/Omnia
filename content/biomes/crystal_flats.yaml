@@ -8,6 +8,10 @@ passable: true
 genWeight: 3
 flora:
   - { id: "crystal_bloom", weight: 3 }
-fauna: []
+  - { id: "saltvine", weight: 4 }
+  - { id: "prism_lily", weight: 1 }
+fauna:
+  - { id: "crag_ram", weight: 3 }
+  - { id: "dust_hopper", weight: 2 }
 resources:
   - { id: "reactive_crystal", weight: 3 }

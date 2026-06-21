@@ -1,0 +1,8 @@
+# Soft glowing moss that carpets the forest floor. Spreads fast, a light snack.
+id: "lantern_moss"
+name: "Lantern Moss"
+color: "#8fe0a0"
+growthPerDay: 1.3
+edibleAt: 0.4
+foodYield: 0.3
+spreadChancePerDay: 0.28

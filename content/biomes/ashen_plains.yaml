@@ -8,7 +8,11 @@ passable: true
 genWeight: 6            # most common biome at world generation
 flora:
   - { id: "ash_grass", weight: 8 }
+  - { id: "emberwheat", weight: 4 }
   - { id: "spore_fern", weight: 1 }
 fauna:
-  - { id: "moth_grazer", weight: 5 }
+  - { id: "moth_grazer", weight: 4 }
+  - { id: "thistle_doe", weight: 3 }
+  - { id: "spire_elk", weight: 2 }
+  - { id: "crag_ram", weight: 2 }
 resources: []

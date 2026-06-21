@@ -1,0 +1,9 @@
+# Lean rust-red hound of the wastes — for now a wary scavenger of whatever grows.
+# (A natural predator once hunting lands in a later milestone.)
+id: "ember_hound"
+name: "Ember Hound"
+color: "#c56a4a"
+size: "medium"
+hungerDecayPerDay: 0.7
+breedThreshold: 0.76
+breedCooldownDays: 4

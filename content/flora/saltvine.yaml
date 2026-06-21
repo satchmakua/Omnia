@@ -1,0 +1,8 @@
+# Pale, salt-crusted vine that creeps across the crystal flats. Hardy, low yield.
+id: "saltvine"
+name: "Saltvine"
+color: "#b9c6a0"
+growthPerDay: 0.5
+edibleAt: 0.5
+foodYield: 0.45
+spreadChancePerDay: 0.08

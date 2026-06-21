@@ -27,7 +27,9 @@ const KIND_GLYPH: Record<EventKind, string> = {
 };
 
 export class EventFeed {
+  private readonly panel: HTMLDivElement;
   private readonly body: HTMLDivElement;
+  private visible = true;
   private lastTopTick = -1;
   private lastCount = -1;
 
@@ -39,8 +41,15 @@ export class EventFeed {
         overflow: 'hidden',
       },
     });
+    this.panel = panel;
     this.body = body;
     document.body.appendChild(panel);
+  }
+
+  /** Hide/show the whole feed (hotkey H), like the legend (L). */
+  toggle(): void {
+    this.visible = !this.visible;
+    this.panel.style.display = this.visible ? 'block' : 'none';
   }
 
   render(world: World): void {

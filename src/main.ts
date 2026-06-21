@@ -59,6 +59,7 @@ let active: Simulation | null = null;
 let activeCfg: SimConfig = baseCfg;
 let lastSeed = baseCfg.seed;
 let state: 'menu' | 'running' | 'paused' = 'menu';
+let realElapsedMs = 0;   // real-world time spent watching this run (excludes paused/menu)
 
 // The "soul" provider: the deterministic stub by default; the live local model
 // (Ollama) when toggled on in Settings (applies on the next run). The async path is
@@ -77,6 +78,7 @@ function newSimulation(seed: number): void {
   active = createSimulation(activeCfg, content);
   activeProvider = liveModel ? new OllamaProvider(OLLAMA) : stubProvider;
   lastSeed = seed;
+  realElapsedMs = 0;
   inspector.close();
   state = 'running';
 }
@@ -90,6 +92,7 @@ function showPauseMenu(): void {
       onToggleLive: () => { liveModel = !liveModel; },
       onBack: () => showPauseMenu(),
     }),
+    onControls: () => menu.showControls(() => showPauseMenu()),
     onQuit: () => { active = null; state = 'menu'; openStart(); },
   });
 }
@@ -151,14 +154,17 @@ function loop(now: number) {
   last = now;
 
   if (state === 'running' && active && speed > 0) {
+    realElapsedMs += dtSeconds * 1000;
     tickAccumulator += dtSeconds * speed;
-    const steps = Math.min(Math.floor(tickAccumulator), 30);
+    // Cap ticks-per-frame high enough for ~1 year/sec at top speed, but bounded so a
+    // stall can't trigger a catch-up spiral.
+    const steps = Math.min(Math.floor(tickAccumulator), 500);
     tickAccumulator -= Math.floor(tickAccumulator);
     for (let i = 0; i < steps; i++) tick(active.world, active.rng, activeCfg, active.clockEntity, content, activeProvider);
   }
 
   if (active) {
-    renderer.render(active.world, active.clockEntity);
+    renderer.render(active.world, active.clockEntity, realElapsedMs);
     renderer.consumeClick(active.world);
     inspector.update(active.world);
     eventFeed.render(active.world);
@@ -176,6 +182,7 @@ function loop(now: number) {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (anyDashOpen()) closeDashboards();          // back out of a dashboard first
+    else if (inspector.isOpen) inspector.close();  // then close an open inspector card
     else if (state === 'running') pause();
     else if (state === 'paused') { menu.hide(); state = 'running'; }
     return;
@@ -183,13 +190,16 @@ document.addEventListener('keydown', (e) => {
   // Don't fire hotkeys while typing in a field (directory search, seed input).
   if (document.activeElement instanceof HTMLInputElement) return;
   if (state !== 'running' || !active) return;
+  // preventDefault on the letter hotkeys so the keystroke that opens a search field
+  // (Find) isn't also typed into it.
   if (e.key === ' ') { controls.togglePause(); e.preventDefault(); }
-  else if (e.key === 'c' || e.key === 'C') { toggleDashboard('legends'); }
-  else if (e.key === 'e' || e.key === 'E') { toggleDashboard('economy'); }
-  else if (e.key === 'f' || e.key === 'F') { toggleDashboard('directory'); }
-  else if (e.key === 't' || e.key === 'T') { toggleDashboard('family'); }
-  else if (e.key === 'g' || e.key === 'G') { toggleDashboard('lineages'); }
-  else if (e.key === 'l' || e.key === 'L') { legend.toggle(); }
+  else if (e.key === 'c' || e.key === 'C') { toggleDashboard('legends'); e.preventDefault(); }
+  else if (e.key === 'e' || e.key === 'E') { toggleDashboard('economy'); e.preventDefault(); }
+  else if (e.key === 'f' || e.key === 'F') { toggleDashboard('directory'); e.preventDefault(); }
+  else if (e.key === 't' || e.key === 'T') { toggleDashboard('family'); e.preventDefault(); }
+  else if (e.key === 'g' || e.key === 'G') { toggleDashboard('lineages'); e.preventDefault(); }
+  else if (e.key === 'l' || e.key === 'L') { legend.toggle(); e.preventDefault(); }
+  else if (e.key === 'h' || e.key === 'H') { eventFeed.toggle(); e.preventDefault(); }
   else if (e.key === 'ArrowLeft')  { renderer.panBy(-0.12, 0); e.preventDefault(); }
   else if (e.key === 'ArrowRight') { renderer.panBy(0.12, 0); e.preventDefault(); }
   else if (e.key === 'ArrowUp')    { renderer.panBy(0, -0.12); e.preventDefault(); }

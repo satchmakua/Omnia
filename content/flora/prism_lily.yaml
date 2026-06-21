@@ -1,0 +1,8 @@
+# Light-splitting lily of the salt flats — slow, rare, and the richest forage around.
+id: "prism_lily"
+name: "Prism Lily"
+color: "#f0a9d0"
+growthPerDay: 0.35
+edibleAt: 0.7
+foodYield: 0.75
+spreadChancePerDay: 0.03
