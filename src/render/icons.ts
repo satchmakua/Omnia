@@ -34,8 +34,11 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
       return `<circle cx="0" cy="-6" r="4" fill="${color}"/>` +
         `<path d="M-6 9 Q -6 -1 0 -1 Q 6 -1 6 9 Z" fill="${color}"/>`;
     case 'animal':
-      return `<ellipse cx="-1" cy="2" rx="8" ry="4" fill="${color}"/><circle cx="7" cy="-1" r="3" fill="${color}"/>` +
-        `<path d="M-5 5 V9 M-1 6 V10 M3 6 V10 M6 5 V9 M-8 1 Q -11 -1 -10 -4" stroke="${color}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+      return `<ellipse cx="-1" cy="0" rx="7.5" ry="4.2" fill="${color}"/>` +
+        `<circle cx="6.5" cy="-2" r="3.2" fill="${color}"/>` +
+        `<path d="M4.7 -4.5 L4.2 -7.2 L6.1 -5.3 Z M8.3 -4.5 L9.3 -7 L7 -5.3 Z" fill="${color}"/>` +
+        `<path d="M-6 3.5 V8 M-2 4 V8.2 M2 4 V8.2 M5 3.5 V7.8 M-8 -0.5 Q -11.5 -1.5 -10.8 -5.5" stroke="${color}" stroke-width="1.7" fill="none" stroke-linecap="round"/>` +
+        `<circle cx="7.4" cy="-2.4" r="0.9" fill="#0c0c14"/>`;
     case 'plant':
       return `<path d="M0 9 V-3" stroke="${color}" stroke-width="1.8" fill="none" stroke-linecap="round"/>` +
         `<ellipse cx="-4" cy="0" rx="3.6" ry="2" fill="${color}" transform="rotate(-30 -4 0)"/>` +
@@ -44,8 +47,10 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
       return `<path d="M-7 4 L-4 -5 L4 -6 L8 1 L4 7 L-5 7 Z" fill="${color}" stroke="rgba(255,255,255,0.25)" stroke-width="0.8"/>` +
         `<path d="M-4 -5 L0 2 L8 1 M0 2 L-5 7" stroke="rgba(0,0,0,0.4)" stroke-width="0.8" fill="none"/>`;
     case 'timber':
-      return `<rect x="-9" y="-4" width="16" height="8" rx="4" fill="${color}"/>` +
-        `<circle cx="6" cy="0" r="2.6" fill="none" stroke="rgba(0,0,0,0.45)" stroke-width="1"/>`;
+      // A small stack of cut log-ends (each with a growth ring), not a single pill.
+      return [['-4', '2.5'], ['4', '2.5'], ['0', '-3.5']].map(([cx, cy]) =>
+        `<circle cx="${cx}" cy="${cy}" r="3.6" fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="0.8"/>` +
+        `<circle cx="${cx}" cy="${cy}" r="1.5" fill="none" stroke="rgba(0,0,0,0.4)" stroke-width="0.8"/>`).join('');
     case 'crystal':
       return `<path d="M0 -8 L5 -1 L2 8 L-2 8 L-5 -1 Z" fill="${color}" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>` +
         `<path d="M0 -8 L0 8 M-5 -1 L5 -1" stroke="rgba(0,0,0,0.35)" stroke-width="0.7" fill="none"/>`;
@@ -57,13 +62,14 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
   }
 }
 
-// The categories the legend lists, in reading order, with a one-word label.
-export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; label: string }[] = [
-  { key: 'folk', label: 'Folk' },
-  { key: 'animal', label: 'Animal' },
-  { key: 'plant', label: 'Plant' },
-  { key: 'ore', label: 'Ore' },
-  { key: 'timber', label: 'Timber' },
-  { key: 'crystal', label: 'Crystal' },
-  { key: 'building', label: 'Building' },
+// The categories the legend lists, in reading order, each with a label and a short
+// description so every map symbol is self-explanatory.
+export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; label: string; desc: string }[] = [
+  { key: 'folk', label: 'Folk', desc: 'a sapient person (any race)' },
+  { key: 'animal', label: 'Animal', desc: 'instinct-driven fauna' },
+  { key: 'plant', label: 'Plant', desc: 'flora — food when ripe' },
+  { key: 'ore', label: 'Ore', desc: 'minable rock node' },
+  { key: 'timber', label: 'Timber', desc: 'harvestable wood' },
+  { key: 'crystal', label: 'Crystal', desc: 'rare gem node' },
+  { key: 'building', label: 'Building', desc: 'a business / employer' },
 ];

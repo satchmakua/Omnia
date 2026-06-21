@@ -1,0 +1,8 @@
+# Ember-red bud that only the irradiated wastes seem to suit. Rare and nourishing.
+id: "cinderbud"
+name: "Cinderbud"
+color: "#e0683c"
+growthPerDay: 0.6
+edibleAt: 0.6
+foodYield: 0.6
+spreadChancePerDay: 0.06

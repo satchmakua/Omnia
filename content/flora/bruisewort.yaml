@@ -1,0 +1,8 @@
+# Bruise-purple herb that thrives in the damp under the glowcaps. Bitter but filling.
+id: "bruisewort"
+name: "Bruisewort"
+color: "#9a6fd0"
+growthPerDay: 0.7
+edibleAt: 0.55
+foodYield: 0.55
+spreadChancePerDay: 0.1

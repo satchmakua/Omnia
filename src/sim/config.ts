@@ -122,6 +122,22 @@ export function ageInYears(ticksAlive: number, cfg: SimConfig): number {
   return ticksAlive / ticksPerYear(cfg);
 }
 
+export const SEASON_NAMES = ['Spring', 'Summer', 'Autumn', 'Winter'] as const;
+
+// The display calendar derived from the tick count. The aging year (`ticksPerYear`)
+// is subdivided cosmetically into 4 seasons and 12 months for a legible, resetting
+// date — these labels are display-only and affect no simulation rate (rates use
+// `ticksPerDay`). `year` matches an agent's age-in-years, so the date and ages agree.
+export function calendarOf(tick: number, cfg: SimConfig): { year: number; season: string; month: number } {
+  const tpy = ticksPerYear(cfg);
+  const within = ((tick % tpy) + tpy) % tpy;
+  return {
+    year: Math.floor(tick / tpy),
+    season: SEASON_NAMES[Math.min(3, Math.floor((within / tpy) * 4))],
+    month: Math.min(12, Math.floor((within / tpy) * 12) + 1),
+  };
+}
+
 // Authoritative simulation config. docs/simulation.yaml mirrors these as readable
 // reference but is NOT loaded yet — wiring a YAML config loader is on the roadmap.
 export const defaultConfig: SimConfig = {

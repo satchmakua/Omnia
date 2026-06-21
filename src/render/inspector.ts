@@ -25,6 +25,7 @@ const RULE = 'border-color:rgba(255,255,255,0.1);margin:8px 0';
 
 export class Inspector {
   private readonly panel: HTMLDivElement;
+  private readonly bodyEl: HTMLDivElement;
   private selected: EntityId | null = null;
 
   constructor() {
@@ -46,6 +47,21 @@ export class Inspector {
       overflowY:  'auto',
       borderLeft: '1px solid rgba(255,255,255,0.08)',
     });
+
+    // A persistent close button. The body is re-rendered every frame; the button is
+    // NOT (rebuilding it each frame would destroy it mid-click — the old close bug).
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.title = 'Close (Esc)';
+    Object.assign(closeBtn.style, {
+      position: 'sticky', top: '0', float: 'right', background: 'transparent',
+      color: '#aab', border: 'none', cursor: 'pointer', fontSize: '18px', lineHeight: '1', padding: '0 2px',
+    } as Partial<CSSStyleDeclaration>);
+    closeBtn.addEventListener('click', () => this.close());
+
+    this.bodyEl = document.createElement('div');
+
+    this.panel.append(closeBtn, this.bodyEl);
     document.body.appendChild(this.panel);
   }
 
@@ -58,14 +74,13 @@ export class Inspector {
   /** The currently-inspected entity, if any (used by the family-tree dashboard). */
   get selectedEntity(): EntityId | null { return this.selected; }
 
+  get isOpen(): boolean { return this.panel.style.display !== 'none'; }
+
   update(world: World): void {
     if (this.selected === null) return;
     if (!world.isAlive(this.selected)) {
-      this.panel.innerHTML =
-        '<b style="color:#f88">— gone —</b><br>' +
-        '<button id="ii-close" style="margin-top:8px;background:#333;color:#eee;border:none;cursor:pointer;padding:3px 8px">✕ Close</button>';
-      document.getElementById('ii-close')?.addEventListener('click', () => this.close());
-      this.selected = null;
+      this.bodyEl.innerHTML = '<b style="color:#f88">— gone —</b>';
+      this.selected = null;   // the persistent ✕ (or Esc) closes the panel
       return;
     }
     this._render(this.selected, world);
@@ -101,9 +116,7 @@ export class Inspector {
       body = '<div>—</div>';
     }
 
-    this.panel.innerHTML =
-      `<button id="ii-close" style="float:right;background:transparent;color:#888;border:none;cursor:pointer;font-size:16px">✕</button>${body}`;
-    document.getElementById('ii-close')?.addEventListener('click', () => this.close());
+    this.bodyEl.innerHTML = body;
   }
 
   private title(text: string, sub: string): string {

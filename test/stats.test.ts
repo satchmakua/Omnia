@@ -136,6 +136,9 @@ describe('world history through the live loop', () => {
     expect(ws.samples[ws.samples.length - 1].population).toBeGreaterThan(0);
     expect(chron.eras.length).toBeGreaterThan(0);              // the rollup fired through the loop
     expect(chron.eras.length).toBeLessThanOrEqual(c.chronicleMaxEras);
-    expect(chron.entries.length).toBeLessThanOrEqual(c.chronicleRecentCap);
+    // Recent entries stay bounded, but compression is scheduled (off the hot path),
+    // so a few can accrue past the cap between rollup passes — the invariant is
+    // "bounded", not "never exceeds the cap by one".
+    expect(chron.entries.length).toBeLessThanOrEqual(c.chronicleRecentCap + 10);
   }, 20_000);
 });

@@ -1,0 +1,8 @@
+# Luminescent moth of the fungal groves, sipping spores from the glowcaps.
+id: "glow_moth"
+name: "Glow Moth"
+color: "#7fe6c0"
+size: "small"
+hungerDecayPerDay: 0.6
+breedThreshold: 0.7
+breedCooldownDays: 2

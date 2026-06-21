@@ -55,6 +55,9 @@ export class EconomyDashboard extends ModalPanel {
         ${metric('Gini', w.gini.toFixed(2), w.gini > 0.6 ? '#ff9ad0' : '#8fe88f')}
         ${metric('In debt', String(w.inDebt), w.inDebt > 0 ? '#ff9a6a' : '#8fe88f')}
       </div>
+      <div style="color:#889;font-size:11px;margin-top:4px">
+        Gini = wealth inequality: <b>0</b> everyone holds the same, <b>1</b> one person holds it all (≈0.2 even, ≈0.6+ very unequal).
+      </div>
       <div style="${SECTION}">Employment</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${metric('Folk', String(folk.length))}

@@ -6,8 +6,26 @@ export interface PauseActions {
   onResume: () => void;
   onRestart: () => void;
   onSettings: () => void;
+  onControls: () => void;
   onQuit: () => void;
 }
+
+// One source of truth for the key map, shown in the Controls screen (and the start
+// menu's how-to). Moved off the always-on screen into the menu (M19).
+const CONTROLS: [string, string][] = [
+  ['Scroll / drag', 'zoom & pan the map'],
+  ['Arrow keys · + −', 'pan & zoom'],
+  ['Click', 'inspect anything (✕ or Esc closes the card)'],
+  ['Space', 'pause / resume'],
+  ['Esc', 'menu · or close an open card / dashboard'],
+  ['C', 'Legends &amp; town charts'],
+  ['E', 'Economy'],
+  ['F', 'Find folk'],
+  ['T', 'Family tree'],
+  ['G', 'Lineages of cultures &amp; tongues'],
+  ['L', 'toggle the Legend key'],
+  ['H', 'toggle Town Happenings'],
+];
 
 function styledButton(label: string, primary = false): HTMLButtonElement {
   const b = document.createElement('button');
@@ -102,12 +120,29 @@ export class Menu {
     const resume = styledButton('▶  Resume', true);
     const restart = styledButton('↻  Restart (same seed)');
     const settings = styledButton('⚙  Settings');
+    const controls = styledButton('⌨  Controls');
     const quit = styledButton('⏏  Quit to menu');
     resume.addEventListener('click', () => { this.hide(); a.onResume(); });
     restart.addEventListener('click', () => { this.hide(); a.onRestart(); });
     settings.addEventListener('click', () => a.onSettings());
+    controls.addEventListener('click', () => a.onControls());
     quit.addEventListener('click', () => a.onQuit());
-    this.card.append(resume, restart, settings, quit);
+    this.card.append(resume, restart, settings, controls, quit);
+    this.open();
+  }
+
+  // The controls reference (Esc → Controls), replacing the old always-on HUD strip.
+  showControls(onBack: () => void): void {
+    this.card.innerHTML = '';
+    this.card.appendChild(this.title('Controls', 'how to get around'));
+    const rows = document.createElement('div');
+    Object.assign(rows.style, { color: '#cdd', fontSize: '12.5px', lineHeight: '1.85', margin: '2px 0 14px' } as Partial<CSSStyleDeclaration>);
+    rows.innerHTML = CONTROLS
+      .map(([k, v]) => `<div style="display:flex;gap:10px"><span style="color:#ffd278;min-width:128px">${k}</span><span>${v}</span></div>`)
+      .join('');
+    const back = styledButton('←  Back');
+    back.addEventListener('click', () => onBack());
+    this.card.append(rows, back);
     this.open();
   }
 
