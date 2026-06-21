@@ -5,6 +5,7 @@ import type { World } from '../ecs.ts';
 import { C_FLORA, C_POSITION, C_TILEMAP } from '../components.ts';
 import type { Flora, Position } from '../components.ts';
 import type { SimConfig } from '../config.ts';
+import { scaledMaxFlora } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { isPassable } from '../../world/tilemap.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
@@ -16,6 +17,7 @@ export function runFloraSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
 
   const florae = world.query(C_FLORA, C_POSITION);
+  const maxFlora = scaledMaxFlora(cfg);
   let count = florae.length;
 
   // Track occupied tiles so flora don't stack on top of each other.
@@ -34,7 +36,7 @@ export function runFloraSystem(world: World, cfg: SimConfig, rng: RNG): void {
     if (flora.maturity < 1) flora.maturity = Math.min(1, flora.maturity + flora.growthPerTick);
 
     // Mature flora may seed a neighbour.
-    if (map && flora.maturity >= 1 && count < cfg.maxFlora && rng() < flora.spreadChancePerTick) {
+    if (map && flora.maturity >= 1 && count < maxFlora && rng() < flora.spreadChancePerTick) {
       const pos = world.getComponent<Position>(e, C_POSITION)!;
       const [dx, dy] = DIRS[Math.floor(rng() * DIRS.length)];
       const nx = pos.x + dx, ny = pos.y + dy;

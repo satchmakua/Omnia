@@ -6,7 +6,7 @@ import {
 } from './components.ts';
 import type { Clock, Agent, Lineage, Relationships, AIRecord } from './components.ts';
 import type { SimConfig } from './config.ts';
-import { ticksPerYear, ageInYears } from './config.ts';
+import { ticksPerYear, ageInYears, scaledBiomeSeeds, scaledBusinessCount } from './config.ts';
 import type { EntityId } from './ecs.ts';
 import type { RNG } from './rng.ts';
 import type { Content } from '../content/loader.ts';
@@ -91,7 +91,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   world.addComponent(clockEntity, C_CLOCK, clock);
 
   // Generate terrain first (consumes RNG), store as a singleton component.
-  const tileMap = generateTileMap(rng, cfg.gridWidth, cfg.gridHeight, content.biomes, cfg.biomeSeedCount);
+  const tileMap = generateTileMap(rng, cfg.gridWidth, cfg.gridHeight, content.biomes, scaledBiomeSeeds(cfg));
   const mapEntity = world.createEntity();
   world.addComponent<TileMapData>(mapEntity, C_TILEMAP, tileMap);
 
@@ -126,7 +126,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // Place employer businesses (round-robin over professions for variety).
   const professions = content.professions.all();          // deterministic (sorted by id)
   if (professions.length > 0) {
-    for (let i = 0; i < cfg.businessCount; i++) {
+    for (let i = 0; i < scaledBusinessCount(cfg); i++) {
       const { x, y } = findPassableTile(rng, tileMap);
       spawnBusiness(world, x, y, professions[i % professions.length], cfg);
     }

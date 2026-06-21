@@ -7,9 +7,11 @@ import type { World, EntityId } from '../ecs.ts';
 import { C_AGENT, C_FAUNA, C_FLORA, C_POSITION, C_TILEMAP } from '../components.ts';
 import type { Fauna, Flora, Position } from '../components.ts';
 import type { SimConfig } from '../config.ts';
+import { scaledMaxFauna } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
 import { makeEnterable, stepToward, wanderStep, buildOccupancy } from './movementUtil.ts';
+import { SpatialGrid } from '../spatialGrid.ts';
 
 export function runFaunaSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const mapEnts = world.query(C_TILEMAP);
@@ -17,17 +19,19 @@ export function runFaunaSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const enterable = makeEnterable(cfg, map);
   const occ = buildOccupancy(world, cfg.gridWidth, [C_AGENT, C_FAUNA]);
   const breedChance = cfg.faunaBreedChancePerDay / cfg.ticksPerDay;
+  const maxFauna = scaledMaxFauna(cfg);
 
-  // Index ripe flora by tile for O(1) graze lookup, and keep a list for nearest-search.
+  // Index ripe flora by tile for O(1) graze lookup, plus a spatial grid for the
+  // nearest-search (scales to a big map; insertion order matches the old linear scan).
   const flora = world.query(C_FLORA, C_POSITION);
   const ripeAt = new Map<string, EntityId>();
-  const ripeList: { x: number; y: number; id: EntityId }[] = [];
+  const floraGrid = new SpatialGrid(cfg.gridWidth, cfg.gridHeight);
   for (const fe of flora) {
     const f = world.getComponent<Flora>(fe, C_FLORA)!;
     if (f.maturity < f.edibleAt) continue;
     const p = world.getComponent<Position>(fe, C_POSITION)!;
     ripeAt.set(`${p.x},${p.y}`, fe);
-    ripeList.push({ x: p.x, y: p.y, id: fe });
+    floraGrid.insert(p.x, p.y, fe);
   }
 
   const faunas = world.query(C_FAUNA, C_POSITION);
@@ -53,18 +57,13 @@ export function runFaunaSystem(world: World, cfg: SimConfig, rng: RNG): void {
         f.maturity = 0;                       // grazed back to a sprout
         ripeAt.delete(`${pos.x},${pos.y}`);   // consumed this tick
       } else {
-        let nearest: { x: number; y: number } | null = null;
-        let best = Infinity;
-        for (const r of ripeList) {
-          const d = Math.abs(r.x - pos.x) + Math.abs(r.y - pos.y);
-          if (d < best) { best = d; nearest = r; }
-        }
+        const nearest = floraGrid.nearest(pos.x, pos.y);
         if (nearest) stepToward(pos, nearest.x, nearest.y, rng, enterable, occ);
         else wanderStep(pos, rng, enterable, occ);
       }
     } else {
       // Well fed: maybe breed, otherwise drift.
-      if (fauna.breedCooldownTicks === 0 && faunaCount < cfg.maxFauna && rng() < breedChance) {
+      if (fauna.breedCooldownTicks === 0 && faunaCount < maxFauna && rng() < breedChance) {
         const [dx, dy] = pickDir(rng);
         const nx = pos.x + dx, ny = pos.y + dy;
         if (enterable(nx, ny) && !occ.occupied(nx, ny)) {
