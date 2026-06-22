@@ -1,6 +1,7 @@
 import { createSimulation } from './sim/world.ts';
 import type { Simulation } from './sim/world.ts';
 import { tick } from './sim/loop.ts';
+import { buildSave, loadSave, serializeSave, parseSave } from './sim/saveload.ts';
 import { defaultConfig } from './sim/config.ts';
 import type { SimConfig } from './sim/config.ts';
 import { loadContent } from './content/loader.ts';
@@ -9,6 +10,7 @@ import { Inspector } from './render/inspector.ts';
 import { LegendsPanel } from './render/legendsPanel.ts';
 import { Legend } from './render/legend.ts';
 import { Menu } from './render/menu.ts';
+import type { SetupOptions } from './render/menu.ts';
 import { EconomyDashboard } from './render/economyDashboard.ts';
 import { DirectoryDashboard } from './render/directoryDashboard.ts';
 import { FamilyDashboard } from './render/familyDashboard.ts';
@@ -58,6 +60,8 @@ const lineages  = new LineagesDashboard();
 let active: Simulation | null = null;
 let activeCfg: SimConfig = baseCfg;
 let lastSeed = baseCfg.seed;
+// The last chosen setup (seed / starting population / map size), reused by restart.
+let lastSetup: SetupOptions = { seed: baseCfg.seed, population: baseCfg.initialPopulation, mapSize: baseCfg.gridWidth };
 let state: 'menu' | 'running' | 'paused' = 'menu';
 let realElapsedMs = 0;   // real-world time spent watching this run (excludes paused/menu)
 
@@ -73,22 +77,54 @@ renderer.setClickHandler((entity) => { if (active) inspector.inspect(entity, act
 let speed = baseCfg.simSpeedTicksPerSecond;
 const controls = new SpeedControl(speed, (v) => { speed = v; });
 
-function newSimulation(seed: number): void {
-  activeCfg = { ...baseCfg, seed };
+function newSimulation(opts: SetupOptions): void {
+  lastSetup = opts;
+  activeCfg = {
+    ...baseCfg, seed: opts.seed, initialPopulation: opts.population,
+    gridWidth: opts.mapSize, gridHeight: opts.mapSize,
+  };
   active = createSimulation(activeCfg, content);
+  renderer.configure(activeCfg);                 // size the camera/cells to the chosen map
   activeProvider = liveModel ? new OllamaProvider(OLLAMA) : stubProvider;
-  lastSeed = seed;
+  lastSeed = opts.seed;
   realElapsedMs = 0;
   inspector.close();
   state = 'running';
 }
 
+const SAVE_KEY = 'omnia.save';
+
+// Replay-based load: rebuild the saved run from its config and fast-forward to the
+// saved tick. Synchronous (may take a moment for a long/large run — a snapshot for
+// instant loads is the documented follow-up).
+function loadGame(): void {
+  const json = localStorage.getItem(SAVE_KEY);
+  if (!json) return;
+  try {
+    const save = parseSave(json);
+    activeCfg = save.config;
+    active = loadSave(save, content);
+    renderer.configure(activeCfg);
+    activeProvider = liveModel ? new OllamaProvider(OLLAMA) : stubProvider;
+    lastSeed = save.config.seed;
+    lastSetup = { seed: save.config.seed, population: save.config.initialPopulation, mapSize: save.config.gridWidth };
+    realElapsedMs = 0;
+    inspector.close();
+    state = 'running';
+  } catch (e) {
+    console.error('Failed to load save:', e);
+  }
+}
+
 function showPauseMenu(): void {
   menu.showPause({
     onResume: () => { state = 'running'; },
-    onRestart: () => newSimulation(lastSeed),
+    onRestart: () => newSimulation(lastSetup),
+    onSave: () => { if (active) localStorage.setItem(SAVE_KEY, serializeSave(buildSave(active, activeCfg))); },
+    onLoad: loadGame,
+    hasSave: localStorage.getItem(SAVE_KEY) !== null,
     onSettings: () => menu.showSettings(lastSeed, speed, liveModel, {
-      onApply: (seed) => { menu.hide(); newSimulation(seed); },
+      onApply: (seed) => { menu.hide(); newSimulation({ ...lastSetup, seed }); },
       onToggleLive: () => { liveModel = !liveModel; },
       onBack: () => showPauseMenu(),
     }),
@@ -105,7 +141,7 @@ function pause(): void {
 
 function openStart(): void {
   state = 'menu';
-  menu.showStart(lastSeed, newSimulation);
+  menu.showStart(lastSetup, newSimulation);
 }
 
 // ── hotkey dashboards (mutually exclusive; one open at a time) ──────────────────

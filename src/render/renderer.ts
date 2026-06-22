@@ -39,9 +39,9 @@ const MAX_SCALE = 9;
 
 export class Renderer {
   private readonly ctx: CanvasRenderingContext2D;
-  private readonly cellSize: number;
-  private readonly mapW: number;
-  private readonly mapH: number;
+  private cellSize: number;
+  private mapW: number;
+  private mapH: number;
   private onEntityClick: ((entity: EntityId) => void) | null = null;
   private _pendingClick: { gx: number; gy: number } | null = null;
 
@@ -57,7 +57,7 @@ export class Renderer {
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
-    private readonly cfg: SimConfig,
+    private cfg: SimConfig,
   ) {
     this.ctx = canvas.getContext('2d')!;
     this.cellSize = Math.floor(Math.min(canvas.width / cfg.gridWidth, canvas.height / cfg.gridHeight));
@@ -66,6 +66,19 @@ export class Renderer {
     canvas.style.cursor = 'grab';
     this.clampOffset();
     this.bindInput();
+  }
+
+  // Reconfigure for a (possibly different-sized) world and reset the camera to fit —
+  // so a new run with a chosen map size renders, clamps, and click-maps correctly.
+  configure(cfg: SimConfig): void {
+    this.cfg = cfg;
+    this.cellSize = Math.max(1, Math.floor(Math.min(this.canvas.width / cfg.gridWidth, this.canvas.height / cfg.gridHeight)));
+    this.mapW = cfg.gridWidth * this.cellSize;
+    this.mapH = cfg.gridHeight * this.cellSize;
+    this.scale = 1;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.clampOffset();
   }
 
   setClickHandler(cb: (entity: EntityId) => void): void { this.onEntityClick = cb; }

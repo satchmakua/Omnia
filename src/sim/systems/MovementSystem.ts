@@ -13,6 +13,7 @@ import { pathToward } from '../pathfinding.ts';
 // Mobile creatures never share a tile; a content agent at its workplace fidgets a
 // little so it looks alive rather than frozen on the spot.
 const WORK_FIDGET = 0.3;
+const HUNT_MEAL = 0.7;   // hunger a hungry agent gains from hunting a fauna (M8 slice 5)
 
 export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const forage = content.capabilities.require('forage');
@@ -60,6 +61,13 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
   const nearestNode = (type: string, x: number, y: number): { x: number; y: number } | null =>
     nodeGrids.get(type)?.nearest(x, y) ?? null;
 
+  // Fauna a hungry agent can hunt — a food source and predation pressure on the herds.
+  const faunaGrid = new SpatialGrid(cfg.gridWidth, cfg.gridHeight);
+  for (const fe of world.query(C_FAUNA, C_POSITION)) {
+    const p = world.getComponent<Position>(fe, C_POSITION)!;
+    faunaGrid.insert(p.x, p.y, fe);
+  }
+
   for (const entity of world.query(C_AGENT, C_NEEDS, C_POSITION)) {
     const agent = world.getComponent<Agent>(entity, C_AGENT)!;
     const pos   = world.getComponent<Position>(entity, C_POSITION)!;
@@ -106,16 +114,26 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       if (here !== undefined) {
         // Forage: invoke the capability (data declares restore_hunger); the
         // amount is the flora's yield scaled by ripeness and forage efficiency.
-        const flora = world.getComponent<Flora>(here, C_FLORA)!;
-        const bite = flora.foodYield * flora.maturity * forage.power;
-        flora.maturity = 0;
+        const f = world.getComponent<Flora>(here, C_FLORA)!;
+        const bite = f.foodYield * f.maturity * forage.power;
+        f.maturity = 0;
         ripeAt.delete(`${pos.x},${pos.y}`);
         invokeCapability(forage, { needs }, bite);
         continue;
       }
-      // Move toward the nearest ripe flora; wander if none exists yet.
-      const nearest = floraGrid.nearest(pos.x, pos.y);
-      if (nearest) { pathToward(pos, nearest.x, nearest.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight); continue; }
+      // Opportunistic hunt: only when genuinely desperate (no easy forage), a creature
+      // right beside us is meat. Folk don't chase — predators do that — so hunting is a
+      // light, rare cull, not a steady drain that would empty the herds.
+      const prey = needs.hunger < 0.25
+        ? faunaGrid.nearest(pos.x, pos.y, (id) => world.hasComponent(id, C_FAUNA)) : null;
+      if (prey && Math.abs(prey.x - pos.x) + Math.abs(prey.y - pos.y) <= 1) {
+        world.destroyEntity(prey.id);
+        needs.hunger = Math.min(1, needs.hunger + HUNT_MEAL);
+        continue;
+      }
+      // Otherwise forage the nearest ripe flora; wander if none exists yet.
+      const flora = floraGrid.nearest(pos.x, pos.y);
+      if (flora) { pathToward(pos, flora.x, flora.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight); continue; }
     }
 
     wanderStep(pos, rng, enterable, occ);

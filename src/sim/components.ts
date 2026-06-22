@@ -119,6 +119,7 @@ export interface Fauna {
   name: string;
   color: string;
   size: 'small' | 'medium' | 'large';
+  diet: 'grazer' | 'predator';  // grazers eat flora; predators hunt grazers (M8 slice 5)
   hunger: number;        // 0..1
   hungerDecayPerTick: number;
   breedThreshold: number;

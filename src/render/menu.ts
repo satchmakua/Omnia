@@ -5,6 +5,9 @@
 export interface PauseActions {
   onResume: () => void;
   onRestart: () => void;
+  onSave: () => void;
+  onLoad: () => void;
+  hasSave: boolean;
   onSettings: () => void;
   onControls: () => void;
   onQuit: () => void;
@@ -26,6 +29,34 @@ const CONTROLS: [string, string][] = [
   ['L', 'toggle the Legend key'],
   ['H', 'toggle Town Happenings'],
 ];
+
+// What the start screen collects to begin a run.
+export interface SetupOptions { seed: number; population: number; mapSize: number; }
+
+// Map-size presets (square, in tiles). Small is the tuned default; the larger ones
+// reach the M8 10–20× range. Each dim is used for both gridWidth and gridHeight.
+export const MAP_SIZES: { label: string; dim: number }[] = [
+  { label: 'Small', dim: 64 },
+  { label: 'Medium', dim: 128 },
+  { label: 'Large', dim: 200 },
+  { label: 'Huge', dim: 288 },
+];
+
+const INPUT_STYLE: Partial<CSSStyleDeclaration> = {
+  flex: '1', background: '#10101e', color: '#eee', border: '1px solid rgba(255,255,255,0.15)',
+  borderRadius: '6px', padding: '8px', font: '13px monospace',
+};
+
+// A labelled control row (label · control · optional trailing element).
+function labelledRow(labelText: string, control: HTMLElement, trailing?: HTMLElement): HTMLDivElement {
+  const row = document.createElement('div');
+  Object.assign(row.style, { display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0 10px' } as Partial<CSSStyleDeclaration>);
+  const label = document.createElement('span');
+  label.textContent = labelText; label.style.color = '#99a'; label.style.minWidth = '52px';
+  row.append(label, control);
+  if (trailing) row.append(trailing);
+  return row;
+}
 
 function styledButton(label: string, primary = false): HTMLButtonElement {
   const b = document.createElement('button');
@@ -77,40 +108,69 @@ export class Menu {
     return wrap;
   }
 
-  showStart(defaultSeed: number, onStart: (seed: number) => void): void {
+  showStart(defaults: SetupOptions, onStart: (opts: SetupOptions) => void): void {
     this.card.innerHTML = '';
     this.card.appendChild(this.title('Omnia', 'the everything simulator — a town of deep little lives'));
 
-    const seedRow = document.createElement('div');
-    Object.assign(seedRow.style, { display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0 12px' });
-    const seedLabel = document.createElement('span');
-    seedLabel.textContent = 'Seed'; seedLabel.style.color = '#99a';
+    // Seed.
     const seedInput = document.createElement('input');
-    seedInput.type = 'number'; seedInput.value = String(defaultSeed);
-    Object.assign(seedInput.style, {
-      flex: '1', background: '#10101e', color: '#eee', border: '1px solid rgba(255,255,255,0.15)',
-      borderRadius: '6px', padding: '8px', font: '13px monospace',
-    } as Partial<CSSStyleDeclaration>);
-    seedRow.append(seedLabel, seedInput);
+    seedInput.type = 'number'; seedInput.value = String(defaults.seed);
+    Object.assign(seedInput.style, INPUT_STYLE);
+    this.card.append(labelledRow('Seed', seedInput));
+
+    // Starting population (10–100).
+    let population = Math.max(10, Math.min(100, defaults.population));
+    const popReadout = document.createElement('span');
+    Object.assign(popReadout.style, { color: '#ffd278', minWidth: '28px', textAlign: 'right' } as Partial<CSSStyleDeclaration>);
+    popReadout.textContent = String(population);
+    const popSlider = document.createElement('input');
+    popSlider.type = 'range'; popSlider.min = '10'; popSlider.max = '100'; popSlider.step = '5';
+    popSlider.value = String(population);
+    Object.assign(popSlider.style, { flex: '1', cursor: 'pointer' } as Partial<CSSStyleDeclaration>);
+    popSlider.addEventListener('input', () => { population = Number(popSlider.value); popReadout.textContent = String(population); });
+    this.card.append(labelledRow('Folk', popSlider, popReadout));
+
+    // Map size presets.
+    let mapSize = defaults.mapSize;
+    const sizeRow = document.createElement('div');
+    Object.assign(sizeRow.style, { display: 'flex', gap: '6px', margin: '2px 0 12px' } as Partial<CSSStyleDeclaration>);
+    const sizeBtns: HTMLButtonElement[] = [];
+    const highlight = () => sizeBtns.forEach((b, i) => {
+      const sel = MAP_SIZES[i].dim === mapSize;
+      b.style.background = sel ? '#46467e' : '#23233a';
+      b.style.borderColor = sel ? '#8a8ad0' : 'rgba(255,255,255,0.12)';
+    });
+    MAP_SIZES.forEach((s) => {
+      const b = document.createElement('button');
+      b.textContent = s.label; b.title = `${s.dim}×${s.dim} tiles`;
+      Object.assign(b.style, { flex: '1', padding: '8px 4px', color: '#eee',
+        border: '1px solid rgba(255,255,255,0.12)', borderRadius: '7px', font: '12px monospace', cursor: 'pointer' } as Partial<CSSStyleDeclaration>);
+      b.addEventListener('click', () => { mapSize = s.dim; highlight(); });
+      sizeBtns.push(b); sizeRow.append(b);
+    });
+    highlight();
+    const sizeLabel = document.createElement('div');
+    sizeLabel.textContent = 'Map size'; Object.assign(sizeLabel.style, { color: '#99a', margin: '2px 0 4px' } as Partial<CSSStyleDeclaration>);
+    this.card.append(sizeLabel, sizeRow);
 
     const start = styledButton('▶  New simulation', true);
     start.addEventListener('click', () => {
-      const seed = Math.floor(Number(seedInput.value)) || defaultSeed;
+      const seed = Math.floor(Number(seedInput.value)) || defaults.seed;
       this.hide();
-      onStart(seed);
+      onStart({ seed, population, mapSize });
     });
 
     const help = styledButton('?  How to play');
     const about = document.createElement('div');
-    Object.assign(about.style, { color: '#aab', fontSize: '12px', lineHeight: '1.6', margin: '8px 2px 0', display: 'none' });
+    Object.assign(about.style, { color: '#aab', fontSize: '12px', lineHeight: '1.6', margin: '8px 2px 0', display: 'none' } as Partial<CSSStyleDeclaration>);
     about.innerHTML =
       'Scroll to zoom, drag or arrow-keys to pan, click anyone to inspect.<br>' +
-      'Space pauses time; the slider sets its speed. C opens the Legends &amp; ' +
-      'town charts, L toggles the legend key, Esc opens this menu.<br>' +
-      'Then just watch — folk work, wed, raise children, reflect, and pass on.';
+      'Space pauses time; the slider sets its speed. Esc opens the menu — ' +
+      '<b>Controls</b> there lists every key.<br>' +
+      'Then just watch — folk work, wed, raise families, hunt, reflect, and pass on.';
     help.addEventListener('click', () => { about.style.display = about.style.display === 'none' ? 'block' : 'none'; });
 
-    this.card.append(seedRow, start, help, about);
+    this.card.append(start, help, about);
     this.open();
   }
 
@@ -118,16 +178,25 @@ export class Menu {
     this.card.innerHTML = '';
     this.card.appendChild(this.title('Paused', 'time is held'));
     const resume = styledButton('▶  Resume', true);
-    const restart = styledButton('↻  Restart (same seed)');
+    const restart = styledButton('↻  Restart (same setup)');
+    const save = styledButton('💾  Save game');
+    const load = styledButton('📂  Load game');
     const settings = styledButton('⚙  Settings');
     const controls = styledButton('⌨  Controls');
     const quit = styledButton('⏏  Quit to menu');
     resume.addEventListener('click', () => { this.hide(); a.onResume(); });
     restart.addEventListener('click', () => { this.hide(); a.onRestart(); });
+    save.addEventListener('click', () => {
+      a.onSave();
+      save.textContent = '✓  Saved';
+      setTimeout(() => { save.textContent = '💾  Save game'; }, 1200);
+    });
+    if (!a.hasSave) { load.style.opacity = '0.45'; load.style.cursor = 'default'; }
+    load.addEventListener('click', () => { if (a.hasSave) { this.hide(); a.onLoad(); } });
     settings.addEventListener('click', () => a.onSettings());
     controls.addEventListener('click', () => a.onControls());
     quit.addEventListener('click', () => a.onQuit());
-    this.card.append(resume, restart, settings, controls, quit);
+    this.card.append(resume, restart, save, load, settings, controls, quit);
     this.open();
   }
 

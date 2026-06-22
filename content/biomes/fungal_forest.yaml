@@ -15,5 +15,6 @@ fauna:
   - { id: "glow_moth", weight: 4 }
   - { id: "moth_grazer", weight: 2 }
   - { id: "spire_elk", weight: 2 }
+  - { id: "pallid_stalker", weight: 1 }   # predator
 resources:
   - { id: "timber", weight: 4 }

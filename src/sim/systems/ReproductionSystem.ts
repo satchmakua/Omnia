@@ -8,7 +8,7 @@ import {
 } from '../components.ts';
 import type { Agent, Needs, Health, Lineage, Position, SpeciesComp, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
-import { ageInYears } from '../config.ts';
+import { ageInYears, scaledMaxPopulation } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
 import { spawnAgent } from '../spawnAgent.ts';
@@ -26,6 +26,7 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
   const chronicle = chronEnts.length ? world.getComponent<ChronicleData>(chronEnts[0], C_CHRONICLE) : undefined;
 
   let population = world.query(C_AGENT).length;
+  const maxPopulation = scaledMaxPopulation(cfg);   // land-area carrying capacity (M8)
   const births: { mother: EntityId; father: EntityId; x: number; y: number; speciesId: string }[] = [];
 
   for (const e of world.query(C_AGENT, C_LINEAGE)) {
@@ -36,7 +37,7 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
     if (agent.sex !== 'female') continue;            // process each couple once, via the mother
     if (lin.partner === null || !world.hasComponent(lin.partner, C_AGENT)) continue;
     if (lin.reproCooldownTicks > 0) continue;
-    if (population + births.length >= cfg.maxPopulation) continue;
+    if (population + births.length >= maxPopulation) continue;
 
     const father = world.getComponent<Agent>(lin.partner, C_AGENT)!;
     if (father.sex !== 'male') continue;

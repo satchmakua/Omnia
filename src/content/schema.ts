@@ -66,6 +66,7 @@ export const FaunaSchema = z.object({
   name: z.string().min(1),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour'),
   size: z.enum(['small', 'medium', 'large']),
+  diet: z.enum(['grazer', 'predator']).default('grazer'),  // grazers eat flora; predators hunt grazers
   hungerDecayPerDay: z.number().positive(),
   breedThreshold: z.number().min(0).max(1).default(0.7),  // hunger above which it may breed
   breedCooldownDays: z.number().min(0).default(1),
