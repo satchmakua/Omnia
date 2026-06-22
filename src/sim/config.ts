@@ -117,6 +117,12 @@ export function scaledMaxFauna(cfg: SimConfig): number {
 export function scaledBusinessCount(cfg: SimConfig): number {
   return Math.max(1, Math.round(cfg.businessCount * areaScale(cfg)));
 }
+// Folk carrying capacity scales with the land (M8): a bigger map holds more people,
+// rather than a flat magic number. Identity at 64×64. (A truly unbounded population
+// awaits the economy/housing limits of M11–M12; this is the land-area carrying cap.)
+export function scaledMaxPopulation(cfg: SimConfig): number {
+  return Math.round(cfg.maxPopulation * areaScale(cfg));
+}
 
 export function ageInYears(ticksAlive: number, cfg: SimConfig): number {
   return ticksAlive / ticksPerYear(cfg);
@@ -153,11 +159,11 @@ export const defaultConfig: SimConfig = {
   simSpeedTicksPerSecond: 6,   // gentle default; adjust live with the speed slider
   biomeSeedCount: 14,
   floraDensity: 0.06,
-  faunaDensity: 0.006,
+  faunaDensity: 0.012,
   resourceDensity: 0.01,
   maxFlora: 500,
-  maxFauna: 150,
-  faunaBreedChancePerDay: 0.5,
+  maxFauna: 120,            // area-scaled fauna carrying capacity (M8); predators thin + chase the herds
+  faunaBreedChancePerDay: 0.6,  // grazers breed back fast, so bounded predation thins but never wipes them
   businessCount: 8,
   dailyUpkeep: 3,
   wealthGoalMin: 30,

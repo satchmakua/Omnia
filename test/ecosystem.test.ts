@@ -36,7 +36,7 @@ function addFauna(world: World, x: number, y: number, over: Partial<Fauna> = {})
   const e = world.createEntity();
   world.addComponent<Position>(e, C_POSITION, { x, y });
   world.addComponent<Fauna>(e, C_FAUNA, {
-    speciesId: 'moth_grazer', name: 'Moth Grazer', color: '#d9c27a', size: 'small',
+    speciesId: 'moth_grazer', name: 'Moth Grazer', color: '#d9c27a', size: 'small', diet: 'grazer',
     hunger: 0.8, hungerDecayPerTick: 0.01, breedThreshold: 0.7, breedCooldownTicks: 0, ticksAlive: 0,
     ...over,
   });

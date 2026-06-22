@@ -42,6 +42,7 @@ export function spawnFauna(
     name: def.name,
     color: def.color,
     size: def.size,
+    diet: def.diet,
     hunger: rngFloat(rng, 0.5, 1.0),
     hungerDecayPerTick: def.hungerDecayPerDay / cfg.ticksPerDay,
     breedThreshold: def.breedThreshold,

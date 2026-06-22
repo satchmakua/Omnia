@@ -1,9 +1,9 @@
-# Lean rust-red hound of the wastes — for now a wary scavenger of whatever grows.
-# (A natural predator once hunting lands in a later milestone.)
+# Lean rust-red pack hunter of the wastes. Stalks and runs down the grazing herds.
 id: "ember_hound"
 name: "Ember Hound"
 color: "#c56a4a"
 size: "medium"
-hungerDecayPerDay: 0.7
-breedThreshold: 0.76
-breedCooldownDays: 4
+diet: "predator"
+hungerDecayPerDay: 0.12   # hardy — can go days between kills, so the founders survive lean times
+breedThreshold: 0.7
+breedCooldownDays: 6       # slow-breeding, so predators stay a small thinning force (not a plague)

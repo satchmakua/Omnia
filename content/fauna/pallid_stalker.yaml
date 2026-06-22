@@ -1,0 +1,10 @@
+# Pale, ghost-quiet predator that haunts the plains and fungal groves, thinning the
+# herds. Breeds slowly, so it stays rarer than its prey.
+id: "pallid_stalker"
+name: "Pallid Stalker"
+color: "#cdb8c0"
+size: "medium"
+diet: "predator"
+hungerDecayPerDay: 0.12   # hardy — survives lean stretches so it persists as a regulator
+breedThreshold: 0.7
+breedCooldownDays: 6       # slow-breeding, so predators stay a small thinning force
