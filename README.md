@@ -33,11 +33,11 @@ Navigate into it with `cd`:
 
 - **PowerShell or Command Prompt:**
   ```
-  cd C:\Users\satch\Projects\Omnia
+  cd C:\path\Omnia
   ```
 - **Git Bash:**
   ```
-  cd /c/Users/satch/Projects/Omnia
+  cd /c/path/Omnia
   ```
 
 Confirm you're in the right place — this should list `package.json` among the files:
@@ -46,7 +46,7 @@ Confirm you're in the right place — this should list `package.json` among the 
 - Git Bash: `ls`
 
 > **If you see `npm error … Could not read package.json … ENOENT`**, you are in the
-> wrong folder (probably `C:\Users\satch\Projects`, the parent). Run `cd Omnia`
+> wrong folder (probably `C:\Users\path\Projects`, the parent). Run `cd Omnia`
 > first, then retry. That single mistake is the most common reason `npm` fails here.
 
 ### 3. Install dependencies (first time only)
