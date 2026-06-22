@@ -144,8 +144,9 @@ export function calendarOf(tick: number, cfg: SimConfig): { year: number; season
   };
 }
 
-// Authoritative simulation config. docs/simulation.yaml mirrors these as readable
-// reference but is NOT loaded yet — wiring a YAML config loader is on the roadmap.
+// Typed default tunables — the schema + fallback for the YAML loader (M9). The live
+// authoritative config is `config/simulation.yaml` (loaded at startup, merged over
+// these); these values are what it ships mirroring, and the fallback for any key it omits.
 export const defaultConfig: SimConfig = {
   gridWidth: 64,
   gridHeight: 64,
