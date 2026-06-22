@@ -1,9 +1,10 @@
 // Standalone headless soak runner. Usage: npm run soak
 // Runs 10,000 ticks and prints world-health metrics; exits non-zero on invariant violation.
 
+import { readFileSync } from 'node:fs';
 import { createSimulation } from './world.ts';
 import { tick } from './loop.ts';
-import { defaultConfig } from './config.ts';
+import { loadSimConfig } from './configLoader.ts';
 import { loadContentFromDisk } from '../content/fsSource.ts';
 import {
   C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS,
@@ -19,7 +20,8 @@ import { wealthStats } from './wealth.ts';
 import { measureWorld } from '../analysis/metrics.ts';
 
 const SOAK_TICKS = 40_000; // ~42 sim-years — long enough to see several generations
-const cfg: SimConfig = { ...defaultConfig, seed: 8 }; // seed 8 includes a couple of mages
+// Authoritative tunables from the YAML (M9); seed 8 includes a couple of mages.
+const cfg: SimConfig = { ...loadSimConfig(readFileSync('config/simulation.yaml', 'utf8')), seed: 8 };
 
 console.log(`Omnia soak: ${SOAK_TICKS} ticks, seed=${cfg.seed}, pop=${cfg.initialPopulation}`);
 const t0 = Date.now();

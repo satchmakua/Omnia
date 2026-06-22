@@ -2,8 +2,9 @@ import { createSimulation } from './sim/world.ts';
 import type { Simulation } from './sim/world.ts';
 import { tick } from './sim/loop.ts';
 import { buildSave, loadSave, serializeSave, parseSave } from './sim/saveload.ts';
-import { defaultConfig } from './sim/config.ts';
+import { loadSimConfig } from './sim/configLoader.ts';
 import type { SimConfig } from './sim/config.ts';
+import simulationYaml from '../config/simulation.yaml?raw';
 import { loadContent } from './content/loader.ts';
 import { Renderer } from './render/renderer.ts';
 import { Inspector } from './render/inspector.ts';
@@ -34,7 +35,9 @@ const fileMap = new Map<string, string>(
 const content = loadContent(fileMap);
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-const baseCfg = defaultConfig;
+// The authoritative tunables come from config/simulation.yaml (M9); the setup screen
+// then overrides seed / population / map size per run.
+const baseCfg = loadSimConfig(simulationYaml);
 
 const renderer  = new Renderer(canvas, baseCfg);
 const inspector = new Inspector();

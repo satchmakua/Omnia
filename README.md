@@ -172,10 +172,10 @@ Each kind of thing has its own **silhouette**, so the world reads at a glance:
   town refills itself. Click a long-lived elder and a child to see the family
   links between them — the town sustains itself across many lifetimes.
 
-> Want a different world? Edit `seed` in **`src/sim/config.ts`** (the authoritative
-> config) and restart. The same seed always produces the same town, backstory, and
-> run. *(`docs/simulation.yaml` mirrors these knobs as readable reference, but is
-> not loaded yet — wiring it as the live config is on the roadmap.)*
+> Want a different world? Pick the seed, starting population, and map size on the
+> **start screen**, or edit the tunables in **`config/simulation.yaml`** (the live,
+> authoritative config loaded at startup) and restart. The same seed always produces
+> the same town, backstory, and run.
 
 ## Other commands
 
@@ -218,7 +218,7 @@ simply "keep going," and the agent should know what to do.
 
 ## Tunable knobs
 
-`src/sim/config.ts` (`defaultConfig`) is the **authoritative** set of simulation constants (world size, tick rate, need-decay, economy, life cycle, capability rarity, LLM/reflection settings) — edit there and restart. `docs/simulation.yaml` mirrors these as human-readable, commented reference; a YAML loader that makes it the live config is on the roadmap (it is not loaded today).
+`config/simulation.yaml` is the **authoritative** runtime config (world size, tick rate, need-decay, economy, life cycle, ecology, capability rarity, LLM/reflection settings) — loaded at startup (M9); edit a value and restart. It may be partial: anything omitted falls back to the typed defaults in `src/sim/config.ts` (`defaultConfig`), which documents every tunable and supplies the schema the loader validates against (unknown keys / non-numbers abort with a clear error).
 
 ## Content
 
