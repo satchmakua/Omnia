@@ -55,6 +55,9 @@ export class FamilyDashboard extends ModalPanel {
   }
 
   refresh(world: World): void { this.world = world; if (this.visible) this.render(); }
+  /** Master-tab API: set the focus person (from the inspector) and render. */
+  setSelected(id: EntityId | null): void { this.rootId = id; }
+  update(world: World): void { this.world = world; this.render(); }
 
   private chip(id: EntityId, highlight: boolean): string {
     const p = personInfo(this.world!, id);
@@ -82,6 +85,7 @@ export class FamilyDashboard extends ModalPanel {
     const k = kinOf(w, root)!;
     const self = personInfo(w, root)!;
     this.titleEl.textContent = `Family of ${self.name}`;
+    const heading = `<div style="text-align:center;color:#cfe;margin-bottom:6px">Family of <b>${self.name}</b></div>`;
 
     const grandparents: EntityId[] = [];
     const seen = new Set<EntityId>();
@@ -92,6 +96,7 @@ export class FamilyDashboard extends ModalPanel {
     const selfRow = k.partner != null ? [root, k.partner] : [root];
 
     this.tree.innerHTML =
+      heading +
       this.row('Grandparents', grandparents) +
       this.row('Parents', k.parents) +
       this.row('Self & partner', selfRow, root) +

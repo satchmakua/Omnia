@@ -43,30 +43,11 @@ function chart(label: string, latest: string, values: number[], color: string): 
 }
 
 export class LegendsPanel {
-  private readonly panel: HTMLDivElement;
-  private visible = false;
+  private readonly contentEl = document.createElement('div');
 
-  constructor() {
-    this.panel = document.createElement('div');
-    Object.assign(this.panel.style, {
-      position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-      width: 'min(640px, 92vw)', maxHeight: '82vh', background: 'rgba(10,10,26,0.97)',
-      color: '#e6e6f0', fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.7',
-      padding: '20px 24px', boxSizing: 'border-box', display: 'none', overflowY: 'auto',
-      border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px',
-      boxShadow: '0 8px 40px rgba(0,0,0,0.6)', zIndex: '10',
-    });
-    document.body.appendChild(this.panel);
-  }
-
-  toggle(world: World): void {
-    this.visible = !this.visible;
-    this.panel.style.display = this.visible ? 'block' : 'none';
-    if (this.visible) this.render(world);
-  }
-
-  hide(): void { this.visible = false; this.panel.style.display = 'none'; }
-  get isOpen(): boolean { return this.visible; }
+  /** The content element, hosted as a tab by the master view (M10). */
+  get content(): HTMLElement { return this.contentEl; }
+  update(world: World): void { this.render(world); }
 
   private get<T>(world: World, comp: string): T | undefined {
     const ents = world.query(comp);
@@ -79,13 +60,11 @@ export class LegendsPanel {
     const clock = this.get<Clock>(world, C_CLOCK);
     const year = clock ? yearOf(clock.tick) : 0;
 
-    this.panel.innerHTML =
-      `<div style="font-size:16px;font-weight:bold;color:#ffd278;margin-bottom:2px">Legends</div>
-       <div style="color:#99a;margin-bottom:12px">the town's history, in year ${year}</div>
+    this.contentEl.innerHTML =
+      `<div style="color:#99a;margin-bottom:12px">the town's history, in year ${year}</div>
        ${this.chronicleHtml(chronicle)}
        ${this.strataHtml(stats)}
-       ${this.scienceHtml(world)}
-       <div style="margin-top:16px;color:#666">press C to close</div>`;
+       ${this.scienceHtml(world)}`;
   }
 
   // Emergent structure (M7.7, D29): the same measurements `npm run soak` prints,

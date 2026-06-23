@@ -42,6 +42,9 @@ export class DirectoryDashboard extends ModalPanel {
   }
 
   refresh(world: World): void { this.world = world; if (this.visible) this.renderList(); }
+  /** Master-tab API: render unconditionally, and focus the search box when shown. */
+  update(world: World): void { this.world = world; this.renderList(); }
+  focusSearch(): void { this.input.focus(); }
 
   private renderList(): void {
     const w = this.world;
@@ -54,6 +57,7 @@ export class DirectoryDashboard extends ModalPanel {
       .sort((p, n) => p.a.name.localeCompare(n.a.name));
 
     this.titleEl.textContent = `Directory · ${folk.length} folk`;
+    const countLine = `<div style="color:#9ab;margin:0 0 6px">${folk.length} folk${q ? ' matching' : ''}</div>`;
 
     const rows = folk.map(({ e, a }) => {
       const sp = w.getComponent<SpeciesComp>(e, C_SPECIES);
@@ -74,6 +78,6 @@ export class DirectoryDashboard extends ModalPanel {
       </div>`;
     }).join('');
 
-    this.list.innerHTML = rows || '<div style="color:#778;padding:8px 0">no one by that name</div>';
+    this.list.innerHTML = countLine + (rows || '<div style="color:#778;padding:8px 0">no one by that name</div>');
   }
 }

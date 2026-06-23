@@ -12,6 +12,24 @@ function swatch(inner: string, scale = 1): string {
     <svg width="22" height="22" viewBox="-12 -12 24 24">${g}</svg></span>`;
 }
 
+// A glyph badge in a swatch-sized box (so badges line up with the icon rows).
+function glyphCell(glyph: string, color: string): string {
+  return `<span style="display:inline-flex;width:24px;height:24px;border-radius:5px;background:#12131c;
+    align-items:center;justify-content:center;flex:0 0 auto;color:${color};font:13px monospace">${glyph}</span>`;
+}
+
+// One legend row: a cell (swatch or glyph) + a name and a "what it represents" line.
+function entryRow(cell: string, name: string, desc: string): string {
+  return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">${cell}
+    <span style="line-height:1.25"><b style="color:#dde">${name}</b>` +
+    `<br><span style="color:#889;font-size:10px">${desc}</span></span></div>`;
+}
+
+function sectionLabel(text: string): string {
+  return `<div style="margin:9px 0 3px;color:#9ab;text-transform:uppercase;font-size:10px;letter-spacing:1px;
+    border-top:1px solid rgba(255,255,255,0.08);padding-top:7px">${text}</div>`;
+}
+
 export class Legend {
   private readonly panel: HTMLDivElement;
   private visible = true;
@@ -23,35 +41,34 @@ export class Legend {
     });
     this.panel = panel;
 
-    const rows = LEGEND_ENTRIES.map(({ key, label, desc }) => {
-      const color = CATEGORY_COLOR[key as keyof typeof CATEGORY_COLOR];
-      return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
-        ${swatch(iconSvgInner(key, color))}
-        <span style="line-height:1.25"><b style="color:#dde">${label}</b>` +
-        `<br><span style="color:#889;font-size:10px">${desc}</span></span></div>`;
-    }).join('');
+    // Scrollable, so the list can grow as more icons/badges are added.
+    Object.assign(body.style, { maxHeight: '70vh', overflowY: 'auto', overflowX: 'hidden', paddingRight: '4px' } as Partial<CSSStyleDeclaration>);
 
-    const hostile = `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;opacity:0.65">
-      <span style="display:inline-flex;width:24px;height:24px;border-radius:5px;background:#12131c;
-        align-items:center;justify-content:center;border:1px dashed ${CATEGORY_COLOR.hostile};flex:0 0 auto">
-        <svg width="22" height="22" viewBox="-12 -12 24 24">${iconSvgInner('hostile', CATEGORY_COLOR.hostile)}</svg></span>
-      <span style="line-height:1.25"><b style="color:#dde">Hostile</b><br><span style="color:#778;font-size:10px">a threat · coming soon</span></span></div>`;
+    const folk = CATEGORY_COLOR.folk;
+    const mapRows = LEGEND_ENTRIES.map(({ key, label, desc }) =>
+      entryRow(swatch(iconSvgInner(key, CATEGORY_COLOR[key as keyof typeof CATEGORY_COLOR])), label, desc)).join('');
 
-    // A child folk shown at the same reduced scale the map draws them.
-    const child = `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
-      ${swatch(iconSvgInner('folk', CATEGORY_COLOR.folk), 0.6)}
-      <span style="line-height:1.25"><b style="color:#dde">Child</b><br><span style="color:#889;font-size:10px">a smaller folk icon</span></span></div>`;
+    const hostileCell = `<span style="display:inline-flex;width:24px;height:24px;border-radius:5px;background:#12131c;
+      align-items:center;justify-content:center;border:1px dashed ${CATEGORY_COLOR.hostile};flex:0 0 auto">
+      <svg width="22" height="22" viewBox="-12 -12 24 24">${iconSvgInner('hostile', CATEGORY_COLOR.hostile)}</svg></span>`;
 
-    const badges =
-      `<div style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.08);padding-top:6px;color:#9ab">Folk badges</div>` +
-      `<div style="margin:3px 0"><span style="color:#c79bf0">✦</span> has magic &nbsp; <span style="color:#e06666">✚</span> ill</div>` +
-      `<div style="margin:3px 0;color:#cdd"><span style="color:#ffd24a;letter-spacing:1px">|||</span> seeking food &nbsp; <span style="color:#ffd24a">⊥</span> working</div>` +
-      `<div style="margin:3px 0;color:#cdd">☾ sleeping &nbsp; ·· chatting</div>`;
+    // Folk badges + the day/night phase, each a row like the map symbols (vertical).
+    const badgeRows =
+      entryRow(swatch(iconSvgInner('folk', folk), 0.6), 'Child', 'too young to work, court, or bear children') +
+      entryRow(glyphCell('✦', '#c79bf0'), 'Magic spark', 'born with a rare magic aptitude') +
+      entryRow(glyphCell('✚', '#e06666'), 'Ill', 'sick — at higher risk of death') +
+      entryRow(glyphCell('|||', '#ffd24a'), 'Seeking food', 'hungry — off to forage or hunt') +
+      entryRow(glyphCell('⊥', '#ffd24a'), 'Working', 'at a job, earning gold') +
+      entryRow(glyphCell('☾', '#9fb6d9'), 'Sleeping', 'resting to recover energy') +
+      entryRow(glyphCell('··', '#9ab'), 'Chatting', 'socialising with a neighbour') +
+      entryRow(glyphCell('☀', '#ffe08a'), 'Day / night', '☀ daytime · ☾ night');
 
-    const phase = `<div style="margin:5px 0 0;color:#889"><span style="color:#ffe08a">☀</span> day &nbsp; <span style="color:#9ab">☾</span> night</div>`;
-
-    body.innerHTML = rows + hostile + child + badges + phase +
-      `<div style="margin-top:7px;color:#667">L hide · H happenings · Esc menu</div>`;
+    body.innerHTML =
+      mapRows +
+      entryRow(hostileCell, 'Hostile', 'a threat — coming soon') +
+      sectionLabel('Folk badges') +
+      badgeRows +
+      `<div style="margin-top:9px;color:#667;font-size:10px">L hide · H happenings · Esc menu</div>`;
 
     document.body.appendChild(this.panel);
   }

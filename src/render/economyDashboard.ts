@@ -18,6 +18,8 @@ export class EconomyDashboard extends ModalPanel {
 
   toggle(world: World): void { if (this.visible) this.hide(); else { this.reveal(); this.render(world); } }
   refresh(world: World): void { if (this.visible) this.render(world); }
+  /** Render into the (master-hosted) content element, regardless of standalone visibility. */
+  update(world: World): void { this.render(world); }
 
   private render(world: World): void {
     const w = wealthStats(world);

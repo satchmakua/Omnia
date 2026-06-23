@@ -19,6 +19,7 @@ export class LineagesDashboard extends ModalPanel {
 
   toggle(world: World): void { if (this.visible) this.hide(); else { this.reveal(); this.render(world); } }
   refresh(world: World): void { if (this.visible) this.render(world); }
+  update(world: World): void { this.render(world); }
 
   private render(world: World): void {
     const lstore = getLanguageStore(world);

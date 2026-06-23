@@ -12,6 +12,7 @@ import { LegendsPanel } from './render/legendsPanel.ts';
 import { Legend } from './render/legend.ts';
 import { Menu } from './render/menu.ts';
 import type { SetupOptions } from './render/menu.ts';
+import { MasterPanel } from './render/masterPanel.ts';
 import { EconomyDashboard } from './render/economyDashboard.ts';
 import { DirectoryDashboard } from './render/directoryDashboard.ts';
 import { FamilyDashboard } from './render/familyDashboard.ts';
@@ -58,6 +59,16 @@ const economy   = new EconomyDashboard();
 const directory = new DirectoryDashboard(focusOn);
 const family    = new FamilyDashboard(focusOn);
 const lineages  = new LineagesDashboard();
+
+// One master tabbed view holds every global view (M10 slice 1). Per-view hotkeys jump
+// straight to a tab; Tab opens it on the current one. The inspector stays the entity
+// side-panel; the Legend (L) and Town Happenings (H) stay as glanceable overlays.
+const master = new MasterPanel();
+master.register({ id: 'legends',   label: 'Legends',   hotkey: 'c', el: legends.content,   update: (w) => legends.update(w) });
+master.register({ id: 'economy',   label: 'Economy',   hotkey: 'e', el: economy.content,   update: (w) => economy.update(w) });
+master.register({ id: 'directory', label: 'Find',      hotkey: 'f', el: directory.content, update: (w) => directory.update(w), onShow: () => directory.focusSearch() });
+master.register({ id: 'family',    label: 'Family',    hotkey: 't', el: family.content,    update: (w) => family.update(w),    onShow: () => family.setSelected(inspector.selectedEntity) });
+master.register({ id: 'lineages',  label: 'Lineages',  hotkey: 'g', el: lineages.content,  update: (w) => lineages.update(w) });
 
 // The currently running simulation (null while the start menu is up).
 let active: Simulation | null = null;
@@ -147,37 +158,12 @@ function openStart(): void {
   menu.showStart(lastSetup, newSimulation);
 }
 
-// ── hotkey dashboards (mutually exclusive; one open at a time) ──────────────────
-function anyDashOpen(): boolean {
-  return legends.isOpen || directory.visible || economy.visible || family.visible || lineages.visible;
-}
-function closeDashboards(): void {
-  legends.hide(); directory.hide(); economy.hide(); family.hide(); lineages.hide();
-}
-function toggleDashboard(kind: 'legends' | 'directory' | 'economy' | 'family' | 'lineages'): void {
-  if (!active) return;
-  const w = active.world;
-  const wasOpen =
-    kind === 'legends' ? legends.isOpen :
-    kind === 'directory' ? directory.visible :
-    kind === 'economy' ? economy.visible :
-    kind === 'lineages' ? lineages.visible : family.visible;
-  closeDashboards();
-  if (wasOpen) return;
-  if (kind === 'legends') legends.toggle(w);
-  else if (kind === 'directory') directory.toggle(w);
-  else if (kind === 'economy') economy.toggle(w);
-  else if (kind === 'lineages') lineages.toggle(w);
-  else family.toggle(w, inspector.selectedEntity);
-}
-
 // Dev-only debug handle (stripped from production builds by Vite).
 if (import.meta.env.DEV) {
   (window as unknown as { __omnia: unknown }).__omnia = {
     get sim() { return active; },
     get world() { return active?.world; },
-    content, renderer, inspector, controls, eventFeed, legends, legend, menu,
-    economy, directory, family, lineages, newSimulation, toggleDashboard,
+    content, renderer, inspector, controls, eventFeed, legend, menu, master, newSimulation,
     setLiveModel: (v: boolean) => { liveModel = v; },
     get provider() { return activeProvider; },
     step: (n = 1) => { if (active) for (let i = 0; i < n; i++) tick(active.world, active.rng, activeCfg, active.clockEntity, content, activeProvider); },
@@ -207,20 +193,15 @@ function loop(now: number) {
     renderer.consumeClick(active.world);
     inspector.update(active.world);
     eventFeed.render(active.world);
-    // Keep an open dashboard's figures live (cheap; throttled).
-    if (frame++ % 20 === 0) {
-      economy.refresh(active.world);
-      directory.refresh(active.world);
-      family.refresh(active.world);
-      lineages.refresh(active.world);
-    }
+    // Keep the open master tab's figures live (cheap; throttled).
+    if (frame++ % 20 === 0) master.refresh(active.world);
   }
   requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (anyDashOpen()) closeDashboards();          // back out of a dashboard first
+    if (master.visible) master.hide();             // close the master view first
     else if (inspector.isOpen) inspector.close();  // then close an open inspector card
     else if (state === 'running') pause();
     else if (state === 'paused') { menu.hide(); state = 'running'; }
@@ -232,11 +213,8 @@ document.addEventListener('keydown', (e) => {
   // preventDefault on the letter hotkeys so the keystroke that opens a search field
   // (Find) isn't also typed into it.
   if (e.key === ' ') { controls.togglePause(); e.preventDefault(); }
-  else if (e.key === 'c' || e.key === 'C') { toggleDashboard('legends'); e.preventDefault(); }
-  else if (e.key === 'e' || e.key === 'E') { toggleDashboard('economy'); e.preventDefault(); }
-  else if (e.key === 'f' || e.key === 'F') { toggleDashboard('directory'); e.preventDefault(); }
-  else if (e.key === 't' || e.key === 'T') { toggleDashboard('family'); e.preventDefault(); }
-  else if (e.key === 'g' || e.key === 'G') { toggleDashboard('lineages'); e.preventDefault(); }
+  else if (e.key === 'Tab') { master.open(active.world); e.preventDefault(); }
+  else if (master.isTabKey(e.key)) { master.openTab(e.key, active.world); e.preventDefault(); }
   else if (e.key === 'l' || e.key === 'L') { legend.toggle(); e.preventDefault(); }
   else if (e.key === 'h' || e.key === 'H') { eventFeed.toggle(); e.preventDefault(); }
   else if (e.key === 'ArrowLeft')  { renderer.panBy(-0.12, 0); e.preventDefault(); }

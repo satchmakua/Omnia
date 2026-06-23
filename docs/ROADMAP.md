@@ -181,12 +181,42 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD:** a run saves and loads to a byte-identical state; setup options take effect; config is YAML-authoritative.
 
-## ▶ Milestone 10 — Agent Depth: Body, Mind & Inventory  *(next)*
+## ▶ Milestone 10 — Causal & Legible Minds (the two loops)  *(next — reprioritised 2026-06-17 per the human)*
 
-**Goal:** agents become storytelling-rich and mechanically deep — all inherited and legible.
+**Goal:** close the two loops the whole project is built on (D25): make the inner life **causal** (culture, memory, beliefs, and language actually *steer behaviour*) and **legible** (a master tabbed view to see it all). Front-loaded with the UI the human wants ASAP + the quick fixes.
+
+- [x] **Slice 1 — Master tabbed view + UI fixes (FIRST, human priority).** *(S38: `src/render/masterPanel.ts` — one modal hosting all global views as scrollable **tabs** (Legends·C / Economy·E / Find·F / Family·T / Lineages·G); **Tab** opens it on the current tab, the existing per-view hotkeys jump straight to a tab, Esc closes it. Low-churn design: each view hands the master its **persistent content element** (a `content` getter on `ModalPanel` + a `LegendsPanel` refactor) and an `update(world)`, so the master **reparents** them into a shared slot and just shows/refreshes the active one — the directory's search box, family-tree navigation, etc. keep their state across tab switches. The inspector stays the entity side-panel; the Legend (L) and Town Happenings (H) stay glanceable overlays. **Quick fixes:** **sleep/work hysteresis** (`ActionSystem` — commit to sleeping-until-rested (energy ≥ 0.85) / eating-until-full, unless the other survival need goes urgent — fixes the every-other-tick jitter, which was threshold-thrash at energy 0.4); **legend** badges now a **vertical, scrollable** list with "what it represents" descriptions (Child → "too young to work, court, or bear children"); **building-icon** description generalised ("a home, workplace, or civic place"). Verified live (DOM): all 5 tabs render, switching + Find search/filter/focus + Family + Legends + Lineages work, no console errors.)*
+- [ ] **Slice 2 — Culture is fully causal (D26).** Wire the other value axes to behaviour (only `communal`→wealth-goal is causal today; the rest are inert): `open`→cross-group friendship + willingness to learn languages, `traditional`→resistance to drift/change, `martial`→conflict propensity (lands fully once conflict exists). Each coupling gets a test + soak check; surfaced in the inspector.
+- [ ] **Slice 3 — Memory & belief become causal (D26).** Distil beliefs/memories into numeric **drives** that bias action selection (a family belief → reproduction priority; trauma → mood/alignment lean); generate **more memories + vows/core beliefs**; show them affecting choices. (Today beliefs are write-only flavour — never read back into any decision.)
+- [ ] **Slice 4 — Language as a mechanic + Conversation/Language tabs.** A per-agent **fluency** map (language → 0–100%); **same-language synergy** (chatting a same-tongue speaker bonds/benefits faster); **gradual learning** of another tongue through interaction (a % progress bar); cross-language interaction still works, just with less synergy. **Conversation tab** (active + past dialogue) and **Language tab** (phoneme inventory, sample words & structure, sound-change history). Make agents *visibly* chat (decouple the chatting badge from the rarely-low social need).
+
+**DoD:** culture (all axes), beliefs, and language each **measurably change behaviour** (a test shows each shifting an outcome distribution); the master tabbed view holds every view incl. Conversation + Language + Mind; the sleep/work jitter is gone; all legible; determinism + soak hold.
+
+## Milestone 11 — Homes & Property  *(pulled from old M12; human-requested now)*
+
+**Goal:** folk build and own homes that matter — visible town growth, not pre-placed boxes.
+
+- [ ] **Homes:** agents **build/own** a home from gathered resources over time (the town visibly grows), **sleep there**, get a **mood bonus**, and store goods (later); **landlords** own several.
+- [ ] **Buildings generalised:** a building is a home / workplace / civic place — not just an employer; icon + inspector reflect this.
+
+**DoD:** folk build and own homes, sleep in them, and gain a mood bonus; some own several; the town visibly grows from gathered resources; legible; soak-stable.
+
+## Milestone 12 — Robust Save/Load & World Management  *(human-requested; storage robustness)*
+
+**Goal:** many worlds, saved safely, loaded instantly.
+
+- [ ] **Snapshot loads:** serialise the World + RNG state so load is **instant** (fixes the replay-load freeze on big/long runs — replay stays the correctness baseline / cross-check).
+- [ ] **Multiple named worlds** with a save-manager UI (list / load / **delete**); storage in **IndexedDB** (room for big snapshots, beyond localStorage's ~5 MB).
+- [ ] **Disk export/import:** download a save as a `.omnia` JSON file and re-import via a file picker — portable and shareable.
+
+**DoD:** several named worlds save / load (snapshot-fast) and delete; a save round-trips to disk and back; loaded state is byte-identical and continuable; legible.
+
+## Milestone 13 — Agent Depth: Stats, Alignment, Personality & Body  *(the old M10 — D&D depth)*
+
+**Goal:** agents become mechanically deep — inherited and legible (the D&D layer combat/crime build on).
 
 - [ ] **Ability scores** (STR/DEX/CON/INT/WIS/CHA), content-driven, rolled + species-modified.
-- [ ] **9-alignment (dynamic, D26-causal):** baseline neutral-leaning-good; trauma/events/environment shift it; it biases behaviour (evil → lying/stealing/violence; good → cooperation).
+- [ ] **9-alignment (dynamic, D26-causal):** baseline neutral-leaning-good; trauma/events/environment shift it; it biases behaviour (evil → lying/stealing/violence; good → cooperation). *(Builds on M10's belief→behaviour machinery.)*
 - [ ] **Personality** archetypes/traits (coward / ambitious / greedy / loyal / curious / sadistic …); mid-life drift from trauma.
 - [ ] **One Heredity system:** physical traits (height/weight/eye/hair/voice) + ability scores + alignment-lean + magic aptitude all inherit (parental mean + variation), *visibly*.
 - [ ] **Inventory** + meaningful uses for gold; **status/health** (HP, exhaustion, starvation, sickness, poverty) as real states.
@@ -194,7 +224,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD:** light-eyed parents tend to light-eyed children (traits visibly inherited); alignment shifts with experience and changes behaviour; ability scores feed later combat/skills; all legible; determinism + soak hold.
 
-## Milestone 11 — Institutions: Tribes, Factions & Governments
+## Milestone 14 — Institutions: Tribes, Factions & Governments
 
 **Goal:** the unified social-structure engine — the biggest "world feels alive" jump.
 
@@ -206,19 +236,18 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD:** tribes/factions form, hold cohesion, and schism over deep time alongside language/culture, and visibly govern themselves; faction colours are distinct (never red); all legible; determinism + soak hold.
 
-## Milestone 12 — Economy Depth: Markets, Property & Class
+## Milestone 15 — Economy Depth: Markets, Trade & Class
 
 **Goal:** a tactile economy where gold matters and fortunes rise and fall *(completes M3's deferrals)*.
 
 - [ ] **Supply/demand market:** prices move with supply/demand; agents buy food/goods; business revenue from **real sales**; businesses can **go bankrupt**.
 - [ ] **Resource → craft → goods** coupling so depletion bites; **skill/knowledge gating** (learn-by-doing / apprenticeship).
-- [ ] **Homes:** own / sleep / raise-family / store-goods + a mood bonus; **landlords** (multi-home owners).
-- [ ] **Banking/loans/debt** rebalance (agents shouldn't sink into debt so fast); caravans; stockpiles; boom/bust cycles.
+- [ ] **Banking/loans/debt** rebalance (agents shouldn't sink into debt so fast); caravans; stockpiles; boom/bust cycles. *(Homes/landlords moved to M11.)*
 - [ ] Inspector: a **market/prices** view; per-agent wealth/property/holdings.
 
 **DoD:** prices respond to scarcity; agents trade and accumulate/lose property; some become landlords; businesses open and fail; debt is balanced; legible; soak-stable.
 
-## Milestone 13 — Conflict: Combat, Hunting, Crime & War
+## Milestone 16 — Conflict: Combat, Hunting, Crime & War
 
 **Goal:** the messier side of life — and a real threat model.
 
@@ -230,7 +259,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD:** agents fight, hunt, and commit crimes consistent with alignment; wounds persist and show; organized conflict (gangs/wars) emerges and is recorded as legends; legible; soak-stable.
 
-## Milestone 14 — Knowledge: Tech Tree, Magic & Research
+## Milestone 17 — Knowledge: Tech Tree, Magic & Research
 
 **Goal:** civilizations climb the full ladder — and magic finally earns its place.
 
@@ -241,7 +270,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD:** an org researches up a visible tech *and* magic tree across the ages incl. the sci-fi tier; mages do something inspectable and useful; knowledge can be lost and rediscovered; achievements fire and are viewable; determinism + soak hold.
 
-## Milestone 15 — Religion & Belief
+## Milestone 18 — Religion & Belief
 
 **Goal:** living faiths that evolve and split like languages.
 
@@ -251,7 +280,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD:** ≥1 religion founds, spreads, and schisms over deep time tied to culture; faith visibly affects behaviour and events; legible; soak-stable.
 
-## Milestone 16 — Events, Seasons & the Paranormal
+## Milestone 19 — Events, Seasons & the Paranormal
 
 **Goal:** things *happen* — the world has weather, holidays, and the occasional ghost.
 
@@ -263,7 +292,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD:** seasons cycle and affect the world; disasters and rare paranormal events occur, leave consequences, and enter the Chronicle; adding an event is data-only; legible; soak-stable.
 
-## Milestone 17 — History, Legend & Quest
+## Milestone 20 — History, Legend & Quest
 
 **Goal:** the capstone of emergent storytelling — the world remembers.
 
@@ -273,7 +302,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD:** named historical figures and dynasties accrue and are referenced for generations; artifacts carry histories; ruins of fallen civs are discoverable; agents pursue procedural goals; all browsable; soak-stable.
 
-## Milestone 18 — Content & Bestiary Expansion
+## Milestone 21 — Content & Bestiary Expansion
 
 **Goal:** a world that isn't all humans, dwarves, and moth grazers.
 
@@ -285,17 +314,16 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD:** the map shows many distinct races/animals/monsters/special agents and building types, each with a clear icon and a content-defined role; adding more is data-only; soak-stable.
 
-## Milestone 19 — UI, Inspectors & Legibility Overhaul
+## Milestone 22 — UI, Inspectors & Aesthetic Polish
 
 **Goal:** make all the depth perceivable (RimWorld / Dwarf Fortress / Kenshi / Sims-grade).
 
 - [~] **Inspector overhaul:** audit existing views; add the missing ones (agent sheet, organization, government, religion, tech/magic, events, achievements, world/misc). *(S33, pulled forward: fixed the **stuck-open card** — the ✕ button is now persistent (was rebuilt every frame and destroyed mid-click) and Esc closes the card. Full overhaul still pending.)*
-- [ ] **Conversation tab** (active + past conversations).
-- [ ] **Master tabbed view** *(human idea, S33)*: one hotkey opens a master panel holding **all** views as scrollable tabs; per-view hotkeys jump to a tab. Replaces the growing flat hotkey list and makes "Town Happenings" just another view. **Deferred** — a sizeable refactor of the five modal dashboards (legends/economy/directory/family/lineages) + the always-on panels into a tab host; worth its own focused pass.
+- [→] **Master tabbed view** and **Conversation tab** — **moved to M10** (slice 1 / slice 4) at the human's request (master UI ASAP).
 - [x] **On-screen help / game guide**; **controls → Esc → Controls** (off the main screen); **top bar minimal** (day / year / season / folk) with the rest moved into views. *(S33: removed the always-on `#hud` controls strip; added **Esc → Controls** (one keymap source); the **top banner is now minimal** — day/night, Year · Season · Month, Folk, and real-world watch-time (⏱) — Gini/Mages/Graves/Fauna moved off (Gini → Economy with a plain-English explanation). New **time model**: a legible Year/Season/Month calendar (cosmetic subdivision of the aging year, so dates & ages agree) replacing the confusing cumulative "day"; the **speed slider is now exponential up to 1000 ticks/s ≈ 1 sim-year/second** (was capped at 100, with a 30-tick/frame loop cap raised to 500). Zoom % is labelled and tucked bottom-right. **Town Happenings** is now hideable (H), like the Legend (L). The **Legend** explains every symbol (incl. the `|||` = seeking-food badge) and shows the child folk at actual reduced scale.)*
 - [x] Fix the **finder "f"-typed-into-search bug** *(S33: `preventDefault` on the letter hotkeys, so the F that opens Find isn't typed into its search field)*; aesthetic/lo-fi pass (D13); optional ambient audio.
 
-**DoD:** every system from M8–M18 is inspectable; the top bar is minimal and controls/help live under Esc; the finder bug is gone; the UI reads richly; soak-stable. *(Top-bar/controls/finder/time/legend done S33; inspector overhaul + master tabbed view + conversation tab remain.)*
+**DoD:** every system from M8–M21 is inspectable; the top bar is minimal and controls/help live under Esc; the finder bug is gone; the UI reads richly; soak-stable. *(Top-bar/controls/finder/time/legend done S33; the master tabbed view + Conversation/Language tabs moved to M10; this milestone is now the closing inspector-completeness + aesthetic/audio polish pass.)*
 
 ---
 
@@ -303,7 +331,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 *(Append new ideas here with a date. Do not build directly from this list.)*
 
-> **Note (2026-06-17):** most older backlog items below are now **promoted into M8–M19** above (market → M12, building → M11/M12, conflict/vice → M13, skill gating + lost arts → M14, YAML config loader → M9, family-tree view + tween motion → M19, async live-model is already done in M7.5). They're left here as the historical trail; build from the milestones, not this list.
+> **Note (updated 2026-06-17, after the M10 reprioritisation):** most older backlog items below are now **promoted into the M8–M22 milestones** above (market → M15 economy, homes/building → M11, conflict/vice → M16, skill gating + lost arts → M17 knowledge, YAML config loader → M9 (done), save/load robustness → M12, async live-model already done in M7.5). They're left here as the historical trail; build from the milestones, not this list. *(Milestones were renumbered 2026-06-17: the new M10 "Causal & Legible Minds" + M11 Homes + M12 Save/Load were inserted, pushing the old M10–M19 down to M13–M22.)*
 
 - **God-sim fork (future direction, D30):** give the player in-sim agency — nudges, triggered events, set goals. Designed-*for* now (a player intervention is just another recordable event in the deterministic log) but **not built**; the human may fork here once the observed world is compelling enough — date: 2026-06-15.
 - More traditions for the capability system (alchemy, bio-engineering, ritual) — date: founding.

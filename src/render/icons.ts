@@ -71,5 +71,5 @@ export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; lab
   { key: 'ore', label: 'Ore', desc: 'minable rock node' },
   { key: 'timber', label: 'Timber', desc: 'harvestable wood' },
   { key: 'crystal', label: 'Crystal', desc: 'rare gem node' },
-  { key: 'building', label: 'Building', desc: 'a business / employer' },
+  { key: 'building', label: 'Building', desc: 'a home, workplace, or civic place' },
 ];
