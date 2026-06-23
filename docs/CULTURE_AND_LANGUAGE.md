@@ -41,6 +41,19 @@ A culture carries:
 
 (Cultural traits spread and mutate like memes; a culture's cohesion is essentially how strongly it resists drift.)
 
+### How values steer behaviour (causal coupling — D26)
+
+The four value axes are **causal**: they bias what agents actually *do*, deterministically (procedural, no LLM — so seed-replay holds). The coupling is introduced **small and soak-gated** (each axis gets a test + a soak check), and an axis only lands once it has a behavioural home — `martial` waits for conflict (M16).
+
+| Axis | Pole (1.0) | How it biases behaviour | Hooks into | Status |
+|---|---|---|---|---|
+| **communal** | communal / sharing | Lowers the agent's personal **wealth goal** — communal folk prize modest wealth, individualists accumulate. *(Later: share food/gold with needy kin.)* | spawn / economy | **causal** (M7) |
+| **open** | open to outsiders | Scales **friendship warmth toward other cultures**: same-culture pairs bond fully, cross-culture warmth is damped by how *insular* the pair is. *(Later: willingness to learn another tongue — M10 slice 4.)* | `SocialSystem.interact` | **causal** (M10) |
+| **traditional** | clings to the old ways | **Endogamy** — traditional folk prefer to marry within their own culture; innovative folk intermarry freely. *(Later: inherit a parent's profession, slow to adopt new tech — M17.)* | `SocialSystem.matchmake` | **causal** (M10) |
+| **martial** | martial / warlike | Conflict propensity — raid, defend territory, settle disputes by force; prefer warrior over merchant professions. | combat | **deferred to M16** (no behavioural home yet) |
+
+*Distinct from `cohesion`:* `cohesion` is a **culture-level** knob (how fast the culture's *values* drift); `traditional` is an **agent-level** behaviour (folk preserving the old ways). Company (the social *need*) is met by anyone — `open` only governs whether that company warms into *friendship* across cultures, so insular folk still aren't lonely, they just stay socially segregated.
+
 ## Naming
 
 Names are generated from a culture's language — phonology + phonotactics + the culture's naming conventions and morphology. Consequences that make the world feel alive:
