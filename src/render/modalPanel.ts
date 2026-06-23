@@ -41,6 +41,9 @@ export class ModalPanel {
   get visible(): boolean { return this._visible; }
   protected reveal(): void { this._visible = true; this.panel.style.display = 'block'; }
   hide(): void { this._visible = false; this.panel.style.display = 'none'; }
+
+  /** The content element — adopted by the master tabbed view as a tab pane (M10). */
+  get content(): HTMLDivElement { return this.body; }
 }
 
 // Small shared bits the dashboards reuse.

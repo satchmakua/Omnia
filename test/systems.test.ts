@@ -107,6 +107,20 @@ describe('ActionSystem', () => {
     expect(agent.action).toBe('wander');
   });
 
+  it('keeps sleeping until rested — hysteresis, no flip the instant energy clears the gate', () => {
+    const { w, agent } = makeAgent(0.9, 0.6);   // energy past the 0.4 gate but not yet rested
+    agent.action = 'sleep';
+    runActionSystem(w, cfg);
+    expect(agent.action).toBe('sleep');          // stays asleep instead of bouncing to wander
+  });
+
+  it('wakes from sleep once rested', () => {
+    const { w, agent } = makeAgent(0.9, 0.9);    // energy ≥ rested mark
+    agent.action = 'sleep';
+    runActionSystem(w, cfg);
+    expect(agent.action).toBe('wander');
+  });
+
   it('increments ticksAlive each call', () => {
     const { w, agent } = makeAgent(0.9, 0.9);
     runActionSystem(w, cfg);
