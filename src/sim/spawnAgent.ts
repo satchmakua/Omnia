@@ -81,7 +81,7 @@ export function spawnAgent(
   });
   world.addComponent<Memory>(e, C_MEMORY, {
     events: [], summaries: [], beliefs: [], lastReflectTick: -1e9, lastRollupTick: -1e9,
-    utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9,
+    utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9, purpose: 0,
   });
 
   // Rare innate magic aptitude — scarce by construction, but heritable: children

@@ -188,9 +188,14 @@ export class Inspector {
       const earlier = mem.summaries.slice(-2).reverse()
         .map(s => `<div style="color:#8a8a9a">❧ ${s.text}</div>`).join('');
       const memCount = mem.events.length + mem.summaries.reduce((n, s) => n + s.count, 0);
+      // The causal life-purpose (D26): the vow that bends how hard they strive.
+      const purpose = mem.purpose ?? 0;
+      const drive = purpose > 0.05 ? ' · strives for it' : purpose < -0.05 ? ' · grief pulls them back' : '';
+      const vowLine = mem.vow
+        ? `<div style="color:#ffd27a">⚑ vows ${mem.vow}<span style="color:#998">${drive}</span></div>` : '';
       mind = `<hr style="${RULE}">
         <div style="${SECTION}">Mind &nbsp;<span style="color:#789">${memCount} memories</span></div>
-        ${beliefs}${said}${recent}${earlier}`;
+        ${vowLine}${beliefs}${said}${recent}${earlier}`;
     }
 
     return `

@@ -18,6 +18,14 @@ import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { remember } from '../../ai/memory.ts';
+import { getCultureStore, getCulture, bondFactor, prefersEndogamy } from '../../culture/cultureStore.ts';
+import type { CultureStoreData, RuntimeCulture } from '../../culture/cultureStore.ts';
+
+// An agent's culture (D26 coupling), or undefined if they have none / no store yet.
+function cultureOf(world: World, cstore: CultureStoreData | undefined, e: EntityId): RuntimeCulture | undefined {
+  const cid = world.getComponent<Agent>(e, C_AGENT)!.cultureId;
+  return cid && cstore ? getCulture(cstore, cid) : undefined;
+}
 
 const MAX_NEIGHBOURS = 6; // cap pairwise interactions per agent per tick
 // The 8-neighbourhood + own tile: company comes from standing *near* someone, since
@@ -46,6 +54,7 @@ export function runSocialSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const tick = clockEnts.length ? world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick : 0;
   const chronEnts = world.query(C_CHRONICLE);
   const chronicle = chronEnts.length ? world.getComponent<ChronicleData>(chronEnts[0], C_CHRONICLE) : undefined;
+  const cstore = getCultureStore(world);   // for the culture→behaviour couplings (D26)
 
   // Decay everyone's social need and prune edges to the dead.
   const agents = world.query(C_AGENT, C_NEEDS, C_POSITION);
@@ -78,29 +87,42 @@ export function runSocialSystem(world: World, cfg: SimConfig, rng: RNG): void {
       if (!list) continue;
       for (const o of list) {
         if (o <= e) continue;            // pair once, from the lower id
-        interact(world, cfg, e, o);
+        interact(world, cfg, e, o, cstore, tick);
         if (++met >= MAX_NEIGHBOURS) break;
       }
       if (met >= MAX_NEIGHBOURS) break;
     }
   }
 
-  matchmake(world, cfg, rng, marryChance, agents, tick, chronicle);
+  matchmake(world, cfg, rng, marryChance, agents, tick, chronicle, cstore);
 }
 
-// Company restores the social need; repeated contact warms sentiment to friendship.
-function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId): void {
+// Company restores the social need (met by anyone); repeated contact warms sentiment
+// to friendship — but cross-culture warmth is damped by how insular the pair is (the
+// `open` axis, D26), so open folk befriend outsiders and insular folk stay segregated.
+// The moment a pair crosses into friendship is a remembered life event (M10 slice 3).
+function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId, cstore: CultureStoreData | undefined, tick: number): void {
   const na = world.getComponent<Needs>(a, C_NEEDS)!;
   const nb = world.getComponent<Needs>(b, C_NEEDS)!;
   na.social = Math.min(1, na.social + cfg.socialGainPerInteract);
   nb.social = Math.min(1, nb.social + cfg.socialGainPerInteract);
 
+  const bond = bondFactor(cultureOf(world, cstore, a), cultureOf(world, cstore, b));
   const ea = edge(world.getComponent<Relationships>(a, C_RELATIONSHIPS)!, b);
   const eb = edge(world.getComponent<Relationships>(b, C_RELATIONSHIPS)!, a);
-  ea.sentiment = Math.min(1, ea.sentiment + cfg.sentimentGainPerInteract);
-  eb.sentiment = Math.min(1, eb.sentiment + cfg.sentimentGainPerInteract);
+  const wasFriend = ea.type === 'partner' || ea.sentiment >= cfg.friendSentiment;  // already close?
+  ea.sentiment = Math.min(1, ea.sentiment + cfg.sentimentGainPerInteract * bond);
+  eb.sentiment = Math.min(1, eb.sentiment + cfg.sentimentGainPerInteract * bond);
   if (ea.type !== 'partner' && ea.sentiment >= cfg.friendSentiment) ea.type = 'friend';
   if (eb.type !== 'partner' && eb.sentiment >= cfg.friendSentiment) eb.type = 'friend';
+
+  if (!wasFriend && ea.type === 'friend' && ea.sentiment >= cfg.friendSentiment) {  // just became friends
+    const an = world.getComponent<Agent>(a, C_AGENT)!.name;
+    const bn = world.getComponent<Agent>(b, C_AGENT)!.name;
+    emitEvent(world, 'friendship', `${an} and ${bn} became friends.`);
+    remember(world, a, tick, `befriended ${bn}`, 0.45);
+    remember(world, b, tick, `befriended ${an}`, 0.45);
+  }
 }
 
 // Pair up unattached adults (opposite sex, not close kin) so the town keeps
@@ -108,6 +130,7 @@ function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId): void 
 function matchmake(
   world: World, cfg: SimConfig, rng: RNG, marryChance: number,
   agents: EntityId[], tick: number, chronicle: ChronicleData | undefined,
+  cstore: CultureStoreData | undefined,
 ): void {
   const males: EntityId[] = [];
   const females: EntityId[] = [];
@@ -123,8 +146,15 @@ function matchmake(
   for (const m of males) {
     if (rng() >= marryChance) continue;
     const lm = world.getComponent<Lineage>(m, C_LINEAGE)!;
-    const f = females.find(x => !taken.has(x) &&
-      !related(lm, world.getComponent<Lineage>(x, C_LINEAGE)!, m, x));
+    const cm = cultureOf(world, cstore, m);
+    // Traditional folk prefer a same-culture partner (endogamy, D26); fall back to
+    // any eligible match if none of their own are available.
+    const endogamous = prefersEndogamy(cm, rng());
+    const eligible = (x: EntityId) =>
+      !taken.has(x) && !related(lm, world.getComponent<Lineage>(x, C_LINEAGE)!, m, x);
+    const f = (endogamous
+      ? females.find(x => eligible(x) && cultureOf(world, cstore, x)?.id === cm?.id)
+      : undefined) ?? females.find(eligible);
     if (f === undefined) continue;
     taken.add(m);
     taken.add(f);

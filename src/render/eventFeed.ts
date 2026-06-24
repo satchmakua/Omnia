@@ -11,6 +11,7 @@ const KIND_COLOR: Record<EventKind, string> = {
   birth:    '#8fe88f',
   death:    '#9a9aa6',
   marriage: '#ff9ad0',
+  friendship: '#7fd0c0',
   work:     '#ffd24a',
   magic:    '#d090f0',
   illness:  '#ff9a6a',
@@ -22,7 +23,7 @@ const KIND_COLOR: Record<EventKind, string> = {
   culture:  '#e6b0ff',
 };
 const KIND_GLYPH: Record<EventKind, string> = {
-  birth: '✚', death: '†', marriage: '❤', work: '⚒', magic: '✦', illness: '☣', resource: '⛏',
+  birth: '✚', death: '†', marriage: '❤', friendship: '⊕', work: '⚒', magic: '✦', illness: '☣', resource: '⛏',
   reflect: '☼', dialogue: '❝', dream: '☾', decide: '➜', culture: '◈',
 };
 

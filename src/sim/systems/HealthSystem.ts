@@ -32,17 +32,27 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const agent = world.getComponent<Agent>(e, C_AGENT)!;
     const health = world.getComponent<Health>(e, C_HEALTH)!;
 
-    // Illness strikes occasionally; otherwise health recovers.
+    // Illness strikes occasionally; otherwise health recovers. Pulling through a *grave*
+    // illness is itself a remembered turning point (M10 slice 3) — a brush with mortality
+    // that `distill` reads as resilience.
     if (!health.ill && rng() < illnessChance) {
       health.value = Math.max(0, health.value - cfg.illnessHealthLoss);
       health.ill = true;
       if (health.value < 0.4) {
+        health.grave = true;
         emitEvent(world, 'illness', `${agent.name} fell gravely ill.`);
         remember(world, e, tick, 'fell gravely ill', 0.5);
       }
     } else {
       health.value = Math.min(1, health.value + recovery);
-      if (health.value >= 0.5) health.ill = false;
+      if (health.ill && health.value >= 0.5) {
+        health.ill = false;
+        if (health.grave) {
+          health.grave = false;
+          emitEvent(world, 'illness', `${agent.name} pulled through a grave illness.`);
+          remember(world, e, tick, 'survived a grave illness', 0.45);
+        }
+      }
     }
 
     // Mortality: flat base + steep age ramp + poor-health penalty.
@@ -61,10 +71,12 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const lin = world.getComponent<Lineage>(e, C_LINEAGE);
     const ageYears = Math.floor(agent.ticksAlive / tpy);
     const notable = !!(lin && (lin.partner != null || lin.children.length > 0)) || cause === 'old age';
-    // Bereavement: the deceased's kin remember the loss (no-ops for the dead).
+    // Bereavement: the deceased's kin remember the loss (no-ops for the dead). Outliving
+    // your own child is the heaviest grief of all (M10 slice 3).
     if (lin) {
       if (lin.partner != null) remember(world, lin.partner, tick, `lost their spouse ${agent.name}`, 0.9);
       for (const child of lin.children) remember(world, child, tick, `lost their parent ${agent.name}`, 0.9);
+      for (const parent of lin.parents) remember(world, parent, tick, `lost their child ${agent.name}`, 0.95);
     }
     const tomb = killAgent(world, e, tick, cause, tpy);
     emitEvent(world, 'death', `${tomb.name} died of ${cause} at ${ageYears}.`);
