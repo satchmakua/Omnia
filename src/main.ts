@@ -17,6 +17,7 @@ import { EconomyDashboard } from './render/economyDashboard.ts';
 import { DirectoryDashboard } from './render/directoryDashboard.ts';
 import { FamilyDashboard } from './render/familyDashboard.ts';
 import { LineagesDashboard } from './render/lineagesDashboard.ts';
+import { EcologyDashboard } from './render/ecologyDashboard.ts';
 import { SpeedControl } from './render/controls.ts';
 import { EventFeed } from './render/eventFeed.ts';
 import { C_AGENT, C_POSITION } from './sim/components.ts';
@@ -59,6 +60,7 @@ const economy   = new EconomyDashboard();
 const directory = new DirectoryDashboard(focusOn);
 const family    = new FamilyDashboard(focusOn);
 const lineages  = new LineagesDashboard();
+const ecology   = new EcologyDashboard();
 
 // One master tabbed view holds every global view (M10 slice 1). Per-view hotkeys jump
 // straight to a tab; Tab opens it on the current one. The inspector stays the entity
@@ -69,6 +71,7 @@ master.register({ id: 'economy',   label: 'Economy',   hotkey: 'e', el: economy.
 master.register({ id: 'directory', label: 'Find',      hotkey: 'f', el: directory.content, update: (w) => directory.update(w), onShow: () => directory.focusSearch() });
 master.register({ id: 'family',    label: 'Family',    hotkey: 't', el: family.content,    update: (w) => family.update(w),    onShow: () => family.setSelected(inspector.selectedEntity) });
 master.register({ id: 'lineages',  label: 'Lineages',  hotkey: 'g', el: lineages.content,  update: (w) => lineages.update(w) });
+master.register({ id: 'ecology',   label: 'Ecology',   hotkey: 'y', el: ecology.content,   update: (w) => ecology.update(w) });
 
 // The currently running simulation (null while the start menu is up).
 let active: Simulation | null = null;

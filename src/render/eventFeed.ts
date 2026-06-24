@@ -39,9 +39,15 @@ export class EventFeed {
       title: 'Town Happenings',
       style: {
         position: 'fixed', left: '12px', bottom: '64px', width: '300px', maxHeight: '40vh',
-        overflow: 'hidden',
+        overflow: 'hidden', display: 'flex', flexDirection: 'column',
       },
     });
+    // The header stays put while the list scrolls inside the remaining height — without
+    // this the lower lines were clipped by the panel's max-height. `minHeight:0` lets the
+    // flex child actually shrink so it scrolls instead of overflowing the window.
+    Object.assign(body.style, {
+      flex: '1 1 auto', minHeight: '0', overflowY: 'auto', overflowX: 'hidden',
+    } as Partial<CSSStyleDeclaration>);
     this.panel = panel;
     this.body = body;
     document.body.appendChild(panel);
@@ -50,7 +56,7 @@ export class EventFeed {
   /** Hide/show the whole feed (hotkey H), like the legend (L). */
   toggle(): void {
     this.visible = !this.visible;
-    this.panel.style.display = this.visible ? 'block' : 'none';
+    this.panel.style.display = this.visible ? 'flex' : 'none';
   }
 
   render(world: World): void {
@@ -63,7 +69,7 @@ export class EventFeed {
 
     const rows = events.map(e => {
       const col = KIND_COLOR[e.kind];
-      return `<div style="margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">` +
+      return `<div style="margin:2px 0;overflow-wrap:anywhere">` +
         `<span style="color:${col}">${KIND_GLYPH[e.kind]}</span> ${e.text}</div>`;
     }).join('');
     this.body.innerHTML = rows || '<div style="color:#778">quiet for now…</div>';
