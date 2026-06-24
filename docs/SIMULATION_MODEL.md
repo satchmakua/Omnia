@@ -100,4 +100,4 @@ For deep history that was compressed away, plausible detail can be **reconstruct
 
 ### The failure mode to watch
 
-The risk the human flagged: compress so hard that history goes **flat** — every legend reduced to bloodless statistics. Guard against it by keeping importance scoring generous toward the dramatic (deaths, betrayals, foundings, ruin) and by preserving *named, sharp* Chronicle entries even when the surrounding detail is gone. A good test of this system is qualitative: open Legends after many generations and check that it reads like a *story*, not a spreadsheet.
+The flagged risk: compress so hard that history goes **flat** — every legend reduced to bloodless statistics. Guard against it by keeping importance scoring generous toward the dramatic (deaths, betrayals, foundings, ruin) and by preserving *named, sharp* Chronicle entries even when the surrounding detail is gone. A good test of this system is qualitative: open Legends after many generations and check that it reads like a *story*, not a spreadsheet.

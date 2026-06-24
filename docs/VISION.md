@@ -16,13 +16,13 @@ A small town of a few hundred genuinely distinct people whose ordinary and extra
 The engine substrate is strong (determinism, ECS, validated content, bounded history, a real test bar); the **life on top must now become causal and legible.** Two loops to close — they fix the science and the art at once:
 
 1. **Cognition → consequence.** The inner life must *steer behaviour*, not merely narrate it. The **procedural** cognitive layers — a culture's value axes, and beliefs distilled to numbers — feed back into what agents *do*, deterministically, so seed-replay still holds. (LLM *generation* stays off the deterministic trajectory and recorded, per D19/D20; it is the procedural distillate that is causal — see **D26**.)
-2. **Mechanism → meaning.** The world's emergent patterns must be *measurable as findings* — distributions, social-network structure, phase transitions, exportable runs (**D29**) — and the verisimilitude machinery must be *visible to the player*: a real lens onto how language and culture evolve, not a buried family tree (**D27**). And the human–AI collaboration that builds this is itself part of the artifact.
+2. **Mechanism → meaning.** The world's emergent patterns must be *measurable as findings* — distributions, social-network structure, phase transitions, exportable runs (**D29**) — and the verisimilitude machinery must be *visible to the player*: a real lens onto how language and culture evolve, not a buried family tree (**D27**). And the process that builds this is itself part of the artifact.
 
 Milestone 7 (culture & language) is the keystone — language is where a thought becomes a habit becomes a culture becomes history. The settled calls behind this direction are **D25–D30**.
 
 ## The living-world arc — M8–M19 *(added 2026-06-16)*
 
-With the substrate proven (M0–M7.7), the arc from here turns Omnia from a believable town into a **living world with civilizations, conflict, knowledge, faith, and deep history.** The human's vision (D&D-style agents, tribes/factions/governments, markets, combat, crime, a science **and** magic tech tree climbing to a sci-fi ceiling, religion, events, legendary history, a 10–20× world, save/load, a real bestiary) is organized into **M8–M19** in `ROADMAP.md`. The leverage is a few reusable **engines** rather than hundreds of one-off features:
+With the substrate proven (M0–M7.7), the arc from here turns Omnia from a believable town into a **living world with civilizations, conflict, knowledge, faith, and deep history.** The vision (D&D-style agents, tribes/factions/governments, markets, combat, crime, a science **and** magic tech tree climbing to a sci-fi ceiling, religion, events, legendary history, a 10–20× world, save/load, a real bestiary) is organized into **M8–M19** in `ROADMAP.md`. The leverage is a few reusable **engines** rather than hundreds of one-off features:
 
 - a unified **`Organization`** entity for tribes/factions/governments/gangs/companies/religions (**D33**),
 - one **`Heredity`** system (traits, ability scores, alignment-lean, magic aptitude all inherit),
@@ -58,7 +58,7 @@ A **lo-fi, pastel** look — soft, muted color palette; calm, readable, unhurrie
 We are explicitly **not** building, at least not now:
 
 - **Not photorealistic or even pretty graphics.** Simple icons on a grid plus rich inspector panels. Pastel/lo-fi styling and music are *deferred* polish, not early work.
-- **Not a massive-scale civilization — but bigger than a town now (D32, 2026-06-16).** The human made the deliberate scale call: a **10–20× world with no artificial population caps**, kept affordable by **level-of-detail** brain tiers. Still **individually simulated agents**, never aggregate "Schrödinger's citizens" — distant folk are coarsely but really simulated, not faked as statistics. Thousands, not millions; growth is bounded by **ecology** (food/space/predation/economy), not a magic number.
+- **Not a massive-scale civilization — but bigger than a town now (D32, 2026-06-16).** The deliberate scale call was made: a **10–20× world with no artificial population caps**, kept affordable by **level-of-detail** brain tiers. Still **individually simulated agents**, never aggregate "Schrödinger's citizens" — distant folk are coarsely but really simulated, not faked as statistics. Thousands, not millions; growth is bounded by **ecology** (food/space/predation/economy), not a magic number.
 - **Not a multiplayer game or networked server.** Single-machine simulation.
 - **Not an authored narrative.** No *hand-written* quests, no scripted plot, no win condition. Stories come from emergence — including the **procedural** agent goals of M17 (recover an heirloom, hunt a monster, avenge kin), which arise from agents' own state, not an author's script.
 - **Not a chatbot.** The LLM gives agents a "soul" (dialogue, reflection, occasional big decisions); it is never a user-facing assistant and never on the hot path. The deterministic stub is the default; the **live local model (Ollama) is an opt-in mode** for richer text (D28), always recorded so replay stays exact.
@@ -66,4 +66,4 @@ We are explicitly **not** building, at least not now:
 - **Not a full generative grammar / linguistics engine.** Language evolution is deep but bounded (phonology, lexicon, light morphology) — full syntax evolution is out of scope (`CULTURE_AND_LANGUAGE.md`).
 - **Not modder-scriptable behavior (yet).** Content is data; new *behaviors* are code. Player/modder scripting is a far-future maybe.
 
-If a task seems to require crossing one of these lines, stop and flag it for the human rather than expanding scope.
+If a task seems to require crossing one of these lines, stop and flag it for review rather than expanding scope.
