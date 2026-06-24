@@ -2,8 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig, ticksPerYear } from '../src/sim/config.ts';
-import { C_AGENT, C_WALLET, C_RELATIONSHIPS, C_TOMBSTONE } from '../src/sim/components.ts';
-import type { Agent, Wallet, Relationships, Tombstone } from '../src/sim/components.ts';
+import {
+  C_AGENT, C_WALLET, C_RELATIONSHIPS, C_TOMBSTONE, C_MEMORY, C_LINEAGE, C_JOB,
+} from '../src/sim/components.ts';
+import type {
+  Agent, Wallet, Relationships, Tombstone, Memory, Lineage, Job,
+} from '../src/sim/components.ts';
 import type { LanguageStoreData, RuntimeLanguage } from '../src/lang/languageStore.ts';
 import { createSimulation } from '../src/sim/world.ts';
 import { runTicks } from '../src/sim/loop.ts';
@@ -11,6 +15,7 @@ import { testContent } from './helpers.ts';
 import {
   linregress, powerLawTail, socialMetrics, ageDistribution,
   zipfFit, nameFrequencies, languageFamilyShape, measureWorld,
+  vowSpread, dynastyConcentration, matingAssortativity, occupationDiversity,
 } from '../src/analysis/metrics.ts';
 
 const cfg = defaultConfig;
@@ -184,6 +189,97 @@ describe('languageFamilyShape', () => {
   });
 });
 
+// ── 6–9. the M10 emergent metrics (vows, dynasties, mating, work) ────────────────
+
+// A minimal agent carrying just the fields a given metric reads.
+function person(
+  w: World, opts: { surname?: string; cultureId?: string } = {},
+): EntityId {
+  const e = w.createEntity();
+  w.addComponent<Agent>(e, C_AGENT, {
+    name: 'A B', surname: opts.surname, cultureId: opts.cultureId, action: 'wander',
+    ticksAlive: 30 * ticksPerYear(cfg), wealthGoal: 50, sex: 'female', lifespanTicks: 1e9,
+  });
+  return e;
+}
+const memWith = (vow?: string, purpose = 0): Memory => ({
+  events: [], summaries: [], beliefs: [], lastReflectTick: -1e9, lastRollupTick: -1e9,
+  utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9, purpose, vow,
+});
+
+describe('vowSpread', () => {
+  it('tallies vows and the mean drive across those who hold one', () => {
+    const w = new World();
+    w.addComponent<Memory>(person(w), C_MEMORY, memWith('to provide for those they love', 0.2));
+    w.addComponent<Memory>(person(w), C_MEMORY, memWith('to provide for those they love', 0.2));
+    w.addComponent<Memory>(person(w), C_MEMORY, memWith('to guard against the hard times', -0.3));
+    w.addComponent<Memory>(person(w), C_MEMORY, memWith(undefined, 0));  // not settled — ignored
+    const v = vowSpread(w);
+    expect(v.withVow).toBe(3);
+    expect(v.counts['to provide for those they love']).toBe(2);
+    expect(v.counts['to guard against the hard times']).toBe(1);
+    expect(v.meanDrive).toBeCloseTo((0.2 + 0.2 - 0.3) / 3, 6);
+  });
+});
+
+describe('dynastyConcentration', () => {
+  it('measures how much of the living belongs to the biggest paternal line', () => {
+    const w = new World();
+    for (let i = 0; i < 3; i++) person(w, { surname: 'Resmu' });
+    person(w, { surname: 'Vant' });
+    const d = dynastyConcentration(w);
+    expect(d.lines).toBe(2);
+    expect(d.largestShare).toBeCloseTo(0.75, 6);   // 3 of 4
+    expect(d.gini).toBeGreaterThan(0);             // unequal line sizes
+  });
+});
+
+describe('matingAssortativity', () => {
+  function wed(w: World, a: EntityId, b: EntityId): void {
+    w.addComponent<Lineage>(a, C_LINEAGE, { partner: b, parents: [], children: [], reproCooldownTicks: 0 });
+    w.addComponent<Lineage>(b, C_LINEAGE, { partner: a, parents: [], children: [], reproCooldownTicks: 0 });
+  }
+  it('is +1 when every couple is within-culture more than chance allows', () => {
+    const w = new World();
+    wed(w, person(w, { cultureId: 'A' }), person(w, { cultureId: 'A' }));
+    wed(w, person(w, { cultureId: 'B' }), person(w, { cultureId: 'B' }));
+    const m = matingAssortativity(w);
+    expect(m.pairs).toBe(2);
+    expect(m.sameCultureFraction).toBeCloseTo(1, 6);
+    expect(m.expectedRandom).toBeCloseTo(0.5, 6);  // pool A,A,B,B
+    expect(m.index).toBeCloseTo(1, 6);
+  });
+  it('returns zeros when no one is partnered', () => {
+    const w = new World();
+    person(w, { cultureId: 'A' });
+    expect(matingAssortativity(w)).toEqual({ pairs: 0, sameCultureFraction: 0, expectedRandom: 0, index: 0 });
+  });
+});
+
+describe('occupationDiversity', () => {
+  function employ(w: World, professionId: string): void {
+    w.addComponent<Job>(person(w), C_JOB, {
+      professionId, professionName: professionId, employer: 999, wagePerTick: 0.1, gathers: null,
+    });
+  }
+  it('a perfectly even split of trades scores evenness 1', () => {
+    const w = new World();
+    employ(w, 'farmer'); employ(w, 'farmer'); employ(w, 'smith'); employ(w, 'smith');
+    const o = occupationDiversity(w);
+    expect(o.workers).toBe(4);
+    expect(o.professions).toBe(2);
+    expect(o.evenness).toBeCloseTo(1, 6);
+    expect(o.topShare).toBeCloseTo(0.5, 6);
+  });
+  it('a lopsided mix scores lower evenness and a higher top share', () => {
+    const w = new World();
+    employ(w, 'farmer'); employ(w, 'farmer'); employ(w, 'farmer'); employ(w, 'smith');
+    const o = occupationDiversity(w);
+    expect(o.evenness).toBeLessThan(1);
+    expect(o.topShare).toBeCloseTo(0.75, 6);
+  });
+});
+
 // ── integration: emergent regularities from a live run ───────────────────────────
 
 describe('measureWorld through the live loop', () => {
@@ -215,5 +311,16 @@ describe('measureWorld through the live loop', () => {
     expect(m.surnameZipf.vocab).toBeGreaterThan(0);
     const topSurname = Math.max(...[...nameFrequencies(world).surname.values()]);
     expect(topSurname).toBeGreaterThanOrEqual(2);
+
+    // The M10 metrics are present and bounded after a real run.
+    expect(m.vows.withVow).toBeGreaterThan(0);                 // folk have reflected into vows
+    expect(m.dynasty.lines).toBeGreaterThan(0);
+    expect(m.dynasty.largestShare).toBeGreaterThan(0);
+    expect(m.dynasty.largestShare).toBeLessThanOrEqual(1);
+    expect(m.mating.sameCultureFraction).toBeGreaterThanOrEqual(0);
+    expect(m.mating.sameCultureFraction).toBeLessThanOrEqual(1);
+    expect(m.occupation.workers).toBeGreaterThan(0);
+    expect(m.occupation.evenness).toBeGreaterThanOrEqual(0);
+    expect(m.occupation.evenness).toBeLessThanOrEqual(1);
   }, 20_000);
 });

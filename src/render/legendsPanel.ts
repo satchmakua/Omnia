@@ -74,10 +74,15 @@ export class LegendsPanel {
     const m: WorldMetrics = measureWorld(world, defaultConfig);
     if (m.ages.count === 0) return '';
 
-    const row = (label: string, value: string, note = ''): string =>
-      `<div style="display:flex;justify-content:space-between;gap:10px;margin:3px 0">
-        <span style="color:#aab">${label}</span>
-        <span style="color:#cfe;text-align:right">${value}${note ? ` <span style="color:#778">${note}</span>` : ''}</span></div>`;
+    // Each article carries a plain-language line: what it is and why it matters.
+    const row = (label: string, value: string, desc: string, note = ''): string =>
+      `<div style="margin:8px 0">
+        <div style="display:flex;justify-content:space-between;gap:10px">
+          <span style="color:#aab">${label}</span>
+          <span style="color:#cfe;text-align:right">${value}${note ? ` <span style="color:#778">${note}</span>` : ''}</span>
+        </div>
+        <div style="color:#7c7c90;font-size:11px;line-height:1.45;margin-top:2px">${desc}</div>
+      </div>`;
 
     const sw = m.social.smallWorldSigma;
     const swNote = sw >= 1 ? 'small-world' : sw > 0 ? 'dense/clustered' : '';
@@ -85,18 +90,51 @@ export class LegendsPanel {
     const zipfNote = surn.exponent > 0.6 && surn.r2 > 0.6 ? "≈ Zipf's law" : '';
     const fam = m.family;
 
+    // Life-orientation (vows): the most common aim + whether the town leans hopeful/weary.
+    const vows = m.vows;
+    const topVow = Object.entries(vows.counts).sort((a, b) => b[1] - a[1])[0]?.[0]?.replace(/^to /, '');
+    const mood = vows.meanDrive > 0.05 ? 'leans hopeful' : vows.meanDrive < -0.05 ? 'leans weary' : 'steady';
+
+    // Cultural mixing: turn the homophily index into words.
+    const mi = m.mating;
+    const mixWord = mi.index > 0.15 ? 'cultures stay apart' : mi.index < -0.05 ? 'actively mixing' : 'blending freely';
+
+    const oc = m.occupation;
+
     return `<hr style="border-color:rgba(255,255,255,0.1);margin:14px 0">
       <div style="color:#9fd6ff;text-transform:uppercase;font-size:11px;letter-spacing:1px;margin-bottom:4px">Emergent structure</div>
-      ${row('Wealth inequality (Gini)', m.wealthGini.toFixed(2))}
-      ${row('Wealth power-law tail α', m.wealthTail.alpha > 0 ? m.wealthTail.alpha.toFixed(2) : '—',
+      ${row('Wealth inequality (Gini)', m.wealthGini.toFixed(2),
+        'How evenly money is spread across everyone. 0 means everyone has the same amount; 1 means a single person has it all. Most real societies sit somewhere in between.')}
+      ${row('Wealth — how top-heavy', m.wealthTail.alpha > 0 ? m.wealthTail.alpha.toFixed(2) : '—',
+        'Looks only at the richest folk and how lopsided the very top is. A lower number means wealth is piled into a tiny handful; higher means even the rich are fairly close to one another.',
         m.wealthTail.alpha > 0 ? `r²=${m.wealthTail.r2.toFixed(2)}` : '')}
       ${row('Friendships per person', m.social.avgDegree.toFixed(1),
+        "The average number of friends and partners each person has. “Clustering” is how often your friends are also friends with each other — higher means tight-knit circles.",
         `clustering ${m.social.clustering.toFixed(2)}`)}
-      ${row('Small-world σ', sw > 0 ? sw.toFixed(2) : '—', swNote)}
-      ${row('Surname Zipf exponent', surn.exponent.toFixed(2), `r²=${surn.r2.toFixed(2)} ${zipfNote}`)}
-      ${row('Given-name Zipf exponent', m.givenZipf.exponent.toFixed(2), 'flat (no inheritance)')}
-      ${fam ? row('Language family', `${fam.living} living / ${fam.extinct} lost`,
-        `depth ${fam.maxDepth}, breadth ${fam.maxBreadth}`) : ''}`;
+      ${row('Small-world σ', sw > 0 ? sw.toFixed(2) : '—',
+        "Whether everyone is linked through a short chain of friends — the “six degrees of separation” idea. Above 1 means people form close groups yet can still reach almost anyone in a few hops.",
+        swNote)}
+      ${row('Last-name spread', surn.exponent.toFixed(2),
+        'Whether last names behave like real family names: a few are very common and most are rare. This pattern shows up on its own when names get handed down from parent to child over many generations.',
+        `r²=${surn.r2.toFixed(2)} ${zipfNote}`)}
+      ${row('First-name spread', m.givenZipf.exponent.toFixed(2),
+        "First names are made up fresh for each baby instead of being inherited, so no single name ever takes over. It’s shown next to last names as a comparison — to reveal what passing names down actually does.",
+        'flat')}
+      ${fam ? row('Language family tree', `${fam.living} spoken / ${fam.extinct} lost`,
+        'The family tree of the world’s languages: how many are still spoken versus died out, how many generations the oldest line runs, and how many new tongues ever split off from a single parent.',
+        `depth ${fam.maxDepth}, breadth ${fam.maxBreadth}`) : ''}
+      ${row('What people live for', vows.withVow > 0 && topVow ? `“${topVow}”` : '—',
+        "Across the whole town, the guiding aim each adult has settled on from the life they’ve led — to provide for loved ones, to make something of themselves, to play it safe after hard loss, or to take each day as it comes. The mood shows whether the town leans hopeful or worn-down overall.",
+        vows.withVow > 0 ? mood : 'no vows settled yet')}
+      ${row('Family dynasties', `${Math.round(m.dynasty.largestShare * 100)}% in the biggest line`,
+        'Whether a few big families have come to dominate the bloodline. It’s the share of living people who all trace back to the same family name. A high number means one or two lines dominate; low means many separate families coexist.',
+        `${m.dynasty.lines} lines · Gini ${m.dynasty.gini.toFixed(2)}`)}
+      ${row('Cultural mixing', mi.pairs > 0 ? `${mi.index >= 0 ? '+' : ''}${mi.index.toFixed(2)}` : '—',
+        "Whether people tend to marry inside their own culture or across cultures. It compares who actually pairs up to what you’d see if matches were random. Higher means cultures stay separate; near zero means they’re freely blending.",
+        mi.pairs > 0 ? `${Math.round(mi.sameCultureFraction * 100)}% marry within · ${mixWord}` : '')}
+      ${row('Variety of work', oc.workers > 0 ? oc.evenness.toFixed(2) : '—',
+        'How varied the town’s jobs are. Low means almost everyone does the same work; high means work is spread across many different trades. A quick read on how complex the local economy has grown.',
+        oc.workers > 0 ? `${oc.professions} trades · top ${Math.round(oc.topShare * 100)}%` : '')}`;
   }
 
   private chronicleHtml(c: ChronicleData | undefined): string {

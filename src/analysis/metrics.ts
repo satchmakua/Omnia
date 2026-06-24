@@ -9,8 +9,12 @@
 // language family. All metrics are pure functions of state, so a given seed produces
 // identical measurements every run.
 import type { World } from '../sim/ecs.ts';
-import { C_AGENT, C_WALLET, C_RELATIONSHIPS, C_TOMBSTONE } from '../sim/components.ts';
-import type { Agent, Wallet, Relationships, Tombstone } from '../sim/components.ts';
+import {
+  C_AGENT, C_WALLET, C_RELATIONSHIPS, C_TOMBSTONE, C_MEMORY, C_LINEAGE, C_JOB,
+} from '../sim/components.ts';
+import type {
+  Agent, Wallet, Relationships, Tombstone, Memory, Lineage, Job,
+} from '../sim/components.ts';
 import type { SimConfig } from '../sim/config.ts';
 import { ageInYears } from '../sim/config.ts';
 import { gini } from '../sim/wealth.ts';
@@ -289,6 +293,133 @@ export function languageFamilyShape(store: LanguageStoreData): FamilyShape {
   return { total: ids.length, living, extinct, roots, maxDepth, maxBreadth };
 }
 
+// ── 6. Life-orientation: the spread of causal vows (M10 slice 3) ──────────────────
+
+export interface VowSpread {
+  withVow: number;                  // adults who have settled on a guiding vow
+  counts: Record<string, number>;   // vow text → how many hold it
+  meanDrive: number;                // mean `purpose` over those with a vow (+ hopeful, − weary)
+}
+
+// Tally the deterministic `vow`/`purpose` distilled into each agent's memory. A pure
+// read — vows are written by reflection, here we just count them across the living.
+export function vowSpread(world: World): VowSpread {
+  const counts: Record<string, number> = {};
+  let withVow = 0, driveSum = 0;
+  for (const e of world.query(C_AGENT, C_MEMORY)) {
+    const m = world.getComponent<Memory>(e, C_MEMORY)!;
+    if (!m.vow) continue;
+    withVow++;
+    counts[m.vow] = (counts[m.vow] ?? 0) + 1;
+    driveSum += m.purpose ?? 0;
+  }
+  return { withVow, counts, meanDrive: withVow ? driveSum / withVow : 0 };
+}
+
+// ── 7. Dynasties: concentration of living folk into paternal name-lines ───────────
+
+export interface DynastyConcentration {
+  lines: number;         // distinct surnames among the living (paternal lines)
+  largestShare: number;  // share of the living in the single biggest line (0..1)
+  gini: number;          // inequality of line sizes (0 = all equal, 1 = one line dominates)
+}
+
+// Surnames pass down the paternal line (founders coin them), so a surname ≈ a dynasty.
+// Measures whether a few family lines have come to dominate the living population.
+export function dynastyConcentration(world: World): DynastyConcentration {
+  const sizes = new Map<string, number>();
+  let total = 0;
+  for (const e of world.query(C_AGENT)) {
+    const sur = world.getComponent<Agent>(e, C_AGENT)!.surname;
+    if (!sur) continue;
+    sizes.set(sur, (sizes.get(sur) ?? 0) + 1);
+    total++;
+  }
+  if (total === 0) return { lines: 0, largestShare: 0, gini: 0 };
+  let largest = 0;
+  for (const n of sizes.values()) if (n > largest) largest = n;
+  return { lines: sizes.size, largestShare: largest / total, gini: gini([...sizes.values()]) };
+}
+
+// ── 8. Mating: do partners share a culture more than chance would give? ───────────
+
+export interface MatingAssortativity {
+  pairs: number;             // living couples counted
+  sameCultureFraction: number;
+  expectedRandom: number;    // same-culture rate if partners paired at random
+  index: number;             // (obs − exp)/(1 − exp): 1 = fully within-culture, 0 = random, <0 = mixing
+}
+
+// Compares the observed within-culture pairing rate against what random matching of the
+// same partnered population would produce (a normalized homophily index). Surfaces the
+// melting-pot ↔ segregation tension the culture axes (slice 2) create.
+export function matingAssortativity(world: World): MatingAssortativity {
+  const ids = world.query(C_AGENT, C_LINEAGE);
+  const idSet = new Set(ids);
+  const cultureOf = (e: number) => world.getComponent<Agent>(e, C_AGENT)!.cultureId;
+
+  let pairs = 0, same = 0;
+  const partneredCultureCounts = new Map<string, number>();
+  let partneredTotal = 0;
+  for (const e of ids) {
+    const partner = world.getComponent<Lineage>(e, C_LINEAGE)!.partner;
+    if (partner == null || !idSet.has(partner)) continue;
+    // Every partnered agent contributes to the random-baseline distribution…
+    const c = cultureOf(e) ?? '∅';
+    partneredCultureCounts.set(c, (partneredCultureCounts.get(c) ?? 0) + 1);
+    partneredTotal++;
+    // …but each couple is scored once, from the lower id.
+    if (e < partner) {
+      pairs++;
+      if (cultureOf(e) === cultureOf(partner)) same++;
+    }
+  }
+  if (pairs === 0) return { pairs: 0, sameCultureFraction: 0, expectedRandom: 0, index: 0 };
+  // Expected same-culture rate under random pairing = Simpson's index of the partnered pool.
+  let expected = 0;
+  for (const n of partneredCultureCounts.values()) {
+    const p = n / partneredTotal;
+    expected += p * p;
+  }
+  const obs = same / pairs;
+  const index = expected < 1 ? (obs - expected) / (1 - expected) : 0;
+  return { pairs, sameCultureFraction: obs, expectedRandom: expected, index };
+}
+
+// ── 9. Economy: how specialized is the town's work? ──────────────────────────────
+
+export interface OccupationDiversity {
+  workers: number;
+  professions: number;  // distinct trades held
+  shannon: number;      // Shannon entropy of the job mix (nats)
+  evenness: number;     // shannon / ln(professions): 0 = one trade dominates, 1 = perfectly even
+  topShare: number;     // share of workers in the single most common trade
+}
+
+// Shannon entropy over professions among the employed: a higher, more even spread means
+// a richer division of labour; a low score means nearly everyone does the same work.
+export function occupationDiversity(world: World): OccupationDiversity {
+  const counts = new Map<string, number>();
+  let workers = 0;
+  for (const e of world.query(C_AGENT, C_JOB)) {
+    const id = world.getComponent<Job>(e, C_JOB)!.professionId;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+    workers++;
+  }
+  const professions = counts.size;
+  if (workers === 0 || professions === 0) {
+    return { workers, professions, shannon: 0, evenness: 0, topShare: 0 };
+  }
+  let shannon = 0, top = 0;
+  for (const n of counts.values()) {
+    const p = n / workers;
+    shannon -= p * Math.log(p);
+    if (n > top) top = n;
+  }
+  const evenness = professions > 1 ? shannon / Math.log(professions) : 1;
+  return { workers, professions, shannon, evenness, topShare: top / workers };
+}
+
 // ── The bundle ───────────────────────────────────────────────────────────────────
 
 export interface WorldMetrics {
@@ -299,6 +430,10 @@ export interface WorldMetrics {
   givenZipf: ZipfFit;
   surnameZipf: ZipfFit;
   family: FamilyShape | null;
+  vows: VowSpread;
+  dynasty: DynastyConcentration;
+  mating: MatingAssortativity;
+  occupation: OccupationDiversity;
 }
 
 // One pass measuring every emergent structure from the current world state.
@@ -319,5 +454,9 @@ export function measureWorld(world: World, cfg: SimConfig): WorldMetrics {
     givenZipf: zipfFit([...names.given.values()]),
     surnameZipf: zipfFit([...names.surname.values()]),
     family: lstore ? languageFamilyShape(lstore) : null,
+    vows: vowSpread(world),
+    dynasty: dynastyConcentration(world),
+    mating: matingAssortativity(world),
+    occupation: occupationDiversity(world),
   };
 }
