@@ -91,3 +91,18 @@ export function cultureForLanguage(store: CultureStoreData, languageId: string):
 export function wealthGoalFactor(values: CultureValues): number {
   return 1.3 - 0.6 * values.communal;
 }
+
+// `open` axis: how readily friendship warms BETWEEN cultures. Same culture → full
+// warmth; different cultures → the pair's average openness (floored so insular folk
+// aren't perfectly segregated). So open cultures befriend outsiders, insular ones
+// barely do — while company (the social *need*) is still met by anyone.
+export function bondFactor(a: RuntimeCulture | undefined, b: RuntimeCulture | undefined): number {
+  if (!a || !b || a.id === b.id) return 1;
+  return Math.max(0.15, (a.values.open + b.values.open) / 2);
+}
+
+// `traditional` axis: traditional folk prefer to marry within their own culture
+// (endogamy). `roll` is a seeded RNG draw in [0,1); true ⇒ restrict to same-culture.
+export function prefersEndogamy(c: RuntimeCulture | undefined, roll: number): boolean {
+  return !!c && roll < c.values.traditional;
+}

@@ -83,7 +83,12 @@ describe('agents belong to a culture, and children inherit the mother’s', () =
       if (!sim.world.hasComponent(mother, C_AGENT)) continue; // mother may have died
       const child = sim.world.getComponent<Agent>(e, C_AGENT)!;
       const mum = sim.world.getComponent<Agent>(mother, C_AGENT)!;
-      expect(child.cultureId).toBe(mum.cultureId);
+      // A child inherits its mother's culture at birth, but a *schism* later in the run
+      // can break either of them away into a daughter culture (id `root.d<tick>`), so
+      // their exact ids may diverge. The invariant that survives is the family root —
+      // they always belong to the same founding culture's tree.
+      const root = (id: string | undefined) => id?.split('.')[0];
+      expect(root(child.cultureId)).toBe(root(mum.cultureId));
       checked++;
     }
     expect(checked).toBeGreaterThan(0);                      // some births actually happened

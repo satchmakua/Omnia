@@ -16,7 +16,7 @@ import { hashString } from '../../ai/provider.ts';
 import { stubProvider } from '../../ai/stubProvider.ts';
 import { AIRunner } from '../../ai/aiRunner.ts';
 import {
-  retrieve, buildReflectionPrompt, buildDreamPrompt, buildDialoguePrompt, buildDecisionPrompt,
+  retrieve, distill, buildReflectionPrompt, buildDreamPrompt, buildDialoguePrompt, buildDecisionPrompt,
 } from '../../ai/memory.ts';
 import { recordResponse } from '../../ai/recording.ts';
 import { emitEvent } from '../../history/eventlog.ts';
@@ -97,6 +97,15 @@ function reflectPass(env: Env): void {
     if (tick - mem.lastReflectTick < interval) continue;
 
     const name = world.getComponent<Agent>(e, C_AGENT)!.name;
+
+    // CAUSAL distillate (D26), deterministic: a drive + vow that steers behaviour
+    // (ActionSystem reads `purpose`). A changed vow is a turning point worth a feed line.
+    const prevVow = mem.vow;
+    const d = distill(mem.events);
+    mem.purpose = d.purpose;
+    mem.vow = d.vow;
+    if (mem.vow !== prevVow) emitEvent(world, 'decide', `${name} resolves ${d.vow}.`);
+
     const top = retrieve(mem, `${name}'s life`, env.provider, cfg.reflectMemories);
     const prompt = buildReflectionPrompt(name, tick, top);
     mem.lastReflectTick = tick;

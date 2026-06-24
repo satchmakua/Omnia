@@ -7,7 +7,7 @@ import { C_EVENTLOG, C_CLOCK } from '../sim/components.ts';
 import type { Clock } from '../sim/components.ts';
 
 export type EventKind =
-  | 'birth' | 'death' | 'marriage' | 'work' | 'magic' | 'illness' | 'resource'
+  | 'birth' | 'death' | 'marriage' | 'friendship' | 'work' | 'magic' | 'illness' | 'resource'
   | 'reflect' | 'dialogue' | 'dream' | 'decide' | 'culture';
 
 export interface EventEntry {

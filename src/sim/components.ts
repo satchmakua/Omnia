@@ -141,6 +141,7 @@ export interface Resource {
 export interface Health {
   value: number;  // 0..1; low health raises mortality
   ill: boolean;
+  grave?: boolean;  // was this a *grave* illness? (gates the "survived" life event, M10 slice 3)
 }
 
 export type RelationType = 'friend' | 'rival' | 'partner';
@@ -227,6 +228,12 @@ export interface Memory {
   utterances: Utterance[];   // recent dialogue / dreams / resolutions (bounded)
   lastSpokeTick: number;     // throttles dialogue + decisions for this agent
   lastDreamTick: number;     // throttles dreams for this agent
+  // The CAUSAL distillate of the life so far (M10 slice 3, D26): a `purpose` drive in
+  // ~[-0.4, 0.4] (positive = striving to provide/achieve, negative = grief/withdrawal)
+  // computed procedurally from memories at reflection time, plus the `vow` it names.
+  // The drive biases behaviour (ActionSystem); the LLM beliefs above stay pure flavour.
+  purpose?: number;
+  vow?: string;
 }
 
 // Singleton: every LLM response recorded so a replay reproduces a run exactly

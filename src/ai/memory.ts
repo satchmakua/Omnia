@@ -45,6 +45,31 @@ export function retrieve(
     .map(s => s.ev);
 }
 
+// Distil a life into a CAUSAL drive (M10 slice 3, D26). Deterministic — no LLM — so it
+// can steer behaviour without breaking replay. Weighs the agent's memories by theme:
+// bonds (family/friends) and toil (work/prosperity) pull toward striving, grit (hardship
+// survived) toward seizing the day, and loss (death/illness) toward grief/withdrawal. The
+// dominant theme sets a bounded `purpose` and names the `vow` it implies. `grit` is tested
+// before `loss` so "survived a grave illness" reads as resilience, not just another loss.
+export function distill(events: MemoryEntry[]): { purpose: number; vow: string } {
+  let bonds = 0, grit = 0, loss = 0, toil = 0;
+  for (const ev of events) {
+    const t = ev.text;
+    if (/child|wed|born|befriend/.test(t)) bonds += ev.importance;
+    else if (/survived|overcame|pulled through/.test(t)) grit += ev.importance;
+    else if (/lost|ill/.test(t)) loss += ev.importance;
+    else if (/work|prosper/.test(t)) toil += ev.importance;
+  }
+  const drive = (w: number) => Math.min(0.4, 0.15 + w * 0.1);
+  if (bonds + grit + loss + toil < 0.1) return { purpose: 0, vow: 'to take each day as it comes' };
+  // Dominant theme wins; ties resolve love → grit → loss → toil.
+  const top = Math.max(bonds, grit, loss, toil);
+  if (top === bonds) return { purpose: drive(bonds), vow: 'to provide for those they love' };
+  if (top === grit) return { purpose: drive(grit) * 0.7, vow: 'to live fully while they can' };
+  if (top === loss) return { purpose: -drive(loss), vow: 'to guard against the hard times' };
+  return { purpose: drive(toil), vow: 'to make something of themselves' };
+}
+
 export function buildReflectionPrompt(name: string, tick: number, memories: MemoryEntry[]): string {
   const lines = memories.map(m => `- ${m.text}`).join('\n');
   return `[t${tick}] Reflecting on the life of ${name} so far:\n${lines}\n` +

@@ -1,6 +1,6 @@
 import type { World } from '../ecs.ts';
-import { C_AGENT, C_NEEDS, C_JOB, C_WALLET } from '../components.ts';
-import type { Agent, Needs, Job, Wallet } from '../components.ts';
+import { C_AGENT, C_NEEDS, C_JOB, C_WALLET, C_MEMORY } from '../components.ts';
+import type { Agent, Needs, Job, Wallet, Memory } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 
@@ -37,11 +37,15 @@ export function runActionSystem(world: World, cfg: SimConfig): void {
       continue;
     }
 
-    // Comfortable: adults work if employed and below the wealth goal, else wander.
+    // Comfortable: adults work if employed and below their wealth goal, else wander.
+    // Their distilled life-purpose (D26) bends the goal: a vow to provide for family /
+    // make something of themselves makes them strive harder; grief pulls them back.
     const adult = ageInYears(agent.ticksAlive, cfg) >= cfg.adultAgeYears;
     const job = world.getComponent<Job>(entity, C_JOB);
     const wallet = world.getComponent<Wallet>(entity, C_WALLET);
-    if (adult && job && wallet && wallet.gold < agent.wealthGoal) {
+    const purpose = world.getComponent<Memory>(entity, C_MEMORY)?.purpose ?? 0;
+    const goal = agent.wealthGoal * (1 + 0.5 * purpose);
+    if (adult && job && wallet && wallet.gold < goal) {
       agent.action = 'work';
     } else {
       agent.action = 'wander';
