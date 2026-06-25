@@ -55,7 +55,8 @@ export function runMoodSystem(world: World, cfg: SimConfig): void {
     if (owns) target += HOME_BONUS;
     if (hasFamily) target += FAMILY_BONUS;
     if (wallet && wallet.debt > 0) target -= DEBT_PENALTY;
-    if (adult && !owns) target -= HOMELESS_PENALTY;   // children are dependents, not "homeless"
+    // A roof — even a rented one — spares the homeless penalty (children are dependents anyway).
+    if (adult && !owns && agent.rentsFrom === undefined) target -= HOMELESS_PENALTY;
     if (health && health.ill) target -= ILL_PENALTY;
     target = clamp01(target);
 

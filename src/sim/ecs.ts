@@ -60,4 +60,34 @@ export class World {
   get aliveCount(): number {
     return this.alive.size;
   }
+
+  // ── Snapshot / restore (M12) ────────────────────────────────────────────────
+  // A plain-data dump of the whole world, for instant (non-replay) save/load. `skip`
+  // names components that must not be snapshotted (runtime-only, e.g. the live-model
+  // AIRunner). The component data is referenced, not deep-cloned — serialize it before
+  // mutating the world further.
+  snapshot(skip: readonly string[] = []): WorldData {
+    const components: Record<string, [EntityId, unknown][]> = {};
+    for (const [name, store] of this.components) {
+      if (skip.includes(name)) continue;
+      components[name] = [...store.entries()];
+    }
+    return { nextId: this.nextId, alive: [...this.alive], components };
+  }
+
+  static fromSnapshot(data: WorldData): World {
+    const w = new World();
+    w.nextId = data.nextId;
+    w.alive = new Set(data.alive);
+    for (const name of Object.keys(data.components)) {
+      w.components.set(name, new Map<EntityId, unknown>(data.components[name]));
+    }
+    return w;
+  }
+}
+
+export interface WorldData {
+  nextId: number;
+  alive: EntityId[];
+  components: Record<string, [EntityId, unknown][]>;
 }

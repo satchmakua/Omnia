@@ -2,15 +2,28 @@
 // blocks the sim behind it; the start menu boots a run (with a chosen seed), the
 // pause menu offers resume / restart / quit-to-menu.
 
+import type { SaveMeta } from '../sim/saveStore.ts';
+import { defaultConfig } from '../sim/config.ts';
+
 export interface PauseActions {
   onResume: () => void;
   onRestart: () => void;
-  onSave: () => void;
-  onLoad: () => void;
-  hasSave: boolean;
+  onManageSaves: () => void;
   onSettings: () => void;
   onControls: () => void;
   onQuit: () => void;
+}
+
+// The save-manager screen (M12): many named worlds, instant snapshot load, disk export/import.
+export interface SavesActions {
+  list: () => Promise<SaveMeta[]>;
+  onSaveAs: (name: string) => Promise<void>;
+  onLoadNamed: (name: string) => void;
+  onDelete: (name: string) => Promise<void>;
+  onExport: () => void;
+  onImport: (file: File) => void;
+  onBack: () => void;
+  defaultName: string;
 }
 
 // One source of truth for the key map, shown in the Controls screen (and the start
@@ -74,6 +87,20 @@ function styledButton(label: string, primary = false): HTMLButtonElement {
   b.addEventListener('mouseleave', () => { b.style.background = primary ? '#3a3a66' : '#23233a'; });
   return b;
 }
+
+// A compact inline button (row actions in the save manager).
+function smallBtn(label: string): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.textContent = label;
+  Object.assign(b.style, {
+    background: '#23233a', color: '#cdd', border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: '6px', padding: '5px 9px', font: '12px monospace', cursor: 'pointer', flex: '0 0 auto',
+  } as Partial<CSSStyleDeclaration>);
+  return b;
+}
+
+const escapeHtml = (s: string): string =>
+  s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] ?? c));
 
 export class Menu {
   private readonly backdrop: HTMLDivElement;
@@ -182,24 +209,78 @@ export class Menu {
     this.card.appendChild(this.title('Paused', 'time is held'));
     const resume = styledButton('▶  Resume', true);
     const restart = styledButton('↻  Restart (same setup)');
-    const save = styledButton('💾  Save game');
-    const load = styledButton('📂  Load game');
+    const saves = styledButton('🗂  Saved worlds');
     const settings = styledButton('⚙  Settings');
     const controls = styledButton('⌨  Controls');
     const quit = styledButton('⏏  Quit to menu');
     resume.addEventListener('click', () => { this.hide(); a.onResume(); });
     restart.addEventListener('click', () => { this.hide(); a.onRestart(); });
-    save.addEventListener('click', () => {
-      a.onSave();
-      save.textContent = '✓  Saved';
-      setTimeout(() => { save.textContent = '💾  Save game'; }, 1200);
-    });
-    if (!a.hasSave) { load.style.opacity = '0.45'; load.style.cursor = 'default'; }
-    load.addEventListener('click', () => { if (a.hasSave) { this.hide(); a.onLoad(); } });
+    saves.addEventListener('click', () => a.onManageSaves());
     settings.addEventListener('click', () => a.onSettings());
     controls.addEventListener('click', () => a.onControls());
     quit.addEventListener('click', () => a.onQuit());
-    this.card.append(resume, restart, save, load, settings, controls, quit);
+    this.card.append(resume, restart, saves, settings, controls, quit);
+    this.open();
+  }
+
+  // The save manager (M12): save the current world under a name, load/delete any saved
+  // world (instant snapshot), or export/import a world to/from a .omnia file.
+  showSaves(a: SavesActions): void {
+    this.card.innerHTML = '';
+    this.card.appendChild(this.title('Saved worlds', 'snapshot saves — instant to load'));
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text'; nameInput.value = a.defaultName;
+    Object.assign(nameInput.style, INPUT_STYLE);
+    this.card.append(labelledRow('Name', nameInput));
+
+    const listWrap = document.createElement('div');
+    Object.assign(listWrap.style, { maxHeight: '38vh', overflowY: 'auto', margin: '6px 0 10px' } as Partial<CSSStyleDeclaration>);
+
+    const tpy = defaultConfig.ticksPerDay * defaultConfig.daysPerYear;
+    const refresh = (): void => {
+      void a.list().then((metas) => {
+        listWrap.innerHTML = metas.length ? '' : '<div style="color:#778;font-size:12px;padding:6px 0">No saved worlds yet.</div>';
+        for (const m of metas) {
+          const row = document.createElement('div');
+          Object.assign(row.style, { display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 0', borderTop: '1px solid rgba(255,255,255,0.08)' } as Partial<CSSStyleDeclaration>);
+          const info = document.createElement('div');
+          info.style.flex = '1'; info.style.minWidth = '0';
+          info.innerHTML = `<div style="color:#e6e6f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(m.name)}</div>` +
+            `<div style="color:#889;font-size:11px">Year ${Math.floor(m.tick / tpy)} · ${m.pop} folk · seed ${m.seed}</div>`;
+          const loadB = smallBtn('Load'); loadB.addEventListener('click', () => { this.hide(); a.onLoadNamed(m.name); });
+          const delB = smallBtn('✕'); delB.title = 'Delete';
+          delB.addEventListener('click', () => { void a.onDelete(m.name).then(refresh); });
+          row.append(info, loadB, delB);
+          listWrap.append(row);
+        }
+      });
+    };
+
+    const saveBtn = styledButton('💾  Save current', true);
+    saveBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim() || a.defaultName;
+      saveBtn.textContent = '…  saving';
+      void a.onSaveAs(name).then(() => {
+        saveBtn.textContent = '✓  Saved';
+        setTimeout(() => { saveBtn.textContent = '💾  Save current'; }, 1000);
+        refresh();
+      });
+    });
+
+    const exportBtn = styledButton('⬇  Export current to file');
+    exportBtn.addEventListener('click', () => a.onExport());
+    const importBtn = styledButton('⬆  Import from file');
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file'; fileInput.accept = '.omnia,.json,application/json'; fileInput.style.display = 'none';
+    fileInput.addEventListener('change', () => { const f = fileInput.files?.[0]; if (f) { this.hide(); a.onImport(f); } });
+    importBtn.addEventListener('click', () => fileInput.click());
+
+    const back = styledButton('←  Back');
+    back.addEventListener('click', () => a.onBack());
+
+    this.card.append(saveBtn, listWrap, exportBtn, importBtn, fileInput, back);
+    refresh();
     this.open();
   }
 

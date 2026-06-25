@@ -2,7 +2,7 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
-  C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME,
+  C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME, C_CIVIC,
   C_CLOCK, C_TILEMAP,
 } from '../sim/components.ts';
 import type {
@@ -201,6 +201,10 @@ export class Renderer {
       const p = world.getComponent<Position>(e, C_POSITION)!;
       this.iconBuilding(p.x, p.y, CATEGORY_COLOR.home);
     }
+    for (const e of world.query(C_CIVIC, C_POSITION)) {     // shared civic landmarks (M11 s3)
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      this.iconCivic(p.x, p.y, CATEGORY_COLOR.civic);
+    }
     for (const e of world.query(C_FAUNA, C_POSITION)) {
       const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
@@ -360,6 +364,19 @@ export class Renderer {
     });
   }
 
+  // A civic landmark: the house silhouette with a small banner on the roof.
+  private iconCivic(gx: number, gy: number, color: string): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 1, () => {
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(-9, -1); ctx.lineTo(0, -9); ctx.lineTo(9, -1); ctx.closePath(); ctx.fill();
+      ctx.fillRect(-7, -1, 14, 10);
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(-2, 3, 4, 6);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(0, -13); ctx.lineTo(4, -12); ctx.lineTo(0, -11); ctx.closePath(); ctx.fill();
+    });
+  }
+
   private drawHud(world: World, clockEntity: EntityId, elapsedMs: number): void {
     const { ctx } = this;
     const clock = world.getComponent<Clock>(clockEntity, C_CLOCK)!;
@@ -401,7 +418,7 @@ export class Renderer {
       return null;
     };
 
-    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_RESOURCE) ?? at(C_FLORA);
+    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_CIVIC) ?? at(C_RESOURCE) ?? at(C_FLORA);
     if (hit !== null) this.onEntityClick?.(hit);
     return hit;
   }

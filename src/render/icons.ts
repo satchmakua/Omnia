@@ -12,6 +12,7 @@ export const CATEGORY_COLOR = {
   crystal:  '#6fc3c9',
   building: '#6f8fb0',
   home:     '#caa46a',
+  civic:    '#b58fd0',
   grave:    '#9a9a9a',
   hostile:  '#d06b6b',
 } as const;
@@ -59,6 +60,10 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
     case 'home':
       return `<path d="M-9 -1 L0 -9 L9 -1 Z" fill="${color}"/><rect x="-7" y="-1" width="14" height="10" fill="${color}"/>` +
         `<rect x="-2" y="3" width="4" height="6" fill="rgba(0,0,0,0.45)"/>`;
+    case 'civic':   // a hall with a small banner — a shared landmark
+      return `<path d="M-9 -1 L0 -9 L9 -1 Z" fill="${color}"/><rect x="-7" y="-1" width="14" height="10" fill="${color}"/>` +
+        `<rect x="-2" y="3" width="4" height="6" fill="rgba(0,0,0,0.45)"/>` +
+        `<path d="M0 -9 L0 -13 L4 -12 L0 -11 Z" fill="${color}"/>`;
     default:
       return '';
   }
@@ -75,4 +80,5 @@ export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; lab
   { key: 'crystal', label: 'Crystal', desc: 'rare gem node' },
   { key: 'building', label: 'Workplace', desc: 'a business that employs folk' },
   { key: 'home', label: 'Home', desc: 'a dwelling folk build and own' },
+  { key: 'civic', label: 'Civic', desc: 'a shared place — hall, well, or shrine' },
 ];

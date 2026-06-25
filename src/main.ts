@@ -2,6 +2,7 @@ import { createSimulation } from './sim/world.ts';
 import type { Simulation } from './sim/world.ts';
 import { tick } from './sim/loop.ts';
 import { buildSave, loadSave, serializeSave, parseSave } from './sim/saveload.ts';
+import { listSaves, putSave, getSaveJson, deleteSave } from './sim/saveStore.ts';
 import { loadSimConfig } from './sim/configLoader.ts';
 import type { SimConfig } from './sim/config.ts';
 import simulationYaml from '../config/simulation.yaml?raw';
@@ -115,14 +116,9 @@ function newSimulation(opts: SetupOptions): void {
   state = 'running';
 }
 
-const SAVE_KEY = 'omnia.save';
-
-// Replay-based load: rebuild the saved run from its config and fast-forward to the
-// saved tick. Synchronous (may take a moment for a long/large run — a snapshot for
-// instant loads is the documented follow-up).
-function loadGame(): void {
-  const json = localStorage.getItem(SAVE_KEY);
-  if (!json) return;
+// Load a serialized save (a named world, or an imported file). Snapshot-fast when the save
+// carries one (M12); replays from config otherwise. Robust: a bad save logs and is ignored.
+function loadFromJson(json: string): void {
   try {
     const save = parseSave(json);
     activeCfg = save.config;
@@ -133,19 +129,54 @@ function loadGame(): void {
     lastSetup = { seed: save.config.seed, population: save.config.initialPopulation, mapSize: save.config.gridWidth };
     realElapsedMs = 0;
     inspector.close();
+    menu.hide();
     state = 'running';
   } catch (e) {
     console.error('Failed to load save:', e);
   }
 }
 
+function defaultSaveName(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `world ${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+// Download the current world as a portable .omnia file (M12 disk export).
+function exportCurrent(): void {
+  if (!active) return;
+  const blob = new Blob([serializeSave(buildSave(active, activeCfg))], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${defaultSaveName()}.omnia`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// The save manager (M12): named worlds in IndexedDB + disk export/import.
+function showSavesMenu(): void {
+  menu.showSaves({
+    list: () => listSaves(),
+    onSaveAs: async (name) => {
+      if (!active) return;
+      const save = buildSave(active, activeCfg);
+      const meta = { name, savedAt: Date.now(), tick: save.savedAtTick, pop: active.world.query(C_AGENT).length, seed: activeCfg.seed };
+      await putSave({ name, json: serializeSave(save), meta });
+    },
+    onLoadNamed: (name) => { void getSaveJson(name).then((json) => { if (json) loadFromJson(json); }); },
+    onDelete: (name) => deleteSave(name),
+    onExport: () => exportCurrent(),
+    onImport: (file) => { void file.text().then(loadFromJson); },
+    onBack: () => showPauseMenu(),
+    defaultName: defaultSaveName(),
+  });
+}
+
 function showPauseMenu(): void {
   menu.showPause({
     onResume: () => { state = 'running'; },
     onRestart: () => newSimulation(lastSetup),
-    onSave: () => { if (active) localStorage.setItem(SAVE_KEY, serializeSave(buildSave(active, activeCfg))); },
-    onLoad: loadGame,
-    hasSave: localStorage.getItem(SAVE_KEY) !== null,
+    onManageSaves: () => showSavesMenu(),
     onSettings: () => menu.showSettings(lastSeed, speed, liveModel, {
       onApply: (seed) => { menu.hide(); newSimulation({ ...lastSetup, seed }); },
       onToggleLive: () => { liveModel = !liveModel; },

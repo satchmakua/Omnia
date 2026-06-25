@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { defaultConfig } from '../src/sim/config.ts';
-import { C_AGENT, C_FAUNA, C_FLORA, C_POSITION, C_CLOCK } from '../src/sim/components.ts';
+import { C_AGENT, C_FAUNA, C_FLORA, C_POSITION, C_CLOCK, C_TILEMAP } from '../src/sim/components.ts';
 import type { Agent, Position, Clock } from '../src/sim/components.ts';
+import type { TileMapData } from '../src/world/tilemap.ts';
 import { createSimulation } from '../src/sim/world.ts';
 import type { Simulation } from '../src/sim/world.ts';
 import { runTicks } from '../src/sim/loop.ts';
@@ -50,6 +51,35 @@ describe('save / load', () => {
     // the RNG was restored exactly, not just the entity state).
     runTicks(a.world, a.rng, cfg, a.clockEntity, content, 1500);
     runTicks(loaded.world, loaded.rng, cfg, loaded.clockEntity, content, 1500);
+    expect(snapshot(loaded)).toBe(snapshot(a));
+  }, 20_000);
+
+  it('loads instantly from the snapshot, not by replaying the config (M12)', () => {
+    const content = testContent();
+    const cfg = { ...defaultConfig, seed: 8 };
+    const a = createSimulation(cfg, content);
+    runTicks(a.world, a.rng, cfg, a.clockEntity, content, 2000);
+
+    const save = parseSave(serializeSave(buildSave(a, cfg)));
+    // Sabotage the seed: a replay-load would diverge; a snapshot-load ignores it.
+    const tampered = { ...save, config: { ...save.config, seed: 999 } };
+    const loaded = loadSave(tampered, content);
+    expect(snapshot(loaded)).toBe(snapshot(a));
+
+    // The one typed array in the world — the TileMap's biomeIndex — survives JSON.
+    const map = loaded.world.getComponent<TileMapData>(loaded.world.query(C_TILEMAP)[0], C_TILEMAP)!;
+    expect(map.biomeIndex).toBeInstanceOf(Uint16Array);
+    expect(map.biomeIndex.length).toBe(cfg.gridWidth * cfg.gridHeight);
+  }, 20_000);
+
+  it('still loads correctly via the replay fallback when there is no snapshot', () => {
+    const content = testContent();
+    const cfg = { ...defaultConfig, seed: 8 };
+    const a = createSimulation(cfg, content);
+    runTicks(a.world, a.rng, cfg, a.clockEntity, content, 1500);
+
+    const replayOnly = { ...buildSave(a, cfg), snapshot: undefined };   // force the v1 path
+    const loaded = loadSave(replayOnly, content);
     expect(snapshot(loaded)).toBe(snapshot(a));
   }, 20_000);
 });
