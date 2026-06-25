@@ -11,6 +11,7 @@ export const CATEGORY_COLOR = {
   timber:   '#a9794e',
   crystal:  '#6fc3c9',
   building: '#6f8fb0',
+  home:     '#caa46a',
   grave:    '#9a9a9a',
   hostile:  '#d06b6b',
 } as const;
@@ -55,6 +56,7 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
       return `<path d="M0 -8 L5 -1 L2 8 L-2 8 L-5 -1 Z" fill="${color}" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>` +
         `<path d="M0 -8 L0 8 M-5 -1 L5 -1" stroke="rgba(0,0,0,0.35)" stroke-width="0.7" fill="none"/>`;
     case 'building':
+    case 'home':
       return `<path d="M-9 -1 L0 -9 L9 -1 Z" fill="${color}"/><rect x="-7" y="-1" width="14" height="10" fill="${color}"/>` +
         `<rect x="-2" y="3" width="4" height="6" fill="rgba(0,0,0,0.45)"/>`;
     default:
@@ -71,5 +73,6 @@ export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; lab
   { key: 'ore', label: 'Ore', desc: 'minable rock node' },
   { key: 'timber', label: 'Timber', desc: 'harvestable wood' },
   { key: 'crystal', label: 'Crystal', desc: 'rare gem node' },
-  { key: 'building', label: 'Building', desc: 'a home, workplace, or civic place' },
+  { key: 'building', label: 'Workplace', desc: 'a business that employs folk' },
+  { key: 'home', label: 'Home', desc: 'a dwelling folk build and own' },
 ];

@@ -6,6 +6,7 @@ export const C_SPECIES   = 'Species';
 export const C_MAGIC     = 'Magic';     // present only on the rare agents with magic aptitude
 export const C_JOB       = 'Job';       // an agent's current occupation
 export const C_BUSINESS  = 'Business';  // an employer / organization entity
+export const C_HOME      = 'Home';      // a dwelling an agent built and owns (M11)
 export const C_FLORA     = 'Flora';     // brain tier: none (rule-driven)
 export const C_FAUNA     = 'Fauna';     // brain tier: instinct-only (no LLM)
 export const C_RESOURCE  = 'Resource';  // brain tier: none (rule-driven)
@@ -89,6 +90,14 @@ export interface Business {
   revenuePerWorkerPerTick: number;
   requiresAptitude: boolean;  // magical employers hire only agents with magic aptitude
   gathers: string | null;     // resource id employees harvest from nodes, or null
+}
+
+// A dwelling an agent built and owns (M11). Homes are static (no brain) — they mark
+// the town's growth and who has put down roots. `owner` points at an Agent (it may
+// later resolve to a Tombstone); a home whose owner is no longer living falls to ruin.
+export interface Home {
+  owner: number;       // EntityId of the owning agent
+  builtTick: number;   // when it was raised
 }
 
 // Resolved, per-agent species facts baked in at spawn so hot systems don't

@@ -12,6 +12,7 @@ import { runActionSystem }   from './systems/ActionSystem.ts';
 import { runMovementSystem } from './systems/MovementSystem.ts';
 import { runGatherSystem }   from './systems/GatherSystem.ts';
 import { runEconomySystem }  from './systems/EconomySystem.ts';
+import { runBuildSystem }    from './systems/BuildSystem.ts';
 import { runSocialSystem }   from './systems/SocialSystem.ts';
 import { runReproductionSystem } from './systems/ReproductionSystem.ts';
 import { runHealthSystem }   from './systems/HealthSystem.ts';
@@ -39,6 +40,7 @@ export function tick(
   runMovementSystem(world, cfg, rng, content); // sapient movement / forage / commute / socialise / gather
   runGatherSystem(world, cfg);           // deplete resource nodes being worked
   runEconomySystem(world, cfg);          // hiring, wages, cost of living
+  runBuildSystem(world, cfg);            // settled adults build & own homes (the town grows)
   runSocialSystem(world, cfg, rng);      // relationships, social need, courtship → marriage
   runReproductionSystem(world, cfg, rng, content); // births → children + lineage
   runHealthSystem(world, cfg, rng);      // illness, ageing, death → tombstones

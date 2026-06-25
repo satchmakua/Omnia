@@ -9,7 +9,7 @@ import { loadContentFromDisk } from '../content/fsSource.ts';
 import {
   C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS,
   C_HEALTH, C_LINEAGE, C_TOMBSTONE, C_MEMORY, C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
-  C_CHRONICLE, C_WORLDSTATS, C_LANGUAGESTORE,
+  C_CHRONICLE, C_WORLDSTATS, C_LANGUAGESTORE, C_HOME,
 } from './components.ts';
 import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -63,6 +63,12 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       if (!isPassable(tileMap, p.x, p.y)) inv++;
     }
 
+    // Homes must sit on passable land too (M11 invariant).
+    for (const e of world.query(C_HOME, C_POSITION)) {
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (!isPassable(tileMap, p.x, p.y)) inv++;
+    }
+
     // Mana must stay within [0, maxMana].
     for (const e of world.query(C_MAGIC)) {
       const m = world.getComponent<Magic>(e, C_MAGIC)!;
@@ -95,6 +101,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     const mages = world.query(C_AGENT, C_MAGIC).length;
     const graves = world.query(C_TOMBSTONE).length;
     const nodes = world.query(C_RESOURCE).length;
+    const homes = world.query(C_HOME).length;
     let beliefs = 0, utters = 0, summ = 0;
     const cultureSet = new Set<string>();
     for (const e of agents) {
@@ -121,7 +128,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `fauna=${fauna} nodes=${nodes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt}  invalid=${inv}${marker}`,
+      `fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt}  invalid=${inv}${marker}`,
     );
   }
 }

@@ -214,14 +214,15 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD met (S46):** across 5 seeds a majority of working-age adults stay solvent; debt is bounded (≤40) and meaningful (slows healing); the Economy tab reports the honest adults-only Gini (0.28–0.50) alongside the all-folk one; soak 0 violations, pop stable, determinism holds. Seed-8 soak: Gini 0.87(climbing)→0.51 (adults 0.38), in-debt 47→~10.
 
-## ▶ Milestone 11 — Homes & Property  *(next — pulled from old M12; requested)*
+## ▶ Milestone 11 — Homes & Property  *(in progress — pulled from old M12; requested)*
 
 **Goal:** folk build and own homes that matter — visible town growth, not pre-placed boxes.
 
-- [ ] **Homes:** agents **build/own** a home from gathered resources over time (the town visibly grows), **sleep there**, get a **mood bonus**, and store goods (later); **landlords** own several.
-- [ ] **Buildings generalised:** a building is a home / workplace / civic place — not just an employer; icon + inspector reflect this.
+- [x] **Slice 1 — Build & own homes (the town visibly grows).** *(S47: new `Home` component + `BuildSystem` (daily, after the economy). A settled adult spends `homeCost` (40g) to **build a home** where they stand — placed by a deterministic outward scan onto a passable, building-free tile — so the town visibly fills in over the generations (soak: 14→35 homes). Gold is the cost (an abstraction of the gathering economy's output) and a **wealth sink** that pulls the Gini down (soak 0.70→0.50). Cost **escalates** per home owned, so most folk own one and the wealthy become **landlords** (own several). A home outliving its owner **falls to ruin** (pruned → bounded; inheritance is slice 2). Legible: homes draw as a warm-coloured house, the legend now splits **Workplace** vs **Home**, the inspector shows an agent's home / "landlord" line and a home's owner. +8 `test/homes.test.ts`; live-verified.)*
+- [ ] **Slice 2 — Homes that matter: sleep, mood, rent, inheritance.** Folk **go home to sleep** (`sleep` routes to their home) and gain a benefit there — a **mood/comfort** stat (the first mood system) lifted by owning/sleeping in a home, which then also gives **debt its eviction/comfort consequence** (deferred from D39). **Landlords collect rent** from the homeless who shelter with them (a real income → the "landlord" becomes mechanical, not just a label). Homes **pass to a living heir** on death (family homes / dynasties) instead of always falling to ruin. Optional: build literally from **gathered timber** once agents have an inventory (M13).
+- [ ] **Slice 3 — Buildings fully generalised.** A building is a home / workplace / **civic** place; a shared building model + inspector; civic buildings (a hall, a shrine — hooks for M11+ institutions / M15 religion).
 
-**DoD:** folk build and own homes, sleep in them, and gain a mood bonus; some own several; the town visibly grows from gathered resources; legible; soak-stable.
+**DoD:** folk build and own homes (✓ S47), sleep in them and gain a mood bonus (slice 2), some own several (✓ S47); the town visibly grows (✓ S47); legible (✓ S47); soak-stable (✓ S47).
 
 ## Milestone 12 — Robust Save/Load & World Management  *(requested; storage robustness)*
 
