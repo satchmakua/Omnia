@@ -20,6 +20,11 @@ export const SpeciesSchema = z.object({
   }).strict(),
   magicAptitudeChance: z.number().min(0).max(1).default(0),  // reserved for M3
   language: z.string().min(1),   // id of the tongue this folk are named from (M7); resolved at spawn
+  // Per-species ability-score modifiers (M13), applied on top of a rolled 3d6. Optional —
+  // species without it are unmodified. e.g. a dwarf might be { con: 2, dex: -1 }.
+  abilityMods: z.object({
+    str: z.number(), dex: z.number(), con: z.number(), int: z.number(), wis: z.number(), cha: z.number(),
+  }).partial().default({}),
 }).strict();
 
 export type Species = z.infer<typeof SpeciesSchema>;

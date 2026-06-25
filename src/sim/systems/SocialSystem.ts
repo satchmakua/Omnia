@@ -6,11 +6,12 @@
 // forming generation after generation. Weddings are written to the Chronicle.
 import type { World, EntityId } from '../ecs.ts';
 import {
-  C_AGENT, C_NEEDS, C_POSITION, C_RELATIONSHIPS, C_LINEAGE, C_CLOCK, C_CHRONICLE,
+  C_AGENT, C_NEEDS, C_POSITION, C_RELATIONSHIPS, C_LINEAGE, C_CLOCK, C_CHRONICLE, C_BODY, C_ALIGNMENT,
 } from '../components.ts';
 import type {
-  Agent, Needs, Position, Relationships, RelationEdge, Lineage, Clock,
+  Agent, Needs, Position, Relationships, RelationEdge, Lineage, Clock, Body, Alignment,
 } from '../components.ts';
+import { charismaWarmth, alignmentWarmth } from '../heredity.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 import type { RNG } from '../rng.ts';
@@ -120,7 +121,13 @@ function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId, cstore
   const synergy = langSynergy(intelligibility(agentA.fluency, agentB.fluency), cfg.langSynergyFloor);
   // Content folk warm to each other more readily; the lonely & miserable less so (D26).
   const mood = moodWarmth(agentA.mood ?? MOOD_BASELINE, agentB.mood ?? MOOD_BASELINE);
-  const warm = cfg.sentimentGainPerInteract * bond * synergy * mood;
+  // …and the charismatic befriend a touch faster (M13 — the first ability-score coupling).
+  const bodyA = world.getComponent<Body>(a, C_BODY), bodyB = world.getComponent<Body>(b, C_BODY);
+  const charisma = charismaWarmth(bodyA?.cha ?? 10.5, bodyB?.cha ?? 10.5);   // 10.5 ≈ avg ⇒ neutral
+  // …and the good cooperate (M13): good pairs warm faster, the wicked slower (neutral ⇒ no-op).
+  const alA = world.getComponent<Alignment>(a, C_ALIGNMENT), alB = world.getComponent<Alignment>(b, C_ALIGNMENT);
+  const align = alignmentWarmth(alA?.good ?? 0, alB?.good ?? 0);
+  const warm = cfg.sentimentGainPerInteract * bond * synergy * mood * charisma * align;
 
   const ea = edge(world.getComponent<Relationships>(a, C_RELATIONSHIPS)!, b);
   const eb = edge(world.getComponent<Relationships>(b, C_RELATIONSHIPS)!, a);

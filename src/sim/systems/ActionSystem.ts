@@ -1,8 +1,9 @@
 import type { World } from '../ecs.ts';
-import { C_AGENT, C_NEEDS, C_JOB, C_WALLET, C_MEMORY } from '../components.ts';
-import type { Agent, Needs, Job, Wallet, Memory } from '../components.ts';
+import { C_AGENT, C_NEEDS, C_JOB, C_WALLET, C_MEMORY, C_PERSONALITY } from '../components.ts';
+import type { Agent, Needs, Job, Wallet, Memory, Personality } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
+import { traitGoalFactor } from '../heredity.ts';
 
 // Once an agent starts restoring a survival need, it commits until the need climbs
 // back to here — hysteresis, so folk sleep/eat in long stretches instead of flipping
@@ -44,7 +45,8 @@ export function runActionSystem(world: World, cfg: SimConfig): void {
     const job = world.getComponent<Job>(entity, C_JOB);
     const wallet = world.getComponent<Wallet>(entity, C_WALLET);
     const purpose = world.getComponent<Memory>(entity, C_MEMORY)?.purpose ?? 0;
-    const goal = agent.wealthGoal * (1 + 0.5 * purpose);
+    const trait = world.getComponent<Personality>(entity, C_PERSONALITY)?.trait ?? '';
+    const goal = agent.wealthGoal * (1 + 0.5 * purpose) * traitGoalFactor(trait);
     if (adult && job && wallet && wallet.gold < goal) {
       agent.action = 'work';
     } else {

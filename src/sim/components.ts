@@ -16,6 +16,9 @@ export const C_RELATIONSHIPS = 'Relationships'; // social graph edges (M4)
 export const C_LINEAGE       = 'Lineage';       // partner / parents / children (M4)
 export const C_TOMBSTONE     = 'Tombstone';     // a dead agent's compact record (M4)
 export const C_MEMORY        = 'Memory';        // memory stream + beliefs (M5)
+export const C_BODY          = 'Body';          // ability scores + heritable physical traits (M13)
+export const C_ALIGNMENT     = 'Alignment';     // dynamic 9-alignment (good/law axes) (M13)
+export const C_PERSONALITY   = 'Personality';   // an archetype trait, heritable + trauma-shifted (M13)
 export const C_AIRECORD      = 'AIRecord';      // singleton: recorded LLM responses for replay (M5)
 export const C_AIRUNNER      = 'AIRunner';      // singleton: async live-model queue + pending jobs (M7.5)
 export const C_CLOCK     = 'Clock';
@@ -64,6 +67,35 @@ export interface Agent {
                         // homelessness, illness lower it. Warms friendship (D26). See MoodSystem.
   rentsFrom?: number;   // EntityId of the landlord a homeless adult rents shelter from (M11 s2);
                         // a rented roof spares the homeless mood penalty. See RentSystem.
+}
+
+// Body & heredity (M13): six D&D-style ability scores (3..18) plus heritable physical
+// traits. Founders roll these; children get the parental mean + a little variation (the one
+// Heredity system, see src/sim/heredity.ts) — so traits visibly run in families. Eye/hair
+// are 0..1 shades (dark↔light) mapped to colour names for display; build is slight↔stocky.
+export interface Body {
+  str: number; dex: number; con: number; int: number; wis: number; cha: number;
+  heightCm: number;
+  build: number;   // 0..1
+  eye: number;     // 0..1 dark↔light
+  hair: number;    // 0..1 dark↔light
+}
+
+// Dynamic 9-alignment (M13): two axes, each −1..+1, mapping to the classic grid (Lawful
+// Good … Chaotic Evil). Baseline neutral-leaning-good; a heritable lean at birth, then it
+// **shifts with the life lived** (bonds & resilience → good; loss & withdrawal → harder).
+// `good` already biases cooperation (D26); the full evil→crime/violence expression is M16.
+export interface Alignment {
+  good: number;   // −1 evil … +1 good
+  law: number;    // −1 chaotic … +1 lawful
+}
+
+// Personality (M13): one archetype trait that colours behaviour — `ambitious`/`greedy`
+// strive harder, `content`/`generous` less; others (loyal, brave, curious, gentle…) are
+// flavour now with homes in later milestones. Heritable (children often take after a
+// parent) and shifted by mid-life trauma (deep loss → `hardened`). See src/sim/heredity.ts.
+export interface Personality {
+  trait: string;
 }
 
 // Innate magic aptitude — present on only the rare agents who rolled it at birth

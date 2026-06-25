@@ -2,12 +2,13 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality,
 } from '../sim/components.ts';
+import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
 import { biomeNameAt, inBounds } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { ageInYears } from '../sim/config.ts';
@@ -267,9 +268,26 @@ export class Inspector {
       ${healthBlock}
       ${livelihoodBlock}
       ${family}
+      ${this._bodyBlock(world, e)}
       ${this._cultureBlock(world, agent)}
       ${magicBlock}
       ${mind}`;
+  }
+
+  // Body (M13): the six ability scores + a one-line physical description, all heritable.
+  private _bodyBlock(world: World, e: EntityId): string {
+    const b = world.getComponent<Body>(e, C_BODY);
+    if (!b) return '';
+    const score = (label: string, v: number) => `<span style="display:inline-block;min-width:60px">${label} <b style="color:#dde">${v}</b></span>`;
+    const al = world.getComponent<Alignment>(e, C_ALIGNMENT);
+    const pers = world.getComponent<Personality>(e, C_PERSONALITY);
+    const charBits = [pers ? pers.trait : '', al ? alignmentName(al) : ''].filter(Boolean).join(' · ');
+    const charLine = charBits ? `<div style="color:#c9b6e6;margin-top:3px">${charBits}</div>` : '';
+    return `<hr style="${RULE}">
+      <div style="${SECTION}">Body &amp; character</div>
+      <div style="line-height:1.9">${score('STR', b.str)}${score('DEX', b.dex)}${score('CON', b.con)}<br>${score('INT', b.int)}${score('WIS', b.wis)}${score('CHA', b.cha)}</div>
+      <div style="color:#9ab;margin-top:3px">${b.heightCm}cm · ${buildWord(b)} build · ${eyeColour(b)} eyes · ${hairColour(b)} hair</div>
+      ${charLine}`;
   }
 
   // Culture: the value axes that bias this person's behaviour (M7), shown as bars
