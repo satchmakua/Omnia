@@ -18,11 +18,6 @@ import type { ChronicleData } from '../../history/chronicle.ts';
 import { getOrgStore, areAtWar } from '../../org/orgStore.ts';
 
 export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
-  const predators = world.query(C_FAUNA, C_POSITION).filter(
-    e => world.getComponent<Fauna>(e, C_FAUNA)!.diet === 'predator',
-  );
-  if (predators.length === 0) return;
-
   // Folk indexed by tile, for cheap adjacency lookup.
   const folkAt = new Map<number, EntityId>();
   for (const e of world.query(C_AGENT, C_POSITION)) {
@@ -31,10 +26,15 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
   }
   if (folkAt.size === 0) return;
 
-  const tick = world.getComponent<Clock>(world.query(C_CLOCK)[0], C_CLOCK)!.tick;
+  const clockEnts = world.query(C_CLOCK);
+  if (clockEnts.length === 0) return;
+  const tick = world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick;
   const tpy = ticksPerYear(cfg);
   const OFF = [-1, 0, 1];
 
+  const predators = world.query(C_FAUNA, C_POSITION).filter(
+    e => world.getComponent<Fauna>(e, C_FAUNA)!.diet === 'predator',
+  );
   for (const pe of predators) {
     const ppos = world.getComponent<Position>(pe, C_POSITION)!;
     // Find an adjacent folk to menace.
@@ -78,6 +78,45 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
       markCombat(world, folk, 0, 1);
       world.destroyEntity(pe);
       emitEvent(world, 'work', `${agent.name} fought off and slew a ${beast.name.toLowerCase()}.`);
+    }
+  }
+
+  // ── War (M16 slice 3): members of warring tribes who meet come to blows ──
+  const store = getOrgStore(world);
+  if (!store || (store.wars?.length ?? 0) === 0) return;
+  const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
+  const fellInBattle = (victim: EntityId, slayer: EntityId): void => {
+    markCombat(world, slayer, 0, 1);
+    const tomb = killAgent(world, victim, tick, 'fell in battle', tpy);
+    emitEvent(world, 'death', `${tomb.name} fell in battle.`);
+    if (ch) chronicleAdd(ch, { tick, importance: 0.66, kind: 'war', text: `${tomb.name} fell in battle.` }, cfg.chronicleImportanceThreshold);
+  };
+
+  for (const e of world.query(C_AGENT, C_POSITION)) {
+    if (!world.hasComponent(e, C_AGENT)) continue;   // may have already fallen as someone's foe this pass
+    const aOrg = world.getComponent<Agent>(e, C_AGENT)!.orgId;
+    if (!aOrg) continue;
+    const p = world.getComponent<Position>(e, C_POSITION)!;
+    for (const dy of OFF) for (const dx of OFF) {
+      if (dx === 0 && dy === 0) continue;
+      const o = folkAt.get((p.y + dy) * cfg.gridWidth + (p.x + dx));
+      if (o === undefined || o <= e || !world.hasComponent(o, C_AGENT)) continue;   // each pair once
+      const bOrg = world.getComponent<Agent>(o, C_AGENT)!.orgId;
+      if (!bOrg || bOrg === aOrg || !areAtWar(store, aOrg, bOrg)) continue;
+      if (rng() >= cfg.battleChancePerTick) continue;
+
+      // A clash: each lands a blow; either may fall.
+      const ce = combatantOf(world, e), co = combatantOf(world, o);
+      const ho = world.getComponent<Health>(o, C_HEALTH)!;
+      const d1 = rollAttack(ce, co, rng);
+      ho.value = Math.max(0, ho.value - d1);
+      if (d1 >= cfg.combatScarThreshold) markCombat(world, o, 1, 0);
+      if (ho.value <= 0) { fellInBattle(o, e); continue; }
+      const he = world.getComponent<Health>(e, C_HEALTH)!;
+      const d2 = rollAttack(co, ce, rng);
+      he.value = Math.max(0, he.value - d2);
+      if (d2 >= cfg.combatScarThreshold) markCombat(world, e, 1, 0);
+      if (he.value <= 0) { fellInBattle(e, o); break; }   // e is gone — stop scanning its neighbours
     }
   }
 }
