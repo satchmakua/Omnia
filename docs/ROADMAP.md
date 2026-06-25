@@ -252,25 +252,25 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD met (S52):** light-eyed parents → light-eyed children (✓, tested + live 76% trait inheritance); alignment shifts with experience and changes behaviour (✓); ability scores rolled/inherited and feed later combat/skills (✓, CHA causal now); all legible (✓ agent sheet); determinism + soak hold (✓, 0 violations). *Inventory is the one open bullet, intentionally deferred until items matter.*
 
-## ▶ Milestone 14 — Institutions: Tribes, Factions & Governments  *(next)*
-
-## Milestone 14 — Institutions: Tribes, Factions & Governments
+## ✅ Milestone 14 — Institutions: Tribes, Factions & Governments  *(DoD met — 2026-06-25)*
 
 **Goal:** the unified social-structure engine — the biggest "world feels alive" jump.
 
-- [ ] One **`Organization` entity (D33):** members, values, treasury, leadership + **succession**, procedural **colour** (hue-spaced, never red), territory, descent + **schism** (reusing the culture/language fork machinery).
-- [ ] **Group dynamics:** cluster with kin/allies, defend territory, compete for resources; few agents → fuse, large groups → schism; new tribes emerge *with* new cultures/languages.
-- [ ] **Governments** emerge from culture/values (chiefdom / council / theocracy / …); **social class**; a **reputation** graph.
-- [ ] Faction membership **tints the folk icon** (a colour idea).
-- [ ] Inspector: an **organization/faction** view + per-agent class/reputation/allegiance.
+- [x] One **`Organization` model (D33)** — a store (like cultures) of tribes/factions agents reference by `orgId`. *(S53: `src/org/orgStore.ts` — name (language-coined), **hue-spaced colour (never red)**, values, `leader`, government, cohesion, descent. `createOrg`/`forkOrg`/`pruneOrgs` mirror the culture/language fork machinery.)*
+- [x] **Group dynamics** (form + schism). *(S53: founders split into a few tribes at world-gen (households kept together); children inherit the mother's tribe; **leadership succession** (eldest steps up when a head dies) and **extinction** (a memberless tribe falls); **schism** on the era cadence — a large, loose tribe fractures, a faction breaking away with a new colour/name/values — so new tribes emerge alongside cultures/tongues. Fusion of tiny tribes is deferred.)*
+- [x] **Governments** emerge from values (chiefdom / council / theocracy / gerontocracy / meritocracy). *(S53: a pure function of the tribe's values; schism's value-nudge can change a daughter's government.)*
+- [x] Faction membership **tints the folk icon** + **Tribes dashboard** (hotkey **K**) + **inspector allegiance** (tribe · government, "leads it"). *(S53.)*
+- [ ] **Social class + reputation graph** — *deferred to M15* (class is naturally a wealth/role reading the M15 market gives meaning; a reputation graph is its own slice). Noted, not built.
 
-**DoD:** tribes/factions form, hold cohesion, and schism over deep time alongside language/culture, and visibly govern themselves; faction colours are distinct (never red); all legible; determinism + soak hold.
+**DoD met (S53):** tribes form (3 founding, all founders assigned), hold cohesion, and **schism over deep time** alongside language/culture (live: 3→7 tribes, 4 via schism); they **visibly govern themselves** (named leaders, emergent governments); colours are distinct and **never red**; legible (dashboard + tint + inspector); determinism + soak hold (0 violations). *Class/reputation is the one open thread, folded into M15.* **Also fixed a latent bug the M14 trajectory-shift exposed:** newborns now spawn on a free tile beside the mother (not on her), so the no-shared-tile invariant holds even when a birth lands on a sample tick.
 
-## Milestone 15 — Economy Depth: Markets, Trade & Class
+## ▶ Milestone 15 — Economy Depth: Markets, Trade & Class  *(in progress)*
 
 **Goal:** a tactile economy where gold matters and fortunes rise and fall *(completes M3's deferrals)*.
 
-- [ ] **Supply/demand market:** prices move with supply/demand; agents buy food/goods; business revenue from **real sales**; businesses can **go bankrupt**.
+- [~] **Supply/demand market:** prices move with supply/demand; agents buy food/goods; business revenue from **real sales**; businesses can **go bankrupt**.
+  - [x] **Slice 1 — the staple-goods price (CAUSAL).** *(S54: a `Market` singleton (`src/sim/market.ts`) + daily `MarketSystem` price a town staple from **supply** (food-workers' output + a wild-foraged baseline) vs **demand** (adult mouths). The **cost of living IS that price** — `EconomySystem` charges `market.price`, so a young foraging town has cheap food and a mature, populous one out-breeding its farms faces dear provisions + bounded debt (soak: 2.1g→4.4g, debt 0→28). Food producers are content-flagged (`producesFood` on farmer). Pure arithmetic (no RNG, replays per seed), bounded (price band keeps debt ≤ maxDebt), soak-green. Legible: a Market section in the Economy tab (price · supply · demand · sparkline) + the soak line. +10 `test/market.test.ts`. D44.)*
+  - [ ] **Slice 2 — real sales revenue + bankruptcy.** Route household food spend to producers as revenue (replacing the synthetic per-worker revenue), and let a broke business **fail** (and a new one open) — needs a wage-loop rebalance (the wage/gather loop dwarfs food retail) so it's its own slice.
 - [ ] **Resource → craft → goods** coupling so depletion bites; **skill/knowledge gating** (learn-by-doing / apprenticeship).
 - [ ] **Banking/loans/debt** rebalance (agents shouldn't sink into debt so fast); caravans; stockpiles; boom/bust cycles. *(Homes/landlords moved to M11.)*
 - [ ] Inspector: a **market/prices** view; per-agent wealth/property/holdings.

@@ -104,6 +104,7 @@ export const ProfessionSchema = z.object({
   maxEmployeesPerBusiness: z.number().int().positive().default(4),
   requiresAptitude: z.boolean().default(false),  // magical professions hire only the aptitude-gifted
   gathers: z.string().optional(),                // resource id this profession harvests (e.g. "ore")
+  producesFood: z.boolean().default(false),      // a food producer — its workforce supplies the staple market (M15)
 }).strict();
 
 export type Profession = z.infer<typeof ProfessionSchema>;

@@ -4,9 +4,23 @@ import type { World } from '../sim/ecs.ts';
 import { C_AGENT, C_JOB, C_BUSINESS, C_MAGIC } from '../sim/components.ts';
 import type { Agent, Job, Business } from '../sim/components.ts';
 import { wealthStats } from '../sim/wealth.ts';
+import { getMarket } from '../sim/market.ts';
 import { adultWealthGini } from '../analysis/metrics.ts';
 import { ageInYears, defaultConfig } from '../sim/config.ts';
 import { ModalPanel, SECTION } from './modalPanel.ts';
+
+// A lo-fi inline sparkline of recent prices (matches the Legends-view chart style).
+function priceSparkline(history: number[], min: number, max: number): string {
+  if (history.length < 2) return '';
+  const W = 180, H = 28, n = history.length;
+  const pts = history.map((p, i) => {
+    const x = (i / (n - 1)) * W;
+    const y = H - ((p - min) / Math.max(max - min, 1e-6)) * H;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return `<svg width="${W}" height="${H}" style="display:block;margin-top:4px">
+    <polyline points="${pts}" fill="none" stroke="#e8d28f" stroke-width="1.5"/></svg>`;
+}
 
 function metric(label: string, value: string, color = '#e6e6f0'): string {
   return `<div style="background:rgba(255,255,255,0.05);border-radius:7px;padding:8px 10px;min-width:88px">
@@ -50,7 +64,29 @@ export class EconomyDashboard extends ModalPanel {
       </tr>`;
     }).join('');
 
+    const mkt = getMarket(world);
+    const mktHtml = mkt ? (() => {
+      const dear = mkt.price > defaultConfig.provisionBasePrice * 1.25;
+      const cheap = mkt.price < defaultConfig.provisionBasePrice * 0.8;
+      const trend = dear ? 'provisions are dear — farming lags the mouths to feed'
+        : cheap ? 'provisions are cheap — the farms have a glut'
+        : 'provisions are steady — supply roughly meets demand';
+      return `
+      <div style="${SECTION}">Market — staple provisions</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        ${metric('Price', `${mkt.price.toFixed(1)}g/day`, dear ? '#ff9a6a' : cheap ? '#8fe88f' : '#e6e6f0')}
+        ${metric('Supply', `${mkt.supply.toFixed(0)}`)}
+        ${metric('Demand', `${mkt.demand.toFixed(0)}`)}
+        <div>${priceSparkline(mkt.history, defaultConfig.provisionPriceMin, defaultConfig.provisionPriceMax)}</div>
+      </div>
+      <div style="color:#889;font-size:11px;margin-top:4px">
+        The daily cost of living is the price of a day's food. It floats with <b>supply</b> (the town's
+        farmers + wild foraging) against <b>demand</b> (the adult mouths to feed) — ${trend}.
+      </div>`;
+    })() : '';
+
     this.body.innerHTML = `
+      ${mktHtml}
       <div style="${SECTION}">Wealth</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${metric('Median', `${Math.round(w.median)}g`)}

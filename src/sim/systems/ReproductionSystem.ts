@@ -4,11 +4,13 @@
 // carrying capacity and then holds, balancing the deaths from the HealthSystem.
 import type { World, EntityId } from '../ecs.ts';
 import {
-  C_AGENT, C_NEEDS, C_HEALTH, C_LINEAGE, C_POSITION, C_SPECIES, C_MAGIC, C_CLOCK, C_CHRONICLE,
+  C_AGENT, C_NEEDS, C_HEALTH, C_LINEAGE, C_POSITION, C_SPECIES, C_MAGIC, C_CLOCK, C_CHRONICLE, C_FAUNA, C_TILEMAP,
 } from '../components.ts';
 import type { Agent, Needs, Health, Lineage, Position, SpeciesComp, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears, scaledMaxPopulation } from '../config.ts';
+import { isPassable, inBounds } from '../../world/tilemap.ts';
+import type { TileMapData } from '../../world/tilemap.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
 import { spawnAgent } from '../spawnAgent.ts';
@@ -59,6 +61,25 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
     }
   }
 
+  // Newborns must arrive on a FREE tile beside the mother, not on top of her — otherwise
+  // two mobile creatures would share a tile until the next move (a collision-invariant break).
+  const W = cfg.gridWidth;
+  const mapEnts = world.query(C_TILEMAP);
+  const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
+  const occupied = new Set<number>();
+  for (const e of [...world.query(C_AGENT, C_POSITION), ...world.query(C_FAUNA, C_POSITION)]) {
+    const p = world.getComponent<Position>(e, C_POSITION)!;
+    occupied.add(p.y * W + p.x);
+  }
+  const NEIGH: readonly [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  const birthTile = (x: number, y: number): { x: number; y: number } => {
+    for (const [dx, dy] of NEIGH) {
+      const nx = x + dx, ny = y + dy;
+      if ((!map || (inBounds(map, nx, ny) && isPassable(map, nx, ny))) && !occupied.has(ny * W + nx)) return { x: nx, y: ny };
+    }
+    return { x, y };   // hemmed in — fall back to the mother's tile (rare)
+  };
+
   for (const b of births) {
     const species = content.species.get(b.speciesId);
     if (!species) continue;
@@ -69,8 +90,11 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
     // Patrilineal surname from the father; culture (upbringing) from the mother.
     const surname = world.getComponent<Agent>(b.father, C_AGENT)!.surname;
     const cultureId = world.getComponent<Agent>(b.mother, C_AGENT)!.cultureId;
+    const orgId = world.getComponent<Agent>(b.mother, C_AGENT)!.orgId;   // a child joins the mother's tribe (M14)
+    const spot = birthTile(b.x, b.y);
+    occupied.add(spot.y * W + spot.x);   // so siblings born the same tick don't stack either
     const child = spawnAgent(world, cfg, rng, species, content, {
-      x: b.x, y: b.y, ageTicks: 0, parents: [b.mother, b.father], aptitudeChance, surname, cultureId,
+      x: spot.x, y: spot.y, ageTicks: 0, parents: [b.mother, b.father], aptitudeChance, surname, cultureId, orgId,
     });
 
     world.getComponent<Lineage>(b.mother, C_LINEAGE)!.children.push(child);

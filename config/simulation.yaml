@@ -31,6 +31,14 @@ businessStartBalance: 300
 businessRevenueMargin: 0.25
 homeCost: 40
 rentPerDay: 1
+provisionBasePrice: 3
+provisionPriceMin: 1.5
+provisionPriceMax: 8
+priceAdjustRate: 0.2
+provisionPerAdult: 1
+provisionPerFarmer: 2
+baseForagedProvisions: 18
+marketHistoryLength: 60
 magicManaMax: 100
 manaRegenPerDay: 10
 daysPerYear: 4
@@ -84,6 +92,7 @@ schismChancePerEra: 0.7
 minSchismMembers: 8
 schismValueNudge: 0.2
 maxLineages: 24
+initialTribes: 3
 langLearnPerInteract: 0.002
 langSynergyFloor: 0.4
 aiConcurrency: 2

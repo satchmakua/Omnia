@@ -1,6 +1,8 @@
-# Tends crops and beasts. Modest, steady pay.
+# Tends crops and beasts. Modest, steady pay. The town's food producer — a farm's
+# workforce supplies the staple market, so more farmers means cheaper provisions (M15).
 id: "farmer"
 name: "Farmer"
 dailyWage: 8
 color: "#80b060"
 maxEmployeesPerBusiness: 5
+producesFood: true

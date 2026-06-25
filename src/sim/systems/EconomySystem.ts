@@ -9,6 +9,7 @@ import type { Agent, Wallet, Job, Business, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 import { earn, spend } from '../economy.ts';
+import { getMarket } from '../market.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { remember } from '../../ai/memory.ts';
 
@@ -93,6 +94,11 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
   if (clockEnts.length) {
     const clock = world.getComponent<Clock>(clockEnts[0], C_CLOCK)!;
     if (clock.tick > 0 && clock.tick % cfg.ticksPerDay === 0) {
+      // The cost of living is a day's provisions at the current market price — dear in a
+      // lean year of farming, cheap in a glut (M15). Falls back to the flat upkeep if no
+      // market exists (older saves / minimal test worlds).
+      const market = getMarket(world);
+      const upkeep = market ? market.price : cfg.dailyUpkeep;
       for (const e of world.query(C_AGENT, C_WALLET)) {
         // Children are dependents (the Kids Pass): they neither work nor pay a cost of
         // living, so they no longer march into debt from birth — and adults enter
@@ -104,7 +110,7 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
         // the cost of living) so unemployment is *poverty*, not a bottomless debt spiral
         // (Economy Rebalance). The employed live off their wage/savings, so no handout.
         if (!world.hasComponent(e, C_JOB)) earn(wallet, cfg.subsistencePerDay);
-        spend(wallet, cfg.dailyUpkeep);
+        spend(wallet, upkeep);
         if (wallet.debt > cfg.maxDebt) wallet.debt = cfg.maxDebt;   // debt is bounded — poverty, not a hole
       }
     }

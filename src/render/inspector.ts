@@ -15,6 +15,7 @@ import { ageInYears } from '../sim/config.ts';
 import { defaultConfig } from '../sim/config.ts';
 import { getCultureStore, getCulture } from '../culture/cultureStore.ts';
 import { getLanguageStore, getLanguage } from '../lang/languageStore.ts';
+import { getOrgStore, getOrg } from '../org/orgStore.ts';
 
 function bar(v: number): string {
   const filled = Math.max(0, Math.min(10, Math.round(v * 10)));
@@ -269,6 +270,7 @@ export class Inspector {
       ${livelihoodBlock}
       ${family}
       ${this._bodyBlock(world, e)}
+      ${this._allegianceBlock(world, e, agent)}
       ${this._cultureBlock(world, agent)}
       ${magicBlock}
       ${mind}`;
@@ -288,6 +290,18 @@ export class Inspector {
       <div style="line-height:1.9">${score('STR', b.str)}${score('DEX', b.dex)}${score('CON', b.con)}<br>${score('INT', b.int)}${score('WIS', b.wis)}${score('CHA', b.cha)}</div>
       <div style="color:#9ab;margin-top:3px">${b.heightCm}cm · ${buildWord(b)} build · ${eyeColour(b)} eyes · ${hairColour(b)} hair</div>
       ${charLine}`;
+  }
+
+  // Allegiance (M14): the tribe this person belongs to, its government, and whether they lead it.
+  private _allegianceBlock(world: World, e: EntityId, agent: Agent): string {
+    const store = getOrgStore(world);
+    const org = agent.orgId && store ? getOrg(store, agent.orgId) : undefined;
+    if (!org) return '';
+    const role = org.leader === e ? ' <span style="color:#ffd27a">· leads it</span>' : '';
+    return `<hr style="${RULE}">
+      <div style="${SECTION}">Allegiance</div>
+      <div><b>Tribe</b> <span style="color:${org.color}">${org.name}</span>${role}</div>
+      <div style="color:#9ab">${org.government}</div>`;
   }
 
   // Culture: the value axes that bias this person's behaviour (M7), shown as bars

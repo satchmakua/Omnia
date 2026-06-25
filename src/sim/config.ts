@@ -30,6 +30,15 @@ export interface SimConfig {
   businessRevenueMargin: number;       // revenue per worker = wage × (1 + margin)
   homeCost: number;                    // gold a settled adult spends to build & own a home (M11)
   rentPerDay: number;                  // a tenant pays this to their landlord each day (M11 slice 2)
+  // Staple-goods market (M15): the daily cost of living is a price that floats with supply/demand.
+  provisionBasePrice: number;          // price when supply == demand (≈ the old flat upkeep, for balance)
+  provisionPriceMin: number;           // price floor (a glut never goes free)
+  provisionPriceMax: number;           // price ceiling (a famine never goes infinite — keeps debt bounded)
+  priceAdjustRate: number;             // 0..1: how fast the price eases toward the clearing target each day
+  provisionPerAdult: number;           // rations an adult consumes per day (demand)
+  provisionPerFarmer: number;          // rations one food-worker produces per day (supply)
+  baseForagedProvisions: number;       // wild-foraged baseline supply (the commons, independent of farms)
+  marketHistoryLength: number;         // bounded price-history kept for the chart
   // Capabilities / magic (M3 part 2):
   magicManaMax: number;                // mana pool size for aptitude-gifted agents
   manaRegenPerDay: number;             // mana regenerated per in-sim day
@@ -92,7 +101,8 @@ export interface SimConfig {
   schismChancePerEra: number;          // per-era chance a culture fractures (damped by cohesion)
   minSchismMembers: number;            // a culture needs at least this many living members to schism
   schismValueNudge: number;            // how strongly a daughter culture's values jump from the parent
-  maxLineages: number;                 // cap on stored cultures / tongues; oldest dead branches prune (slice 5)
+  maxLineages: number;                 // cap on stored cultures / tongues / tribes; oldest dead branches prune
+  initialTribes: number;               // founding tribes the town starts with (M14)
   // Language as a mechanic (M10 slice 4): tongues causally gate how readily company warms
   // into friendship, and agents learn each other's tongues through contact (D26).
   langLearnPerInteract: number;        // fluency gained in a neighbour's tongue per interaction (bounded growth toward 1)
@@ -186,6 +196,14 @@ export const defaultConfig: SimConfig = {
   businessRevenueMargin: 0.25,
   homeCost: 40,             // affordable to most adults over time (a wealth sink that grows the town)
   rentPerDay: 1,            // modest: a landlord's spare home earns a little; a roof spares the mood penalty
+  provisionBasePrice: 3,    // equals the old flat upkeep, so a balanced town sits near it
+  provisionPriceMin: 1.5,
+  provisionPriceMax: 8,     // a famine caps here — cost of living bites but debt stays bounded (≤ maxDebt)
+  priceAdjustRate: 0.2,     // price drifts ~a fifth of the gap per day (a legible trend, not a jump)
+  provisionPerAdult: 1,
+  provisionPerFarmer: 2,
+  baseForagedProvisions: 18, // tuned so a typical farmer count sits supply ≈ demand near the base price
+  marketHistoryLength: 60,
   magicManaMax: 100,
   manaRegenPerDay: 10,
   daysPerYear: 4,
@@ -239,6 +257,7 @@ export const defaultConfig: SimConfig = {
   minSchismMembers: 8,            // small cultures don't fracture
   schismValueNudge: 0.2,          // the daughter starts noticeably apart from the parent
   maxLineages: 24,                // a handful of living lineages + their ancestry; dead branches prune
+  initialTribes: 3,               // the town starts as a few founding tribes (M14)
   langLearnPerInteract: 0.002,    // ~a few days of contact to grow fluent in a neighbour's tongue (gradual)
   langSynergyFloor: 0.4,          // strangers with no shared tongue still bond, at 40% rate, until they learn one
   aiConcurrency: 2,               // at most 2 live model calls in flight
