@@ -9,9 +9,9 @@ import { loadContentFromDisk } from '../content/fsSource.ts';
 import {
   C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS,
   C_HEALTH, C_LINEAGE, C_TOMBSTONE, C_MEMORY, C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
-  C_CHRONICLE, C_WORLDSTATS, C_LANGUAGESTORE, C_HOME,
+  C_CHRONICLE, C_WORLDSTATS, C_LANGUAGESTORE, C_HOME, C_ORGSTORE, C_MARKET,
 } from './components.ts';
-import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock } from './components.ts';
+import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock, Market } from './components.ts';
 import type { SimConfig } from './config.ts';
 import { ageInYears } from './config.ts';
 import { isPassable } from '../world/tilemap.ts';
@@ -95,6 +95,9 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     const drifts = ls ? ls.soundChanges : 0;
     const tongues = ls ? Object.keys(ls.byId).length : 0;
     const lostTongues = ls ? Object.values(ls.byId).filter(l => l.extinct).length : 0;
+    const os = world.getComponent(world.query(C_ORGSTORE)[0], C_ORGSTORE) as
+      { byId: Record<string, { extinct?: boolean }> } | undefined;
+    const tribes = os ? Object.values(os.byId).filter(o => !o.extinct).length : 0;
 
     violations += inv;
     const fauna = world.query(C_FAUNA).length;
@@ -122,13 +125,14 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     }
     const avgAge = agents.length ? (ageSum / agents.length).toFixed(0) : '0';
     const wlth = wealthStats(world);
+    const mkt = world.getComponent<Market>(world.query(C_MARKET)[0], C_MARKET);
     const marker = inv > 0 ? ' *** VIOLATION ***' : '';
     const mix = Object.entries(bySpecies).map(([k, v]) => `${k}=${v}`).join(' ');
     console.log(
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt}  invalid=${inv}${marker}`,
+      `fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) tribes=${tribes} drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt} food=${mkt ? mkt.price.toFixed(1) : '—'}g(s/d ${mkt ? mkt.supply.toFixed(0) : '?'}/${mkt ? mkt.demand.toFixed(0) : '?'})  invalid=${inv}${marker}`,
     );
   }
 }

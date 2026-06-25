@@ -33,6 +33,7 @@ export interface SpawnOpts {
   aptitudeChance?: number;     // overrides the species default (lineage boost for children of mages)
   surname?: string;            // inherited family name (children); founders coin a new one
   cultureId?: string;          // inherited culture (children); founders take their species' culture
+  orgId?: string;              // inherited tribe (children); founders are assigned one at world-gen (M14)
 }
 
 export function spawnAgent(
@@ -77,7 +78,7 @@ export function spawnAgent(
     energyMult: species.needs.energy,
   });
   world.addComponent<Agent>(e, C_AGENT, {
-    name, surname, cultureId, action: 'wander',
+    name, surname, cultureId, orgId: opts.orgId, action: 'wander',
     ticksAlive: opts.ageTicks, wealthGoal, sex, lifespanTicks,
     // Natively fluent in their culture's tongue; they learn others through contact (M10 s4).
     fluency: nativeFluency(culture?.language),

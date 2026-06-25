@@ -2,7 +2,7 @@ import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
   C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_WORLDSTATS, C_CULTURESTORE, C_LANGUAGESTORE,
-  C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_CIVIC,
+  C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_CIVIC, C_ORGSTORE, C_MARKET,
 } from './components.ts';
 import type { Clock, Agent, Lineage, Relationships, AIRecord, Position, Civic } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -24,10 +24,13 @@ import { createEventLog } from '../history/eventlog.ts';
 import type { EventLogData } from '../history/eventlog.ts';
 import { createWorldStats } from '../history/stats.ts';
 import type { WorldStatsData } from '../history/stats.ts';
-import { createCultureStore } from '../culture/cultureStore.ts';
+import { createCultureStore, getCultureStore, getCulture } from '../culture/cultureStore.ts';
 import type { CultureStoreData } from '../culture/cultureStore.ts';
-import { createLanguageStore } from '../lang/languageStore.ts';
+import { createLanguageStore, getLanguageStore, getLanguage } from '../lang/languageStore.ts';
 import type { LanguageStoreData } from '../lang/languageStore.ts';
+import { createOrgStore, createOrg, getOrgStore } from '../org/orgStore.ts';
+import { createMarket } from './market.ts';
+import { word } from '../lang/language.ts';
 
 export interface Simulation {
   world: World;
@@ -117,6 +120,45 @@ function placeCivic(world: World, cfg: SimConfig, map: TileMapData): void {
   }
 }
 
+// Found the town's initial tribes (M14): split the adult founders into a few factions
+// (households kept together), each with values seeded from its members' culture — so its
+// government emerges from culture — and a hue-spaced colour. Children inherit the mother's tribe.
+const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+function seedTribes(world: World, cfg: SimConfig, rng: RNG): void {
+  const store = getOrgStore(world);
+  if (!store) return;
+  const cstore = getCultureStore(world);
+  const lstore = getLanguageStore(world);
+  const founders = world.query(C_AGENT, C_LINEAGE)
+    .filter(e => ageInYears(world.getComponent<Agent>(e, C_AGENT)!.ticksAlive, cfg) >= cfg.adultAgeYears);
+  if (founders.length === 0) return;
+
+  const baseCid = world.getComponent<Agent>(founders[0], C_AGENT)!.cultureId;
+  const baseCulture = baseCid && cstore ? getCulture(cstore, baseCid) : undefined;
+  const base = baseCulture ? baseCulture.values : { communal: 0.5, martial: 0.5, traditional: 0.5, open: 0.5 };
+  const lang = baseCulture && lstore ? getLanguage(lstore, baseCulture.language) : (lstore ? Object.values(lstore.byId)[0] : undefined);
+  const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
+  const nudge = (x: number): number => clamp01(x + (rng() * 2 - 1) * 0.25);
+
+  const count = Math.max(1, Math.min(cfg.initialTribes, Math.ceil(founders.length / 3)));
+  const tribeIds: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const values = { communal: nudge(base.communal), martial: nudge(base.martial), traditional: nudge(base.traditional), open: nudge(base.open) };
+    const name = `${cap(lang ? word(lang, `tribe-${store.created}`) : `Tribe${i}`)} clan`;
+    tribeIds.push(createOrg(store, name, values, rngFloat(rng, 0.5, 0.8), 0));
+  }
+
+  let next = 0;
+  for (const e of founders) {
+    const agent = world.getComponent<Agent>(e, C_AGENT)!;
+    if (agent.orgId) continue;
+    const lin = world.getComponent<Lineage>(e, C_LINEAGE)!;
+    const partnerOrg = lin.partner != null && world.hasComponent(lin.partner, C_AGENT)
+      ? world.getComponent<Agent>(lin.partner, C_AGENT)!.orgId : undefined;
+    agent.orgId = partnerOrg ?? tribeIds[(next++) % count];
+  }
+}
+
 export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const world = new World();
   const rng = createRNG(cfg.seed);
@@ -151,6 +193,8 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   world.addComponent<CultureStoreData>(cultureEntity, C_CULTURESTORE, createCultureStore(content));
   const languageEntity = world.createEntity();
   world.addComponent<LanguageStoreData>(languageEntity, C_LANGUAGESTORE, createLanguageStore(content));
+  world.addComponent(world.createEntity(), C_ORGSTORE, createOrgStore());   // tribes/factions (M14)
+  world.addComponent(world.createEntity(), C_MARKET, createMarket(cfg));     // staple-goods market (M15)
 
   // Recorded LLM responses, for deterministic replay of a live-model run.
   const recordEntity = world.createEntity();
@@ -188,6 +232,9 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
 
   // Civic landmarks (deterministic, additive — no RNG, trajectory unchanged).
   placeCivic(world, cfg, tileMap);
+
+  // Found the initial tribes and assign the founders (M14).
+  seedTribes(world, cfg, rng);
 
   return { world, rng, clockEntity, content };
 }

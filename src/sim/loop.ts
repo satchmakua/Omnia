@@ -11,6 +11,7 @@ import { runCapabilitySystem } from './systems/CapabilitySystem.ts';
 import { runActionSystem }   from './systems/ActionSystem.ts';
 import { runMovementSystem } from './systems/MovementSystem.ts';
 import { runGatherSystem }   from './systems/GatherSystem.ts';
+import { runMarketSystem }   from './systems/MarketSystem.ts';
 import { runEconomySystem }  from './systems/EconomySystem.ts';
 import { runBuildSystem }    from './systems/BuildSystem.ts';
 import { runRentSystem }     from './systems/RentSystem.ts';
@@ -18,6 +19,7 @@ import { runSocialSystem }   from './systems/SocialSystem.ts';
 import { runReproductionSystem } from './systems/ReproductionSystem.ts';
 import { runHealthSystem }   from './systems/HealthSystem.ts';
 import { runMoodSystem }     from './systems/MoodSystem.ts';
+import { runOrgSystem }      from './systems/OrgSystem.ts';
 import { runAISystem }       from './systems/AISystem.ts';
 import { runMemorySystem }   from './systems/MemorySystem.ts';
 import { runHistorySystem }  from './systems/HistorySystem.ts';
@@ -41,13 +43,15 @@ export function tick(
   runActionSystem(world, cfg);           // sapient utility action choice
   runMovementSystem(world, cfg, rng, content); // sapient movement / forage / commute / socialise / gather
   runGatherSystem(world, cfg);           // deplete resource nodes being worked
-  runEconomySystem(world, cfg);          // hiring, wages, cost of living
+  runMarketSystem(world, cfg);           // staple market: price floats with supply/demand (sets the cost of living)
+  runEconomySystem(world, cfg);          // hiring, wages, cost of living (at the market price)
   runBuildSystem(world, cfg);            // settled adults build & own homes (the town grows)
   runRentSystem(world, cfg);             // homeless adults rent a landlord's spare home (income + shelter)
   runSocialSystem(world, cfg, rng);      // relationships, social need, courtship → marriage
   runReproductionSystem(world, cfg, rng, content); // births → children + lineage
   runHealthSystem(world, cfg, rng);      // illness, ageing, death → tombstones
   runMoodSystem(world, cfg);             // daily well-being: home / family / solvency / health → mood
+  runOrgSystem(world, cfg, rng);         // tribes: leadership succession, extinction, schism (M14)
   runAISystem(world, cfg, provider);     // the "soul": reflection / dialogue / dreams / decisions (rare)
   runMemorySystem(world, cfg);           // multi-resolution rollup: old memories → episodic summaries
   runHistorySystem(world, cfg);          // world history: sample strata + compress the Chronicle

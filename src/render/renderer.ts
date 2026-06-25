@@ -9,6 +9,7 @@ import type {
   Position, Agent, Health, Flora, Fauna, Resource, Business, Clock,
 } from '../sim/components.ts';
 import type { TileMapData } from '../world/tilemap.ts';
+import { getOrgStore } from '../org/orgStore.ts';
 import { ageInYears, calendarOf } from '../sim/config.ts';
 import { CATEGORY_COLOR, resourceIcon } from './icons.ts';
 
@@ -223,6 +224,7 @@ export class Renderer {
     const inCompany = (p: Position) =>
       NEIGH8.some(([dx, dy]) => folkTiles.has((p.y + dy) * W + (p.x + dx)));
 
+    const orgStore = getOrgStore(world);   // tribe colours tint the folk (M14)
     for (const e of world.query(C_AGENT, C_POSITION)) {
       const agent = world.getComponent<Agent>(e, C_AGENT)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
@@ -233,6 +235,7 @@ export class Renderer {
         ill: !!health?.ill,
         action: agent.action,
         chatting: inCompany(p),
+        bodyColor: agent.orgId && orgStore ? orgStore.byId[agent.orgId]?.color : undefined,
       });
     }
 
@@ -250,10 +253,10 @@ export class Renderer {
     ctx.restore();
   }
 
-  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; action: string; chatting: boolean }): void {
+  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; action: string; chatting: boolean; bodyColor?: string }): void {
     const ctx = this.ctx;
     this.at(gx, gy, child ? 0.72 : 1, () => {
-      ctx.fillStyle = CATEGORY_COLOR.folk;
+      ctx.fillStyle = st.bodyColor ?? CATEGORY_COLOR.folk;   // tinted by tribe (M14)
       ctx.beginPath(); ctx.arc(0, -6, 4, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath();
       ctx.moveTo(-6, 9); ctx.quadraticCurveTo(-6, -1, 0, -1); ctx.quadraticCurveTo(6, -1, 6, 9); ctx.closePath();

@@ -27,7 +27,9 @@ export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/hist
 export const C_EVENTLOG  = 'EventLog';  // singleton: live activity feed (src/history/eventlog.ts)
 export const C_WORLDSTATS = 'WorldStats'; // singleton: statistical strata (src/history/stats.ts)
 export const C_CULTURESTORE = 'CultureStore'; // singleton: live cultures (src/culture/cultureStore.ts)
+export const C_ORGSTORE   = 'OrgStore';   // singleton: live organizations / tribes (src/org/orgStore.ts) (M14)
 export const C_LANGUAGESTORE = 'LanguageStore'; // singleton: live languages (src/lang/languageStore.ts)
+export const C_MARKET     = 'Market';     // singleton: the staple-goods market — price floats with supply/demand (M15)
 
 export interface Position {
   x: number;
@@ -67,6 +69,24 @@ export interface Agent {
                         // homelessness, illness lower it. Warms friendship (D26). See MoodSystem.
   rentsFrom?: number;   // EntityId of the landlord a homeless adult rents shelter from (M11 s2);
                         // a rented roof spares the homeless mood penalty. See RentSystem.
+  orgId?: string;       // the tribe/faction this agent belongs to (M14); inherited from the mother.
+}
+
+// A social structure — a tribe/faction (M14, D33). Like cultures, organizations are a few
+// shared objects agents reference by `orgId`, kept in a singleton store; they hold a leader,
+// values (→ a government), a hue-spaced colour (never red), and descend/schism over the eras.
+export interface Organization {
+  id: string;
+  name: string;          // language-derived (a coined word from the founders' tongue)
+  color: string;         // an hsl() string — hue-spaced around the wheel, never red
+  government: string;    // derived from the values (chiefdom / council / theocracy / gerontocracy)
+  values: { communal: number; martial: number; traditional: number; open: number };
+  leader: number | null; // EntityId of the current head
+  cohesion: number;      // resistance to schism (0..1)
+  founded: number;       // tick it formed
+  parent?: string;       // the tribe it split from (schism descent)
+  extinct?: boolean;     // no living members — a fallen tribe, kept for the family tree
+  diedTick?: number;
 }
 
 // Body & heredity (M13): six D&D-style ability scores (3..18) plus heritable physical
@@ -128,6 +148,18 @@ export interface Business {
   revenuePerWorkerPerTick: number;
   requiresAptitude: boolean;  // magical employers hire only agents with magic aptitude
   gathers: string | null;     // resource id employees harvest from nodes, or null
+  producesFood?: boolean;     // a food producer (farm) — its workforce supplies the staple market (M15)
+}
+
+// The town's staple-goods market (M15): a single price that floats with supply (what the
+// town's farms + foraging produce) and demand (the adult mouths to feed). The daily cost
+// of living IS this price, so a lean year of farming makes provisions dear and a glut makes
+// them cheap. A singleton, updated once a day; pure arithmetic, no RNG.
+export interface Market {
+  price: number;        // current price of a day's provisions, in gold
+  supply: number;       // provisions produced per day (last computed)
+  demand: number;       // provisions demanded per day (last computed)
+  history: number[];    // bounded recent daily prices, for the chart
 }
 
 // A dwelling an agent built and owns (M11). Homes are static (no brain) — they mark
