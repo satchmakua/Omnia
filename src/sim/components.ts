@@ -7,6 +7,7 @@ export const C_MAGIC     = 'Magic';     // present only on the rare agents with 
 export const C_JOB       = 'Job';       // an agent's current occupation
 export const C_BUSINESS  = 'Business';  // an employer / organization entity
 export const C_HOME      = 'Home';      // a dwelling an agent built and owns (M11)
+export const C_CIVIC     = 'Civic';     // a shared civic building — hall / well / shrine (M11 slice 3)
 export const C_FLORA     = 'Flora';     // brain tier: none (rule-driven)
 export const C_FAUNA     = 'Fauna';     // brain tier: instinct-only (no LLM)
 export const C_RESOURCE  = 'Resource';  // brain tier: none (rule-driven)
@@ -61,6 +62,8 @@ export interface Agent {
   mood?: number;        // 0..1 well-being / contentment (M11 slice 2). Drifts toward a target set
                         // by circumstance — a home, family, solvency, health lift it; debt,
                         // homelessness, illness lower it. Warms friendship (D26). See MoodSystem.
+  rentsFrom?: number;   // EntityId of the landlord a homeless adult rents shelter from (M11 s2);
+                        // a rented roof spares the homeless mood penalty. See RentSystem.
 }
 
 // Innate magic aptitude — present on only the rare agents who rolled it at birth
@@ -101,6 +104,14 @@ export interface Business {
 export interface Home {
   owner: number;       // EntityId of the owning agent
   builtTick: number;   // when it was raised
+}
+
+// A shared civic building (M11 slice 3) — a town landmark folk hold in common (a hall,
+// a well, a shrine). Static, no brain; a legible hook for later institutions (M14) and
+// religion (M15). The town's third building kind alongside workplaces and homes.
+export interface Civic {
+  kind: string;   // 'hall' | 'well' | 'shrine'
+  name: string;   // display name
 }
 
 // Resolved, per-agent species facts baked in at spawn so hot systems don't

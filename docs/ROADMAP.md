@@ -214,32 +214,32 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD met (S46):** across 5 seeds a majority of working-age adults stay solvent; debt is bounded (≤40) and meaningful (slows healing); the Economy tab reports the honest adults-only Gini (0.28–0.50) alongside the all-folk one; soak 0 violations, pop stable, determinism holds. Seed-8 soak: Gini 0.87(climbing)→0.51 (adults 0.38), in-debt 47→~10.
 
-## ▶ Milestone 11 — Homes & Property  *(in progress — pulled from old M12; requested)*
+## ✅ Milestone 11 — Homes & Property  *(done — 2026-06-25)*
 
 **Goal:** folk build and own homes that matter — visible town growth, not pre-placed boxes.
 
 - [x] **Slice 1 — Build & own homes (the town visibly grows).** *(S47: new `Home` component + `BuildSystem` (daily, after the economy). A settled adult spends `homeCost` (40g) to **build a home** where they stand — placed by a deterministic outward scan onto a passable, building-free tile — so the town visibly fills in over the generations (soak: 14→35 homes). Gold is the cost (an abstraction of the gathering economy's output) and a **wealth sink** that pulls the Gini down (soak 0.70→0.50). Cost **escalates** per home owned, so most folk own one and the wealthy become **landlords** (own several). A home outliving its owner **falls to ruin** (pruned → bounded; inheritance is slice 2). Legible: homes draw as a warm-coloured house, the legend now splits **Workplace** vs **Home**, the inspector shows an agent's home / "landlord" line and a home's owner. +8 `test/homes.test.ts`; live-verified.)*
-- [~] **Slice 2 — Homes that matter (in progress).**
+- [x] **Slice 2 — Homes that matter.**
   - [x] **Home inheritance.** *(S48: a home outliving its owner passes to a **living, home-less child** — the family seat kept down the line — and falls to ruin only when there's no such heir. Homes thus run in families/dynasties AND stay bounded (each agent's total is capped by the escalating build cost). Soak: 39 homes for pop 60, bounded.)*
   - [x] **Homes are click-inspectable.** *(S48: `consumeClick` was missing `C_HOME`, so the home inspector (added S47) never fired on click — now folk > fauna > business > **home** > resource > flora. Click a house → owner (living or "(late)") + build year.)*
   - [x] **Sleep at home + a mood/comfort stat (the first mood system).** *(S49: new `Agent.mood` (0..1) + `MoodSystem` (daily) — a home (+), living family (+), debt (−), homelessness (−, adults only), illness (−) set a target mood drifts toward. Mood **warms friendship** (D26: `SocialSystem` scales sentiment by `moodWarmth`), so content towns grow more connected — and debt now has a **comfort consequence** (deferred from D39). Folk **head home to sleep**, and one's own bed rests faster (`HOME_REST_BONUS`). Inspector shows a Mood bar; soak prints mean mood; `townMood` added to `measureWorld`. +9 `test/mood.test.ts`; live-verified homeowners 0.90 vs homeless 0.60 mood.)*
-  - [ ] **Landlords collect rent** from the homeless who shelter with them (a real income → "landlord" becomes mechanical, not just a label). *(Eviction — losing a home on ruinous debt — would complete debt's consequence here too.)*
-  - [ ] Optional: build literally from **gathered timber** once agents have an inventory (M13).
-- [ ] **Slice 3 — Buildings fully generalised.** A building is a home / workplace / **civic** place; a shared building model + inspector; civic buildings (a hall, a shrine — hooks for M11+ institutions / M15 religion).
+  - [x] **Landlords collect rent.** *(S50: new `RentSystem` (daily) + `Agent.rentsFrom` + `rentPerDay` (1g). A homeless adult shelters in a landlord's spare home (homes owned beyond the one they live in) for a daily rent → "landlord" is now a real income, and a rented roof spares the tenant the homeless mood penalty. Deterministic matching, bounded by spare capacity. Inspector shows "renting from X" / "owns N — a landlord (T tenants)". +5 `test/rent.test.ts`. Soak: Gini 0.59 (adults 0.55) — rent adds realistic, bounded inequality.)*
+  - [ ] Deferred: build literally from **gathered timber** once agents have an inventory (M13).
+- [x] **Slice 3 — Buildings generalised + civic.** *(S50: new `Civic` component + civic landmarks (Town Hall / Town Well / Old Shrine) placed at world-gen deterministically (after RNG gen → trajectory unchanged); rendered as a bannered hall in a distinct colour, click-inspectable, and in the legend. The map now reads three building kinds — Workplace / Home / Civic. Civic buildings are legible hooks for institutions (M14) and religion (M15); no mechanical role yet. +1 `world.test.ts`.)*
 
-**DoD:** folk build and own homes (✓ S47), sleep in them and gain a mood bonus (slice 2), some own several (✓ S47); the town visibly grows (✓ S47); legible (✓ S47); soak-stable (✓ S47).
+**DoD met (S47–S50):** folk build and own homes, sleep in them and gain a mood bonus, some own several (+ rent income); the town visibly grows; legible (homes/civic clickable, mood bar); determinism + soak hold.
 
-## Milestone 12 — Robust Save/Load & World Management  *(requested; storage robustness)*
+## ✅ Milestone 12 — Robust Save/Load & World Management  *(done — 2026-06-25)*
 
-**Goal:** many worlds, saved safely, loaded instantly.
+**Goal:** many worlds, saved safely, loaded instantly. *(D42.)*
 
-- [ ] **Snapshot loads:** serialise the World + RNG state so load is **instant** (fixes the replay-load freeze on big/long runs — replay stays the correctness baseline / cross-check).
-- [ ] **Multiple named worlds** with a save-manager UI (list / load / **delete**); storage in **IndexedDB** (room for big snapshots, beyond localStorage's ~5 MB).
-- [ ] **Disk export/import:** download a save as a `.omnia` JSON file and re-import via a file picker — portable and shareable.
+- [x] **Snapshot loads.** *(S50: a save now carries a full **world snapshot** (all ECS components + RNG state) so `loadSave` rebuilds state directly — **instant**, no replay (snapshot-load 397ms vs ~2700ms replay in tests). `World.snapshot()/fromSnapshot()`, RNG `getState/setState` (Mulberry32 state), and a Uint16Array-safe JSON (de)serializer for the TileMap. **Replay stays the correctness baseline** — used as a fallback when a save has no snapshot, and cross-checked in tests. +2 `saveload.test.ts`.)*
+- [x] **Multiple named worlds (IndexedDB) + save-manager UI.** *(S50: new `src/sim/saveStore.ts` — an IndexedDB-backed store (room for big snapshots; a world is ~0.6 MB, beyond localStorage's ~5 MB). Pause menu → **Saved worlds**: name + Save current, a list of saved worlds (Year/pop/seed) each with **Load** (instant) and **Delete**. Live-verified the full save→list→load→delete round-trip.)*
+- [x] **Disk export/import.** *(S50: Export current → a portable `.omnia` JSON file (Blob download); Import → a file picker that parses + loads it. Same serialize/load path as the named-world flow.)*
 
-**DoD:** several named worlds save / load (snapshot-fast) and delete; a save round-trips to disk and back; loaded state is byte-identical and continuable; legible.
+**DoD met (S50):** several named worlds save / load (snapshot-instant) and delete; a save round-trips to disk and back; loaded state is byte-identical and continuable (RNG restored); legible. Old single-slot localStorage save retired.
 
-## Milestone 13 — Agent Depth: Stats, Alignment, Personality & Body  *(the old M10 — D&D depth)*
+## ▶ Milestone 13 — Agent Depth: Stats, Alignment, Personality & Body  *(next — the old M10 — D&D depth)*
 
 **Goal:** agents become mechanically deep — inherited and legible (the D&D layer combat/crime build on).
 

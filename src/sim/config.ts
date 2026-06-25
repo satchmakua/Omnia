@@ -29,6 +29,7 @@ export interface SimConfig {
   businessStartBalance: number;        // employer starting funds
   businessRevenueMargin: number;       // revenue per worker = wage × (1 + margin)
   homeCost: number;                    // gold a settled adult spends to build & own a home (M11)
+  rentPerDay: number;                  // a tenant pays this to their landlord each day (M11 slice 2)
   // Capabilities / magic (M3 part 2):
   magicManaMax: number;                // mana pool size for aptitude-gifted agents
   manaRegenPerDay: number;             // mana regenerated per in-sim day
@@ -184,6 +185,7 @@ export const defaultConfig: SimConfig = {
   businessStartBalance: 300,
   businessRevenueMargin: 0.25,
   homeCost: 40,             // affordable to most adults over time (a wealth sink that grows the town)
+  rentPerDay: 1,            // modest: a landlord's spare home earns a little; a roof spares the mood penalty
   magicManaMax: 100,
   manaRegenPerDay: 10,
   daysPerYear: 4,

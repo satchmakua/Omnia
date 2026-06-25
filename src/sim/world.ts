@@ -2,9 +2,9 @@ import { World } from './ecs.ts';
 import { createRNG, rngInt, rngFloat } from './rng.ts';
 import {
   C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_WORLDSTATS, C_CULTURESTORE, C_LANGUAGESTORE,
-  C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS,
+  C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_CIVIC,
 } from './components.ts';
-import type { Clock, Agent, Lineage, Relationships, AIRecord } from './components.ts';
+import type { Clock, Agent, Lineage, Relationships, AIRecord, Position, Civic } from './components.ts';
 import type { SimConfig } from './config.ts';
 import { ticksPerYear, ageInYears, scaledBiomeSeeds, scaledBusinessCount } from './config.ts';
 import type { EntityId } from './ecs.ts';
@@ -13,7 +13,7 @@ import type { Content } from '../content/loader.ts';
 import type { Species } from '../content/schema.ts';
 import { spawnAgent } from './spawnAgent.ts';
 import { generateTileMap } from '../world/worldgen.ts';
-import { isPassable } from '../world/tilemap.ts';
+import { isPassable, inBounds } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { populateWorld } from '../world/populate.ts';
 import { spawnBusiness } from '../world/spawn.ts';
@@ -79,6 +79,42 @@ function findPassableTile(rng: RNG, map: TileMapData): { x: number; y: number } 
     }
   }
   throw new Error('World generation produced no passable tiles');
+}
+
+// The town's shared civic landmarks (M11 slice 3). Placed deterministically AFTER all
+// RNG-consuming generation, so they're purely additive — the trajectory is unchanged. They
+// have no mechanical role yet: legible hooks for institutions (M14) and religion (M15).
+const CIVIC_BUILDINGS: { kind: string; name: string }[] = [
+  { kind: 'hall', name: 'Town Hall' },
+  { kind: 'well', name: 'Town Well' },
+  { kind: 'shrine', name: 'Old Shrine' },
+];
+function placeCivic(world: World, cfg: SimConfig, map: TileMapData): void {
+  const W = cfg.gridWidth;
+  const occupied = new Set<number>();
+  for (const e of world.query(C_BUSINESS, C_POSITION)) {
+    const p = world.getComponent<Position>(e, C_POSITION)!;
+    occupied.add(p.y * W + p.x);
+  }
+  const cx = Math.floor(map.width / 2), cy = Math.floor(map.height / 2);
+  const limit = Math.max(map.width, map.height);
+  for (const c of CIVIC_BUILDINGS) {
+    let placed = false;
+    for (let r = 0; r <= limit && !placed; r++) {
+      for (let dy = -r; dy <= r && !placed; dy++) {
+        for (let dx = -r; dx <= r && !placed; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const x = cx + dx, y = cy + dy;
+          if (!inBounds(map, x, y) || !isPassable(map, x, y) || occupied.has(y * W + x)) continue;
+          const e = world.createEntity();
+          world.addComponent<Position>(e, C_POSITION, { x, y });
+          world.addComponent<Civic>(e, C_CIVIC, { ...c });
+          occupied.add(y * W + x);
+          placed = true;
+        }
+      }
+    }
+  }
 }
 
 export function createSimulation(cfg: SimConfig, content: Content): Simulation {
@@ -149,6 +185,9 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // families immediately (a founding town arrives with households), rather than
   // spending years courting while the elders die off.
   pairFounders(world, cfg);
+
+  // Civic landmarks (deterministic, additive — no RNG, trajectory unchanged).
+  placeCivic(world, cfg, tileMap);
 
   return { world, rng, clockEntity, content };
 }

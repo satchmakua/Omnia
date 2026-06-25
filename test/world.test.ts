@@ -13,7 +13,7 @@ import { runTicks } from '../src/sim/loop.ts';
 import { runMovementSystem } from '../src/sim/systems/MovementSystem.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_POSITION, C_NEEDS, C_FLORA, C_FAUNA, C_BUSINESS, C_JOB, C_TILEMAP,
+  C_AGENT, C_POSITION, C_NEEDS, C_FLORA, C_FAUNA, C_BUSINESS, C_JOB, C_TILEMAP, C_CIVIC,
 } from '../src/sim/components.ts';
 import type { Position, Needs, Agent, Flora } from '../src/sim/components.ts';
 import { testContent } from './helpers.ts';
@@ -206,6 +206,17 @@ describe('createSimulation with terrain', () => {
     const { world } = createSimulation({ ...defaultConfig, seed: 11 }, content);
     expect(world.query(C_FLORA).length).toBeGreaterThan(0);
     expect(world.query(C_FAUNA).length).toBeGreaterThan(0);
+  });
+
+  it('places shared civic landmarks on passable tiles (M11 s3)', () => {
+    const { world } = createSimulation({ ...defaultConfig, seed: 11 }, content);
+    const map = world.getComponent<TileMapData>(world.query(C_TILEMAP)[0], C_TILEMAP)!;
+    const civic = world.query(C_CIVIC, C_POSITION);
+    expect(civic.length).toBeGreaterThanOrEqual(3);
+    for (const e of civic) {
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      expect(isPassable(map, p.x, p.y), 'civic on impassable tile').toBe(true);
+    }
   });
 
   it('places businesses and employs agents within a few ticks', () => {

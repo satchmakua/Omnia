@@ -30,6 +30,7 @@ wealthGoalMax: 110
 businessStartBalance: 300
 businessRevenueMargin: 0.25
 homeCost: 40
+rentPerDay: 1
 magicManaMax: 100
 manaRegenPerDay: 10
 daysPerYear: 4

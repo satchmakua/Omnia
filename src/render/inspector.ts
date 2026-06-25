@@ -1,11 +1,11 @@
 import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME,
+  C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC,
   C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE,
 } from '../sim/components.ts';
 import type {
-  Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home,
+  Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
   Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone,
 } from '../sim/components.ts';
 import { biomeNameAt, inBounds } from '../world/tilemap.ts';
@@ -108,6 +108,8 @@ export class Inspector {
       body = this._business(world, entity, pos);
     } else if (world.hasComponent(entity, C_HOME)) {
       body = this._home(world, entity, pos);
+    } else if (world.hasComponent(entity, C_CIVIC)) {
+      body = this._civic(world, entity, pos);
     } else if (world.hasComponent(entity, C_FAUNA)) {
       body = this._fauna(world, entity, pos);
     } else if (world.hasComponent(entity, C_RESOURCE)) {
@@ -180,11 +182,17 @@ export class Inspector {
     const moodVal = agent.mood ?? 0.6;
     const moodWord = moodVal >= 0.66 ? 'content' : moodVal >= 0.4 ? 'unsettled' : 'low';
     const moodLine = `<div>Mood ${bar(moodVal)} <span style="color:#889">${moodWord}</span></div>`;
+    const renting = agent.rentsFrom !== undefined && world.hasComponent(agent.rentsFrom, C_AGENT)
+      ? world.getComponent<Agent>(agent.rentsFrom, C_AGENT)!.name : null;
+    let tenants = 0;
+    if (homeCount >= 2) for (const oe of world.query(C_AGENT)) if (world.getComponent<Agent>(oe, C_AGENT)!.rentsFrom === e) tenants++;
     const homeLine = homeCount === 0
-      ? `<div><b>Home</b> <span style="color:#a99">none yet</span></div>`
+      ? (renting
+          ? `<div><b>Home</b> <span style="color:#9bc">renting from ${renting}</span></div>`
+          : `<div><b>Home</b> <span style="color:#a99">none yet</span></div>`)
       : homeCount === 1
         ? `<div><b>Home</b> at (${firstHome!.x}, ${firstHome!.y})</div>`
-        : `<div><b>Home</b> owns ${homeCount} <span style="color:#caa46a">— a landlord</span></div>`;
+        : `<div><b>Home</b> owns ${homeCount} <span style="color:#caa46a">— a landlord${tenants ? ` (${tenants} tenant${tenants > 1 ? 's' : ''})` : ''}</span></div>`;
     // Livelihood reads differently for a child: a dependent — no job, no cost of living,
     // no wealth goal yet (the Kids Pass). Adults keep the full job / gold / debt / goal block.
     const livelihoodBlock = child
@@ -317,6 +325,17 @@ export class Inspector {
       <div style="${SECTION}">Home</div>
       <div><b>Owner</b> ${ownerName}</div>
       <div style="color:#889">Built in year ${builtYear}</div>`;
+  }
+
+  private _civic(world: World, e: EntityId, pos: Position): string {
+    const c = world.getComponent<Civic>(e, C_CIVIC)!;
+    return `
+      ${this.title(c.name, 'a civic place · shared by all')}
+      ${this.terrainLine(world, pos)}
+      <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
+      <hr style="${RULE}">
+      <div style="${SECTION}">Civic</div>
+      <div style="color:#9ab">A place the town holds in common.</div>`;
   }
 
   private _fauna(world: World, e: EntityId, pos: Position): string {
