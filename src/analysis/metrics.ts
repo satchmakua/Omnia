@@ -472,10 +472,26 @@ export function linguisticDiversity(world: World): LinguisticDiversity {
   };
 }
 
+// ── 11. Honest wealth inequality: among working-age adults ────────────────────────
+
+// Gini over WORKING-AGE ADULTS' gold (the real economy). Children are exempt from the
+// cost of living (D38) and so sit at 0 gold; counting them inflates the all-folk Gini and
+// makes the town look more unequal than it is. A pure read; gini() handles non-negatives.
+export function adultWealthGini(world: World, cfg: SimConfig): number {
+  const gold: number[] = [];
+  for (const e of world.query(C_AGENT, C_WALLET)) {
+    if (ageInYears(world.getComponent<Agent>(e, C_AGENT)!.ticksAlive, cfg) >= cfg.adultAgeYears) {
+      gold.push(world.getComponent<Wallet>(e, C_WALLET)!.gold);
+    }
+  }
+  return gini(gold);
+}
+
 // ── The bundle ───────────────────────────────────────────────────────────────────
 
 export interface WorldMetrics {
   wealthGini: number;
+  wealthGiniAdults: number;
   wealthTail: TailFit;
   social: SocialMetrics;
   ages: AgeDistribution;
@@ -501,6 +517,7 @@ export function measureWorld(world: World, cfg: SimConfig): WorldMetrics {
   const lstore = getLanguageStore(world);
   return {
     wealthGini: gini(gold),
+    wealthGiniAdults: adultWealthGini(world, cfg),
     wealthTail: powerLawTail(gold),
     social: socialMetrics(world),
     ages: ageDistribution(world, cfg),

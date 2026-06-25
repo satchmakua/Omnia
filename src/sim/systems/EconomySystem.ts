@@ -94,7 +94,18 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
     const clock = world.getComponent<Clock>(clockEnts[0], C_CLOCK)!;
     if (clock.tick > 0 && clock.tick % cfg.ticksPerDay === 0) {
       for (const e of world.query(C_AGENT, C_WALLET)) {
-        spend(world.getComponent<Wallet>(e, C_WALLET)!, cfg.dailyUpkeep);
+        // Children are dependents (the Kids Pass): they neither work nor pay a cost of
+        // living, so they no longer march into debt from birth — and adults enter
+        // adulthood solvent instead of saddled with years of childhood upkeep.
+        const agent = world.getComponent<Agent>(e, C_AGENT)!;
+        if (ageInYears(agent.ticksAlive, cfg) < cfg.adultAgeYears) continue;
+        const wallet = world.getComponent<Wallet>(e, C_WALLET)!;
+        // A jobless adult scrapes by on foraging / odd jobs — a survival floor (just under
+        // the cost of living) so unemployment is *poverty*, not a bottomless debt spiral
+        // (Economy Rebalance). The employed live off their wage/savings, so no handout.
+        if (!world.hasComponent(e, C_JOB)) earn(wallet, cfg.subsistencePerDay);
+        spend(wallet, cfg.dailyUpkeep);
+        if (wallet.debt > cfg.maxDebt) wallet.debt = cfg.maxDebt;   // debt is bounded — poverty, not a hole
       }
     }
   }

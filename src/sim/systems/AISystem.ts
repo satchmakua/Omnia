@@ -11,12 +11,14 @@ import type { World, EntityId } from '../ecs.ts';
 import { C_AGENT, C_MEMORY, C_POSITION, C_RELATIONSHIPS, C_CLOCK, C_AIRUNNER } from '../components.ts';
 import type { Agent, Memory, Position, Relationships, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
+import { ageInYears } from '../config.ts';
 import type { AIProvider } from '../../ai/provider.ts';
 import { hashString } from '../../ai/provider.ts';
 import { stubProvider } from '../../ai/stubProvider.ts';
 import { AIRunner } from '../../ai/aiRunner.ts';
 import {
-  retrieve, distill, buildReflectionPrompt, buildDreamPrompt, buildDialoguePrompt, buildDecisionPrompt,
+  retrieve, distill, remember, CHILD_VOW_SET,
+  buildReflectionPrompt, buildDreamPrompt, buildDialoguePrompt, buildDecisionPrompt,
 } from '../../ai/memory.ts';
 import { recordResponse } from '../../ai/recording.ts';
 import { emitEvent } from '../../history/eventlog.ts';
@@ -96,15 +98,26 @@ function reflectPass(env: Env): void {
     if (mem.events.length < cfg.minMemoriesToReflect) continue;
     if (tick - mem.lastReflectTick < interval) continue;
 
-    const name = world.getComponent<Agent>(e, C_AGENT)!.name;
+    const agent = world.getComponent<Agent>(e, C_AGENT)!;
+    const name = agent.name;
 
     // CAUSAL distillate (D26), deterministic: a drive + vow that steers behaviour
-    // (ActionSystem reads `purpose`). A changed vow is a turning point worth a feed line.
+    // (ActionSystem reads `purpose`). Children distil an age-appropriate vow (the Kids
+    // Pass); a changed vow is a turning point worth a feed line — and a child vow giving
+    // way to an adult one is a coming-of-age, a remembered milestone of growing up.
+    const isChild = ageInYears(agent.ticksAlive, cfg) < cfg.adultAgeYears;
     const prevVow = mem.vow;
-    const d = distill(mem.events);
+    const d = distill(mem.events, isChild);
     mem.purpose = d.purpose;
     mem.vow = d.vow;
-    if (mem.vow !== prevVow) emitEvent(world, 'decide', `${name} resolves ${d.vow}.`);
+    if (mem.vow !== prevVow) {
+      if (!isChild && prevVow != null && CHILD_VOW_SET.has(prevVow)) {
+        emitEvent(world, 'decide', `${name} comes of age, resolving ${d.vow}.`);
+        remember(world, e, tick, 'came of age', 0.6);
+      } else {
+        emitEvent(world, 'decide', `${name} resolves ${d.vow}.`);
+      }
+    }
 
     const top = retrieve(mem, `${name}'s life`, env.provider, cfg.reflectMemories);
     const prompt = buildReflectionPrompt(name, tick, top);

@@ -166,6 +166,20 @@ export class Inspector {
     const lin = world.getComponent<Lineage>(e, C_LINEAGE);
     const ageYears = Math.floor(ageInYears(agent.ticksAlive, defaultConfig));
     const sexGlyph = agent.sex === 'female' ? '♀' : '♂';
+    const child = ageYears < defaultConfig.adultAgeYears;
+    // Livelihood reads differently for a child: a dependent — no job, no cost of living,
+    // no wealth goal yet (the Kids Pass). Adults keep the full job / gold / debt / goal block.
+    const livelihoodBlock = child
+      ? `<hr style="${RULE}">
+         <div style="${SECTION}">Livelihood</div>
+         <div style="color:#9bc">A child — a dependent (no work or upkeep yet)</div>
+         <div>Gold ${wallet.gold.toFixed(1)}</div>`
+      : `<hr style="${RULE}">
+         <div style="${SECTION}">Livelihood</div>
+         ${jobLine}
+         <div>Gold ${wallet.gold.toFixed(1)}</div>
+         ${debtLine}
+         <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>`;
 
     // Family: name the partner if alive; count living children & friends.
     let family = '';
@@ -223,12 +237,7 @@ export class Inspector {
       <div>Energy ${bar(needs.energy)}</div>
       <div>Social ${bar(needs.social)}</div>
       ${healthBlock}
-      <hr style="${RULE}">
-      <div style="${SECTION}">Livelihood</div>
-      ${jobLine}
-      <div>Gold ${wallet.gold.toFixed(1)}</div>
-      ${debtLine}
-      <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>
+      ${livelihoodBlock}
       ${family}
       ${this._cultureBlock(world, agent)}
       ${magicBlock}

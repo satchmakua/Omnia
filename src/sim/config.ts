@@ -19,7 +19,11 @@ export interface SimConfig {
   faunaBreedChancePerDay: number;  // per-day chance a fed, off-cooldown fauna breeds
   // Economy (M3):
   businessCount: number;     // number of employer entities placed at world-gen
-  dailyUpkeep: number;       // cost of living deducted from each agent per day
+  dailyUpkeep: number;       // cost of living deducted from each adult per day (children are exempt — D38)
+  subsistencePerDay: number; // odd-jobs/foraging income for JOBLESS adults — a survival floor so the
+                             //   unemployed aren't doomed to a bottomless debt spiral (Economy Rebalance)
+  maxDebt: number;           // debt is bounded here — poverty, not an ever-growing hole
+  debtRecoveryPenalty: number; // the indebted recover from illness this fraction slower (0..1) — poverty bites
   wealthGoalMin: number;     // agents roll a personal gold target in [min, max];
   wealthGoalMax: number;     //   they work while below it, so wealth stays bounded
   businessStartBalance: number;        // employer starting funds
@@ -169,8 +173,11 @@ export const defaultConfig: SimConfig = {
   maxFlora: 500,
   maxFauna: 120,            // area-scaled fauna carrying capacity (M8); predators thin + chase the herds
   faunaBreedChancePerDay: 0.6,  // grazers breed back fast, so bounded predation thins but never wipes them
-  businessCount: 8,
+  businessCount: 12,        // more employers so most working-age adults can find work (Economy Rebalance)
   dailyUpkeep: 3,
+  subsistencePerDay: 2.5,   // just under upkeep: the jobless scrape by but stay poor (a real underclass)
+  maxDebt: 40,              // bounded hardship, not a runaway spiral
+  debtRecoveryPenalty: 0.4, // the indebted heal ~40% slower — debt finally has teeth
   wealthGoalMin: 30,
   wealthGoalMax: 110,
   businessStartBalance: 300,

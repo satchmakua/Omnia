@@ -2,13 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_JOB, C_BUSINESS, C_POSITION,
+  C_AGENT, C_NEEDS, C_WALLET, C_JOB, C_BUSINESS, C_POSITION, C_HEALTH,
 } from '../src/sim/components.ts';
-import type { Agent, Needs, Wallet, Job, Business } from '../src/sim/components.ts';
+import type { Agent, Needs, Wallet, Job, Business, Health } from '../src/sim/components.ts';
 import { earn, spend, netWorth } from '../src/sim/economy.ts';
 import { gini, wealthStats } from '../src/sim/wealth.ts';
 import { runEconomySystem } from '../src/sim/systems/EconomySystem.ts';
 import { runActionSystem } from '../src/sim/systems/ActionSystem.ts';
+import { runHealthSystem } from '../src/sim/systems/HealthSystem.ts';
+import { createRNG } from '../src/sim/rng.ts';
 
 const cfg = defaultConfig;
 
@@ -128,10 +130,72 @@ describe('EconomySystem', () => {
     // Put a clock entity at a day boundary.
     const c = w.createEntity();
     w.addComponent(c, 'Clock', { tick: cfg.ticksPerDay, day: 1, hour: 0, isDay: true });
-    runEconomySystem(w, { ...cfg, dailyUpkeep: 4 });
+    // subsistence off here to test the upkeep mechanic in isolation (it's covered below).
+    runEconomySystem(w, { ...cfg, dailyUpkeep: 4, subsistencePerDay: 0 });
     const wallet = w.getComponent<Wallet>(a, C_WALLET)!;
     expect(wallet.gold).toBe(0);
     expect(wallet.debt).toBe(3); // owed 4, had 1
+  });
+
+  // ── Economy Rebalance: subsistence floor + bounded debt ─────────────────────────
+  function atDayBoundary(w: World): void {
+    w.addComponent(w.createEntity(), 'Clock', { tick: cfg.ticksPerDay, day: 1, hour: 0, isDay: true });
+  }
+
+  it('a jobless adult scrapes by on subsistence, so a day costs only upkeep − subsistence', () => {
+    const w = new World();                              // no business → stays jobless
+    const a = makeAgent(w, { action: 'wander' }, { gold: 0, debt: 0 });
+    atDayBoundary(w);
+    runEconomySystem(w, cfg);                           // earn 2.5, spend 3
+    const wallet = w.getComponent<Wallet>(a, C_WALLET)!;
+    expect(wallet.gold).toBe(0);
+    expect(wallet.debt).toBeCloseTo(cfg.dailyUpkeep - cfg.subsistencePerDay, 6);  // 0.5, not 3
+  });
+
+  it('debt is bounded by maxDebt — poverty, not a bottomless spiral', () => {
+    const w = new World();
+    const a = makeAgent(w, { action: 'wander' }, { gold: 0, debt: 0 });
+    const c = w.createEntity();
+    w.addComponent(c, 'Clock', { tick: 0, day: 0, hour: 0, isDay: true });
+    const clock = w.getComponent<{ tick: number }>(c, 'Clock')!;
+    for (let d = 1; d <= 300; d++) { clock.tick = d * cfg.ticksPerDay; runEconomySystem(w, cfg); }
+    const wallet = w.getComponent<Wallet>(a, C_WALLET)!;
+    expect(wallet.debt).toBe(cfg.maxDebt);             // capped, not 300 × (upkeep − subsistence)
+  });
+
+  it('children are exempt from both upkeep and subsistence (Kids Pass holds)', () => {
+    const w = new World();
+    const kid = makeAgent(w, { action: 'wander', ticksAlive: 5 * cfg.ticksPerDay * cfg.daysPerYear }, { gold: 0, debt: 0 });
+    atDayBoundary(w);
+    runEconomySystem(w, cfg);
+    const wallet = w.getComponent<Wallet>(kid, C_WALLET)!;
+    expect(wallet.gold).toBe(0);
+    expect(wallet.debt).toBe(0);
+  });
+});
+
+// ── HealthSystem: debt has teeth (slower recovery) ──────────────────────────────
+
+describe('debt slows healing (Economy Rebalance)', () => {
+  function ill(w: World, debt: number) {
+    const e = w.createEntity();
+    w.addComponent<Agent>(e, C_AGENT, { name: 'A', action: 'wander', ticksAlive: 20000, wealthGoal: 50, sex: 'female', lifespanTicks: 1e9 });
+    w.addComponent<Health>(e, C_HEALTH, { value: 0.5, ill: false });
+    w.addComponent<Wallet>(e, C_WALLET, { gold: 0, debt });
+    return e;
+  }
+
+  it('an indebted agent recovers more slowly than a solvent one', () => {
+    const w = new World();
+    w.addComponent(w.createEntity(), 'Clock', { tick: 100, day: 0, hour: 0, isDay: true });
+    const solvent = ill(w, 0), poor = ill(w, 10);
+    // No illness or death this tick — isolate the recovery branch.
+    const calm = { ...cfg, illnessChancePerDay: 0, baseMortalityPerDay: 0, ageMortalityScale: 0, sickMortalityPerDay: 0 };
+    runHealthSystem(w, calm, createRNG(1));
+    const hs = w.getComponent<Health>(solvent, C_HEALTH)!.value;
+    const hp = w.getComponent<Health>(poor, C_HEALTH)!.value;
+    expect(hp).toBeLessThan(hs);     // poverty heals slower
+    expect(hp).toBeGreaterThan(0.5); // but still recovers
   });
 });
 
