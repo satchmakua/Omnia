@@ -420,6 +420,58 @@ export function occupationDiversity(world: World): OccupationDiversity {
   return { workers, professions, shannon, evenness, topShare: top / workers };
 }
 
+// ── 10. Language: bilingualism & the lingua franca ───────────────────────────────
+
+export interface LinguisticDiversity {
+  speakers: number;          // living agents who have a fluency map
+  tongues: number;           // distinct tongues commanded (≥ FLUENT) by at least one of them
+  bilingualFraction: number; // share who command ≥ 2 tongues at conversational fluency
+  meanTongues: number;       // mean tongues known (≥ FLUENT) per speaker
+  linguaFranca: string | null; // the tongue understood most widely (highest total command)
+  francaShare: number;       // that tongue's mean fluency across all speakers (1 = everyone fluent)
+}
+
+// Conversational fluency: the bar at which someone is counted a speaker of a tongue.
+const FLUENT = 0.5;
+
+// How polyglot is the town, and is a common tongue emerging? Measures the slice-4
+// fluency mechanic at the population level: bilingualism rises and a "lingua franca"
+// surfaces as minority-tongue speakers assimilate to the majority through contact.
+// A pure read of `Agent.fluency` (no RNG, no mutation).
+export function linguisticDiversity(world: World): LinguisticDiversity {
+  const maps: Record<string, number>[] = [];
+  for (const e of world.query(C_AGENT)) {
+    const f = world.getComponent<Agent>(e, C_AGENT)!.fluency;
+    if (f) maps.push(f);
+  }
+  const speakers = maps.length;
+  if (speakers === 0) {
+    return { speakers: 0, tongues: 0, bilingualFraction: 0, meanTongues: 0, linguaFranca: null, francaShare: 0 };
+  }
+  const commanded = new Set<string>();
+  const totalCommand = new Map<string, number>();   // Σ fluency per tongue → the widest-understood
+  let bilingual = 0, tonguesKnownSum = 0;
+  for (const f of maps) {
+    let known = 0;
+    for (const [lang, v] of Object.entries(f)) {
+      totalCommand.set(lang, (totalCommand.get(lang) ?? 0) + v);
+      if (v >= FLUENT) { commanded.add(lang); known++; }
+    }
+    if (known >= 2) bilingual++;
+    tonguesKnownSum += known;
+  }
+  let franca: string | null = null, best = 0;
+  for (const [lang, sum] of totalCommand) if (sum > best) { best = sum; franca = lang; }
+  return {
+    speakers,
+    tongues: commanded.size,
+    bilingualFraction: bilingual / speakers,
+    meanTongues: tonguesKnownSum / speakers,
+    linguaFranca: franca,
+    francaShare: best / speakers,
+  };
+}
+
 // ── The bundle ───────────────────────────────────────────────────────────────────
 
 export interface WorldMetrics {
@@ -434,6 +486,7 @@ export interface WorldMetrics {
   dynasty: DynastyConcentration;
   mating: MatingAssortativity;
   occupation: OccupationDiversity;
+  language: LinguisticDiversity;
 }
 
 // One pass measuring every emergent structure from the current world state.
@@ -458,5 +511,6 @@ export function measureWorld(world: World, cfg: SimConfig): WorldMetrics {
     dynasty: dynastyConcentration(world),
     mating: matingAssortativity(world),
     occupation: occupationDiversity(world),
+    language: linguisticDiversity(world),
   };
 }

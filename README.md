@@ -98,6 +98,9 @@ When the page loads you're looking at a small living world ticking in real time.
 | **F** | **Find** — searchable directory of every soul; click a row to inspect them and jump the camera there |
 | **T** | **Family** tree of the inspected person (click anyone first); click relatives to browse the line |
 | **G** | **Lineages** of tongues & cultures — the language/culture family trees (living vs lost), with a sample name in each tongue so you can hear the drift |
+| **Y** | **Ecology** — the wild herds & their hunters (grazers vs predators) and the flora that feeds them |
+| **V** | **Conversation** — what the town is saying: dialogue spoken aloud, plus dreams, resolutions, and settled beliefs |
+| **N** | **Language** — each living tongue's sounds, structure, and sample names, who speaks it, and how far bilingualism has spread |
 | **L** | Show / hide the **legend key** (what each map symbol means) |
 | **Panel headers** | Click a panel's title bar (legend, Town Happenings) to **minimize** it |
 | **Live feed** (lower-left) | The **Town Happenings** ticker — births, weddings, deaths, new jobs, spells, spent veins, as they happen |
