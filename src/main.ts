@@ -22,6 +22,7 @@ import { EcologyDashboard } from './render/ecologyDashboard.ts';
 import { ConversationDashboard } from './render/conversationDashboard.ts';
 import { LanguageDashboard } from './render/languageDashboard.ts';
 import { OrgDashboard } from './render/orgDashboard.ts';
+import { ConflictDashboard } from './render/conflictDashboard.ts';
 import { SpeedControl } from './render/controls.ts';
 import { EventFeed } from './render/eventFeed.ts';
 import { C_AGENT, C_POSITION } from './sim/components.ts';
@@ -68,6 +69,7 @@ const ecology   = new EcologyDashboard();
 const conversation = new ConversationDashboard();
 const language     = new LanguageDashboard();
 const tribes       = new OrgDashboard();
+const conflict     = new ConflictDashboard();
 
 // One master tabbed view holds every global view (M10 slice 1). Per-view hotkeys jump
 // straight to a tab; Tab opens it on the current one. The inspector stays the entity
@@ -82,6 +84,7 @@ master.register({ id: 'ecology',   label: 'Ecology',   hotkey: 'y', el: ecology.
 master.register({ id: 'conversation', label: 'Conversation', hotkey: 'v', el: conversation.content, update: (w) => conversation.update(w) });
 master.register({ id: 'language',  label: 'Language',  hotkey: 'n', el: language.content,  update: (w) => language.update(w) });
 master.register({ id: 'tribes',    label: 'Tribes',    hotkey: 'k', el: tribes.content,    update: (w) => tribes.update(w) });
+master.register({ id: 'conflict',  label: 'Conflict',  hotkey: 'x', el: conflict.content,  update: (w) => conflict.update(w) });
 
 // The currently running simulation (null while the start menu is up).
 let active: Simulation | null = null;

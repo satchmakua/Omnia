@@ -14,6 +14,8 @@ export interface EventEntry {
   tick: number;
   kind: EventKind;
   text: string;
+  x?: number;   // optional map location (combat events tag where they happened, for on-map FX)
+  y?: number;
 }
 
 export interface EventLogData {
@@ -36,11 +38,11 @@ export function recentEvents(log: EventLogData, n: number): EventEntry[] {
 }
 
 // Convenience for systems: look up the singleton log + clock and record an event.
-export function emitEvent(world: World, kind: EventKind, text: string): void {
+export function emitEvent(world: World, kind: EventKind, text: string, pos?: { x: number; y: number }): void {
   const logEnts = world.query(C_EVENTLOG);
   if (logEnts.length === 0) return;
   const log = world.getComponent<EventLogData>(logEnts[0], C_EVENTLOG)!;
   const clockEnts = world.query(C_CLOCK);
   const tick = clockEnts.length ? world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick : 0;
-  logEvent(log, { tick, kind, text });
+  logEvent(log, { tick, kind, text, x: pos?.x, y: pos?.y });
 }
