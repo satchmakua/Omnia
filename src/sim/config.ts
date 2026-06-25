@@ -28,6 +28,7 @@ export interface SimConfig {
   wealthGoalMax: number;     //   they work while below it, so wealth stays bounded
   businessStartBalance: number;        // employer starting funds
   businessRevenueMargin: number;       // revenue per worker = wage × (1 + margin)
+  homeCost: number;                    // gold a settled adult spends to build & own a home (M11)
   // Capabilities / magic (M3 part 2):
   magicManaMax: number;                // mana pool size for aptitude-gifted agents
   manaRegenPerDay: number;             // mana regenerated per in-sim day
@@ -182,6 +183,7 @@ export const defaultConfig: SimConfig = {
   wealthGoalMax: 110,
   businessStartBalance: 300,
   businessRevenueMargin: 0.25,
+  homeCost: 40,             // affordable to most adults over time (a wealth sink that grows the town)
   magicManaMax: 100,
   manaRegenPerDay: 10,
   daysPerYear: 4,

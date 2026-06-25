@@ -2,7 +2,7 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
-  C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS,
+  C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME,
   C_CLOCK, C_TILEMAP,
 } from '../sim/components.ts';
 import type {
@@ -196,6 +196,10 @@ export class Renderer {
       const biz = world.getComponent<Business>(e, C_BUSINESS)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
       this.iconBuilding(p.x, p.y, biz.color);
+    }
+    for (const e of world.query(C_HOME, C_POSITION)) {     // owned homes — the town's growth (M11)
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      this.iconBuilding(p.x, p.y, CATEGORY_COLOR.home);
     }
     for (const e of world.query(C_FAUNA, C_POSITION)) {
       const fa = world.getComponent<Fauna>(e, C_FAUNA)!;

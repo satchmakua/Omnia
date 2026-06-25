@@ -1,12 +1,12 @@
 import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP,
+  C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE,
 } from '../sim/components.ts';
 import type {
-  Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business,
-  Health, Lineage, Memory, Fauna, Flora, Resource,
+  Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone,
 } from '../sim/components.ts';
 import { biomeNameAt, inBounds } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -106,6 +106,8 @@ export class Inspector {
       body = this._agent(world, entity, pos);
     } else if (world.hasComponent(entity, C_BUSINESS)) {
       body = this._business(world, entity, pos);
+    } else if (world.hasComponent(entity, C_HOME)) {
+      body = this._home(world, entity, pos);
     } else if (world.hasComponent(entity, C_FAUNA)) {
       body = this._fauna(world, entity, pos);
     } else if (world.hasComponent(entity, C_RESOURCE)) {
@@ -167,6 +169,19 @@ export class Inspector {
     const ageYears = Math.floor(ageInYears(agent.ticksAlive, defaultConfig));
     const sexGlyph = agent.sex === 'female' ? '♀' : '♂';
     const child = ageYears < defaultConfig.adultAgeYears;
+    // Home ownership (M11): count the homes this agent owns; ≥2 marks an emergent landlord.
+    let homeCount = 0; let firstHome: Position | undefined;
+    for (const he of world.query(C_HOME)) {
+      if (world.getComponent<Home>(he, C_HOME)!.owner === e) {
+        homeCount++;
+        if (!firstHome) firstHome = world.getComponent<Position>(he, C_POSITION);
+      }
+    }
+    const homeLine = homeCount === 0
+      ? `<div><b>Home</b> <span style="color:#a99">none yet</span></div>`
+      : homeCount === 1
+        ? `<div><b>Home</b> at (${firstHome!.x}, ${firstHome!.y})</div>`
+        : `<div><b>Home</b> owns ${homeCount} <span style="color:#caa46a">— a landlord</span></div>`;
     // Livelihood reads differently for a child: a dependent — no job, no cost of living,
     // no wealth goal yet (the Kids Pass). Adults keep the full job / gold / debt / goal block.
     const livelihoodBlock = child
@@ -179,7 +194,8 @@ export class Inspector {
          ${jobLine}
          <div>Gold ${wallet.gold.toFixed(1)}</div>
          ${debtLine}
-         <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>`;
+         <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>
+         ${homeLine}`;
 
     // Family: name the partner if alive; count living children & friends.
     let family = '';
@@ -278,6 +294,25 @@ export class Inspector {
       <div><b>Trade</b> <span style="color:${biz.color}">${biz.professionName}</span></div>
       <div><b>Staff</b> ${staff} / ${biz.maxEmployees}</div>
       <div><b>Balance</b> ${biz.balance.toFixed(0)}g</div>`;
+  }
+
+  private _home(world: World, e: EntityId, pos: Position): string {
+    const home = world.getComponent<Home>(e, C_HOME)!;
+    // Resolve the owner's name whether they're living (Agent) or remembered (Tombstone).
+    const ownerName = world.hasComponent(home.owner, C_AGENT)
+      ? world.getComponent<Agent>(home.owner, C_AGENT)!.name
+      : world.hasComponent(home.owner, C_TOMBSTONE)
+        ? `${world.getComponent<Tombstone>(home.owner, C_TOMBSTONE)!.name} (late)`
+        : 'unknown';
+    const builtYear = Math.floor(home.builtTick / (defaultConfig.ticksPerDay * defaultConfig.daysPerYear));
+    return `
+      ${this.title('Home', 'a dwelling · owned')}
+      ${this.terrainLine(world, pos)}
+      <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
+      <hr style="${RULE}">
+      <div style="${SECTION}">Home</div>
+      <div><b>Owner</b> ${ownerName}</div>
+      <div style="color:#889">Built in year ${builtYear}</div>`;
   }
 
   private _fauna(world: World, e: EntityId, pos: Position): string {
