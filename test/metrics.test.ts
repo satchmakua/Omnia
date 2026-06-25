@@ -15,7 +15,7 @@ import { testContent } from './helpers.ts';
 import {
   linregress, powerLawTail, socialMetrics, ageDistribution,
   zipfFit, nameFrequencies, languageFamilyShape, measureWorld,
-  vowSpread, dynastyConcentration, matingAssortativity, occupationDiversity,
+  vowSpread, dynastyConcentration, matingAssortativity, occupationDiversity, linguisticDiversity,
 } from '../src/analysis/metrics.ts';
 
 const cfg = defaultConfig;
@@ -280,6 +280,46 @@ describe('occupationDiversity', () => {
   });
 });
 
+describe('linguisticDiversity', () => {
+  // A person carrying a fluency map (the slice-4 mechanic the metric reads).
+  function speaker(w: World, fluency: Record<string, number>): void {
+    const e = w.createEntity();
+    w.addComponent<Agent>(e, C_AGENT, {
+      name: 'A B', action: 'wander', ticksAlive: 30 * ticksPerYear(cfg),
+      wealthGoal: 50, sex: 'female', lifespanTicks: 1e9, fluency,
+    });
+  }
+
+  it('a monolingual town: one tongue, no bilinguals, that tongue is the lingua franca', () => {
+    const w = new World();
+    speaker(w, { vant: 1 }); speaker(w, { vant: 1 }); speaker(w, { vant: 1 });
+    const l = linguisticDiversity(w);
+    expect(l.speakers).toBe(3);
+    expect(l.tongues).toBe(1);
+    expect(l.bilingualFraction).toBe(0);
+    expect(l.meanTongues).toBe(1);
+    expect(l.linguaFranca).toBe('vant');
+    expect(l.francaShare).toBe(1);          // all fully fluent
+  });
+
+  it('counts bilinguals only above conversational fluency, and finds the widest tongue', () => {
+    const w = new World();
+    speaker(w, { vant: 1, drak: 0.8 });     // bilingual (both ≥ 0.5)
+    speaker(w, { drak: 1, vant: 0.2 });     // only drak counts (vant 0.2 < 0.5)
+    speaker(w, { drak: 1 });                // monolingual drak
+    const l = linguisticDiversity(w);
+    expect(l.bilingualFraction).toBeCloseTo(1 / 3, 6);
+    expect(l.tongues).toBe(2);              // both vant and drak are commanded by someone
+    expect(l.linguaFranca).toBe('drak');    // Σ command: drak 2.8 > vant 1.2
+    expect(l.francaShare).toBeCloseTo(2.8 / 3, 6);
+  });
+
+  it('is empty-safe when no one has a fluency map', () => {
+    const l = linguisticDiversity(new World());
+    expect(l).toEqual({ speakers: 0, tongues: 0, bilingualFraction: 0, meanTongues: 0, linguaFranca: null, francaShare: 0 });
+  });
+});
+
 // ── integration: emergent regularities from a live run ───────────────────────────
 
 describe('measureWorld through the live loop', () => {
@@ -322,5 +362,13 @@ describe('measureWorld through the live loop', () => {
     expect(m.occupation.workers).toBeGreaterThan(0);
     expect(m.occupation.evenness).toBeGreaterThanOrEqual(0);
     expect(m.occupation.evenness).toBeLessThanOrEqual(1);
+    // Language (slice 4): everyone has a native tongue, and the seed town's mix means
+    // a lingua franca exists with at least partial command across the population.
+    expect(m.language.speakers).toBe(m.ages.count);
+    expect(m.language.tongues).toBeGreaterThanOrEqual(1);
+    expect(m.language.meanTongues).toBeGreaterThanOrEqual(1);   // ≥ native
+    expect(m.language.linguaFranca).not.toBeNull();
+    expect(m.language.francaShare).toBeGreaterThan(0);
+    expect(m.language.francaShare).toBeLessThanOrEqual(1);
   }, 20_000);
 });

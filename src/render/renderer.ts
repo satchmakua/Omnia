@@ -34,6 +34,11 @@ const BADGE = {
   socialize: '#ef8fc0',
 };
 
+// The 8-neighbourhood, for the "in company" chat badge (M10 slice 4.5).
+const NEIGH8: readonly [number, number][] = [
+  [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1],
+];
+
 const MIN_SCALE = 1;
 const MAX_SCALE = 9;
 
@@ -197,6 +202,19 @@ export class Renderer {
       const p = world.getComponent<Position>(e, C_POSITION)!;
       this.iconAnimal(p.x, p.y, fa.color, fa.size);   // species colour + size
     }
+    // "In company": folk standing beside another folk are conversing. The chat badge
+    // (M10 s4.5) shows this regardless of the socialize *action* (which only fires on a
+    // low social need, so it was rare) — so the town's adjacency-driven talk reads on the
+    // map. A cheap render-only pass over folk tiles; the sim is untouched.
+    const W = cfg.gridWidth;
+    const folkTiles = new Set<number>();
+    for (const e of world.query(C_AGENT, C_POSITION)) {
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      folkTiles.add(p.y * W + p.x);
+    }
+    const inCompany = (p: Position) =>
+      NEIGH8.some(([dx, dy]) => folkTiles.has((p.y + dy) * W + (p.x + dx)));
+
     for (const e of world.query(C_AGENT, C_POSITION)) {
       const agent = world.getComponent<Agent>(e, C_AGENT)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
@@ -206,6 +224,7 @@ export class Renderer {
         mage: world.hasComponent(e, C_MAGIC),
         ill: !!health?.ill,
         action: agent.action,
+        chatting: inCompany(p),
       });
     }
 
@@ -223,7 +242,7 @@ export class Renderer {
     ctx.restore();
   }
 
-  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; action: string }): void {
+  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; action: string; chatting: boolean }): void {
     const ctx = this.ctx;
     this.at(gx, gy, child ? 0.72 : 1, () => {
       ctx.fillStyle = CATEGORY_COLOR.folk;
@@ -233,6 +252,12 @@ export class Renderer {
       ctx.fill();
       const ac = BADGE[st.action as keyof typeof BADGE];
       if (ac) this.badge(st.action, ac, 6, 8);
+      // Chat badge: two small "speech" dots at the upper-left when standing beside another
+      // folk — visible conversation, decoupled from the rare socialize action (M10 s4.5).
+      if (st.chatting) {
+        ctx.fillStyle = BADGE.socialize;
+        ctx.beginPath(); ctx.arc(-7, -7, 1.3, 0, Math.PI * 2); ctx.arc(-3.4, -7, 1.3, 0, Math.PI * 2); ctx.fill();
+      }
       if (st.ill) { ctx.strokeStyle = BADGE.ill; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-7, -7); ctx.lineTo(-7, -3); ctx.moveTo(-9, -5); ctx.lineTo(-5, -5); ctx.stroke(); }
       if (st.mage) { ctx.fillStyle = BADGE.mage; this.spark(7, -9); }
     });

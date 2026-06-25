@@ -162,6 +162,11 @@ if (finalPop > 0) {
       `roots=${m.family.roots} depth=${m.family.maxDepth} breadth=${m.family.maxBreadth}`,
     );
   }
+  console.log(
+    `  fluency:  speak=${m.language.tongues} tongues  bilingual=${f(m.language.bilingualFraction * 100, 0)}% ` +
+    `mean=${f(m.language.meanTongues, 2)}/head  lingua franca=${m.language.linguaFranca ?? '—'} ` +
+    `(${f(m.language.francaShare * 100, 0)}% command)`,
+  );
 }
 
 if (violations > 0) {

@@ -26,6 +26,9 @@ const CONTROLS: [string, string][] = [
   ['F', 'Find folk'],
   ['T', 'Family tree'],
   ['G', 'Lineages of cultures &amp; tongues'],
+  ['Y', 'Ecology — fauna &amp; flora'],
+  ['V', 'Conversation — what the town is saying'],
+  ['N', 'Language — tongues, sounds &amp; fluency'],
   ['L', 'toggle the Legend key'],
   ['H', 'toggle Town Happenings'],
 ];
