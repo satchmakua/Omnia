@@ -4,11 +4,15 @@
 import type { World, EntityId } from './ecs.ts';
 import {
   C_POSITION, C_NEEDS, C_WALLET, C_AGENT, C_SPECIES, C_MAGIC, C_HEALTH,
-  C_RELATIONSHIPS, C_LINEAGE, C_MEMORY,
+  C_RELATIONSHIPS, C_LINEAGE, C_MEMORY, C_BODY, C_ALIGNMENT, C_PERSONALITY,
 } from './components.ts';
 import type {
   Position, Needs, Wallet, Agent, SpeciesComp, Magic, Health, Relationships, Lineage, Memory, Sex,
+  Body, Alignment, Personality,
 } from './components.ts';
+import {
+  rollBody, inheritBody, rollAlignment, inheritAlignment, rollPersonality, inheritPersonality,
+} from './heredity.ts';
 import type { SimConfig } from './config.ts';
 import { ticksPerYear } from './config.ts';
 import { rngFloat } from './rng.ts';
@@ -88,6 +92,19 @@ export function spawnAgent(
     events: [], summaries: [], beliefs: [], lastReflectTick: -1e9, lastRollupTick: -1e9,
     utterances: [], lastSpokeTick: -1e9, lastDreamTick: -1e9, purpose: 0,
   });
+
+  // Body & heredity (M13): a child inherits the parental mean (+ variation) of both
+  // parents' bodies; a founder rolls fresh. Traits thus visibly run in families.
+  const parents = opts.parents ?? [];
+  const pa = parents[0] !== undefined ? world.getComponent<Body>(parents[0], C_BODY) : undefined;
+  const pb = parents[1] !== undefined ? world.getComponent<Body>(parents[1], C_BODY) : undefined;
+  world.addComponent<Body>(e, C_BODY, pa && pb ? inheritBody(rng, pa, pb) : rollBody(rng, species));
+  const aa = parents[0] !== undefined ? world.getComponent<Alignment>(parents[0], C_ALIGNMENT) : undefined;
+  const ab = parents[1] !== undefined ? world.getComponent<Alignment>(parents[1], C_ALIGNMENT) : undefined;
+  world.addComponent<Alignment>(e, C_ALIGNMENT, aa && ab ? inheritAlignment(rng, aa, ab) : rollAlignment(rng));
+  const ma = parents[0] !== undefined ? world.getComponent<Personality>(parents[0], C_PERSONALITY) : undefined;
+  const mb = parents[1] !== undefined ? world.getComponent<Personality>(parents[1], C_PERSONALITY) : undefined;
+  world.addComponent<Personality>(e, C_PERSONALITY, ma && mb ? inheritPersonality(rng, ma, mb) : rollPersonality(rng));
 
   // Rare innate magic aptitude — scarce by construction, but heritable: children
   // of a mage get a much higher chance (lineage weighting from the design docs).

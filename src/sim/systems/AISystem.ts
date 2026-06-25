@@ -8,8 +8,8 @@
 //     a later tick — never blocking the tick, falling back to the stub on timeout.
 // Either way the output is pure flavour: nothing here feeds the mechanical trajectory.
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_MEMORY, C_POSITION, C_RELATIONSHIPS, C_CLOCK, C_AIRUNNER } from '../components.ts';
-import type { Agent, Memory, Position, Relationships, Clock } from '../components.ts';
+import { C_AGENT, C_MEMORY, C_POSITION, C_RELATIONSHIPS, C_CLOCK, C_AIRUNNER, C_ALIGNMENT, C_PERSONALITY } from '../components.ts';
+import type { Agent, Memory, Position, Relationships, Clock, Alignment, Personality } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 import type { AIProvider } from '../../ai/provider.ts';
@@ -110,6 +110,16 @@ function reflectPass(env: Env): void {
     const d = distill(mem.events, isChild);
     mem.purpose = d.purpose;
     mem.vow = d.vow;
+    // Alignment drifts with the life lived (M13): bonds & resilience (purpose > 0) lean toward
+    // good; loss & withdrawal (purpose < 0) harden toward self-interest. Small + deterministic.
+    const align = world.getComponent<Alignment>(e, C_ALIGNMENT);
+    if (align && d.purpose !== 0) align.good = Math.max(-1, Math.min(1, align.good + Math.sign(d.purpose) * 0.04));
+    // Mid-life trauma reshapes personality (M13): a life sunk in loss hardens the soul.
+    const pers = world.getComponent<Personality>(e, C_PERSONALITY);
+    if (pers && d.purpose < -0.2 && pers.trait !== 'hardened') {
+      pers.trait = 'hardened';
+      emitEvent(world, 'decide', `${name} grew hardened by loss.`);
+    }
     if (mem.vow !== prevVow) {
       if (!isChild && prevVow != null && CHILD_VOW_SET.has(prevVow)) {
         emitEvent(world, 'decide', `${name} comes of age, resolving ${d.vow}.`);

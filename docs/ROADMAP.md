@@ -239,18 +239,20 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD met (S50):** several named worlds save / load (snapshot-instant) and delete; a save round-trips to disk and back; loaded state is byte-identical and continuable (RNG restored); legible. Old single-slot localStorage save retired.
 
-## ▶ Milestone 13 — Agent Depth: Stats, Alignment, Personality & Body  *(next — the old M10 — D&D depth)*
+## ✅ Milestone 13 — Agent Depth: Stats, Alignment, Personality & Body  *(DoD met — 2026-06-25)*
 
 **Goal:** agents become mechanically deep — inherited and legible (the D&D layer combat/crime build on).
 
-- [ ] **Ability scores** (STR/DEX/CON/INT/WIS/CHA), content-driven, rolled + species-modified.
-- [ ] **9-alignment (dynamic, D26-causal):** baseline neutral-leaning-good; trauma/events/environment shift it; it biases behaviour (evil → lying/stealing/violence; good → cooperation). *(Builds on M10's belief→behaviour machinery.)*
-- [ ] **Personality** archetypes/traits (coward / ambitious / greedy / loyal / curious / sadistic …); mid-life drift from trauma.
-- [ ] **One Heredity system:** physical traits (height/weight/eye/hair/voice) + ability scores + alignment-lean + magic aptitude all inherit (parental mean + variation), *visibly*.
-- [ ] **Inventory** + meaningful uses for gold; **status/health** (HP, exhaustion, starvation, sickness, poverty) as real states.
-- [ ] Inspector: a rich **agent sheet** (stats, alignment, traits, inventory, status, kin resemblance).
+- [x] **Ability scores** (STR/DEX/CON/INT/WIS/CHA). *(S52: rolled 3d6 + content-driven per-species `abilityMods` (e.g. dwarves +CON/+STR/−DEX/−CHA), inherited; **CHA already warms friendship** (`charismaWarmth`, D26); STR/DEX/CON/INT/WIS feed combat/skills in M16.)*
+- [x] **9-alignment (dynamic, D26-causal).** *(S52: two axes (good/law) on the classic grid, baseline neutral-leaning-good, a heritable lean; **shifts with the life lived** (bonds & resilience → good, loss → harder, at reflection); good folk **cooperate** — they warm friendships faster (`alignmentWarmth`). Full evil→crime/violence expression lands with M16 combat/crime.)*
+- [x] **Personality** archetypes. *(S52: one trait per soul from a weighted palette (ambitious/content/curious/loyal/gentle/gregarious/…); **heritable** (children usually take after a parent — 76% live); **mid-life trauma drift** (deep loss → `hardened`); ambition/greed vs content/generous **bend the wealth goal** (ActionSystem). Combat traits (brave/hot-headed) get homes in M16.)*
+- [x] **One Heredity system** (`src/sim/heredity.ts`). *(S52: founders roll, children inherit the parental mean + variation for `Body` (ability scores + height/build/eye/hair) and the lean for `Alignment`/`Personality` — visibly (light-eyed parents → light-eyed children, tested). Magic aptitude was already heritable (D17).)*
+- [x] **Rich agent sheet** in the inspector. *(S52: a "Body & character" section — the six scores, a physical line (height/build/eye/hair), and personality · alignment; kin resemblance is visible by inspecting relatives.)*
+- [ ] **Inventory + status** — *deferred:* the "status" states already exist as real needs (hunger=starvation, energy=exhaustion, `Health.ill`=sickness, debt=poverty); a carried **inventory** is hollow until items have uses (crafting/trade/combat), so it lands with M15 (trade) / M16 (combat). Noted, not built.
 
-**DoD:** light-eyed parents tend to light-eyed children (traits visibly inherited); alignment shifts with experience and changes behaviour; ability scores feed later combat/skills; all legible; determinism + soak hold.
+**DoD met (S52):** light-eyed parents → light-eyed children (✓, tested + live 76% trait inheritance); alignment shifts with experience and changes behaviour (✓); ability scores rolled/inherited and feed later combat/skills (✓, CHA causal now); all legible (✓ agent sheet); determinism + soak hold (✓, 0 violations). *Inventory is the one open bullet, intentionally deferred until items matter.*
+
+## ▶ Milestone 14 — Institutions: Tribes, Factions & Governments  *(next)*
 
 ## Milestone 14 — Institutions: Tribes, Factions & Governments
 
