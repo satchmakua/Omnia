@@ -26,6 +26,17 @@ A language is defined by rules at three levels (seeded in YAML, then evolved at 
 - **Divergence → families:** when a population splits (migration, schism), its language is copied and then accumulates *independent* sound changes and drift, growing into a distinct daughter language. Repeated, this yields a **language family tree** — a centerpiece for the Legends view.
 - **Contact:** trade, conquest, and intermarriage cause **borrowing** (loanwords mark historical contact), occasional creoles, and language death.
 
+### Language as a mechanic (causal coupling — D26)  *(M10 slice 4)*
+
+Tongues aren't just flavour on names — they **gate who bonds with whom**, deterministically (procedural, no LLM, no extra RNG → seed-replay holds):
+
+- **Fluency.** Each agent carries a small `fluency` map (`languageId → 0..1`): natively fluent (1.0) in their culture's tongue, and partially fluent in any they've **learned**. (Stored per-agent, but bounded — a town has single-digit tongues.)
+- **Mutual intelligibility.** Two speakers understand each other as well as the *best tongue they both command* (`max` over shared languages of the weaker speaker's fluency). Same tongue ⇒ 1.0; no common tongue ⇒ 0.
+- **Synergy.** `SocialSystem.interact` scales friendship warmth by **`bondFactor × langSynergy(intelligibility)`** — so the `open` axis (willingness across cultures) and intelligibility (ability to communicate) **both** gate cross-group bonding. A shared tongue bonds at full rate; no common tongue still bonds, but only at `langSynergyFloor` (cross-language interaction *works*, just with less synergy).
+- **Gradual learning.** Every interaction, each speaker picks up a little of the other's native tongue (bounded growth toward 1, rate `langLearnPerInteract`). So mixed neighbours grow mutually intelligible over a life of contact, a lone minority-tongue speaker **assimilates** to the majority tongue, and bilinguals emerge — visible in the inspector ("Also speaks Old Vant 92%").
+
+*(Future refinement: gate the **learning rate** by the `open` axis too — insular folk slower to pick up an outsider's tongue. Today learning is universal; only warmth is openness-gated.)*
+
 ## Culture model
 
 A culture carries:
@@ -48,7 +59,7 @@ The four value axes are **causal**: they bias what agents actually *do*, determi
 | Axis | Pole (1.0) | How it biases behaviour | Hooks into | Status |
 |---|---|---|---|---|
 | **communal** | communal / sharing | Lowers the agent's personal **wealth goal** — communal folk prize modest wealth, individualists accumulate. *(Later: share food/gold with needy kin.)* | spawn / economy | **causal** (M7) |
-| **open** | open to outsiders | Scales **friendship warmth toward other cultures**: same-culture pairs bond fully, cross-culture warmth is damped by how *insular* the pair is. *(Later: willingness to learn another tongue — M10 slice 4.)* | `SocialSystem.interact` | **causal** (M10) |
+| **open** | open to outsiders | Scales **friendship warmth toward other cultures**: same-culture pairs bond fully, cross-culture warmth is damped by how *insular* the pair is. Now compounded by **language intelligibility** (slice 4 — see "Language as a mechanic" above). | `SocialSystem.interact` | **causal** (M10) |
 | **traditional** | clings to the old ways | **Endogamy** — traditional folk prefer to marry within their own culture; innovative folk intermarry freely. *(Later: inherit a parent's profession, slow to adopt new tech — M17.)* | `SocialSystem.matchmake` | **causal** (M10) |
 | **martial** | martial / warlike | Conflict propensity — raid, defend territory, settle disputes by force; prefer warrior over merchant professions. | combat | **deferred to M16** (no behavioural home yet) |
 

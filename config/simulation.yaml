@@ -79,5 +79,7 @@ schismChancePerEra: 0.7
 minSchismMembers: 8
 schismValueNudge: 0.2
 maxLineages: 24
+langLearnPerInteract: 0.002
+langSynergyFloor: 0.4
 aiConcurrency: 2
 aiTimeoutMs: 8000

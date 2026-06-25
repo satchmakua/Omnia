@@ -20,6 +20,7 @@ import { emitEvent } from '../../history/eventlog.ts';
 import { remember } from '../../ai/memory.ts';
 import { getCultureStore, getCulture, bondFactor, prefersEndogamy } from '../../culture/cultureStore.ts';
 import type { CultureStoreData, RuntimeCulture } from '../../culture/cultureStore.ts';
+import { intelligibility, langSynergy, learnTongue } from '../../lang/fluency.ts';
 
 // An agent's culture (D26 coupling), or undefined if they have none / no store yet.
 function cultureOf(world: World, cstore: CultureStoreData | undefined, e: EntityId): RuntimeCulture | undefined {
@@ -98,8 +99,11 @@ export function runSocialSystem(world: World, cfg: SimConfig, rng: RNG): void {
 }
 
 // Company restores the social need (met by anyone); repeated contact warms sentiment
-// to friendship — but cross-culture warmth is damped by how insular the pair is (the
-// `open` axis, D26), so open folk befriend outsiders and insular folk stay segregated.
+// to friendship — but that warmth is damped two ways (D26): by how insular the pair is
+// across cultures (the `open` axis, slice 2) AND by how well they can actually understand
+// each other (language synergy, slice 4). Speakers of a shared tongue bond at full rate;
+// strangers with no common tongue bond slowly, and meanwhile each LEARNS a little of the
+// other's tongue — so mixed neighbours grow mutually intelligible over a life of contact.
 // The moment a pair crosses into friendship is a remembered life event (M10 slice 3).
 function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId, cstore: CultureStoreData | undefined, tick: number): void {
   const na = world.getComponent<Needs>(a, C_NEEDS)!;
@@ -107,21 +111,30 @@ function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId, cstore
   na.social = Math.min(1, na.social + cfg.socialGainPerInteract);
   nb.social = Math.min(1, nb.social + cfg.socialGainPerInteract);
 
-  const bond = bondFactor(cultureOf(world, cstore, a), cultureOf(world, cstore, b));
+  const ca = cultureOf(world, cstore, a);
+  const cb = cultureOf(world, cstore, b);
+  const agentA = world.getComponent<Agent>(a, C_AGENT)!;
+  const agentB = world.getComponent<Agent>(b, C_AGENT)!;
+  const bond = bondFactor(ca, cb);
+  const synergy = langSynergy(intelligibility(agentA.fluency, agentB.fluency), cfg.langSynergyFloor);
+  const warm = cfg.sentimentGainPerInteract * bond * synergy;
+
   const ea = edge(world.getComponent<Relationships>(a, C_RELATIONSHIPS)!, b);
   const eb = edge(world.getComponent<Relationships>(b, C_RELATIONSHIPS)!, a);
   const wasFriend = ea.type === 'partner' || ea.sentiment >= cfg.friendSentiment;  // already close?
-  ea.sentiment = Math.min(1, ea.sentiment + cfg.sentimentGainPerInteract * bond);
-  eb.sentiment = Math.min(1, eb.sentiment + cfg.sentimentGainPerInteract * bond);
+  ea.sentiment = Math.min(1, ea.sentiment + warm);
+  eb.sentiment = Math.min(1, eb.sentiment + warm);
   if (ea.type !== 'partner' && ea.sentiment >= cfg.friendSentiment) ea.type = 'friend';
   if (eb.type !== 'partner' && eb.sentiment >= cfg.friendSentiment) eb.type = 'friend';
 
+  // Gradual learning: each picks up a little of the OTHER's native tongue through contact.
+  if (agentA.fluency && cb) learnTongue(agentA.fluency, cb.language, cfg.langLearnPerInteract);
+  if (agentB.fluency && ca) learnTongue(agentB.fluency, ca.language, cfg.langLearnPerInteract);
+
   if (!wasFriend && ea.type === 'friend' && ea.sentiment >= cfg.friendSentiment) {  // just became friends
-    const an = world.getComponent<Agent>(a, C_AGENT)!.name;
-    const bn = world.getComponent<Agent>(b, C_AGENT)!.name;
-    emitEvent(world, 'friendship', `${an} and ${bn} became friends.`);
-    remember(world, a, tick, `befriended ${bn}`, 0.45);
-    remember(world, b, tick, `befriended ${an}`, 0.45);
+    emitEvent(world, 'friendship', `${agentA.name} and ${agentB.name} became friends.`);
+    remember(world, a, tick, `befriended ${agentB.name}`, 0.45);
+    remember(world, b, tick, `befriended ${agentA.name}`, 0.45);
   }
 }
 
