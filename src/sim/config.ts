@@ -39,6 +39,25 @@ export interface SimConfig {
   provisionPerFarmer: number;          // rations one food-worker produces per day (supply)
   baseForagedProvisions: number;       // wild-foraged baseline supply (the commons, independent of farms)
   marketHistoryLength: number;         // bounded price-history kept for the chart
+  // Business turnover (M15 slice 2b): farms live on real sales minus a fixed operating cost,
+  // so an unneeded/under-patronised farm runs a loss and folds; a new farm opens when food is
+  // scarce and the existing farms are full (so the food sector tracks demand).
+  farmOperatingCostPerDay: number;     // fixed daily overhead a food business pays (premises/upkeep)
+  bankruptcyThreshold: number;         // a business this broke can't make ends meet — it's struggling
+  bankruptcyGraceDays: number;         // consecutive struggling days a business survives before it folds
+  maxFarms: number;                    // safety cap on food businesses (founding stops here)
+  // Conflict (M16): ability-score-driven combat — predators threaten folk; folk fight back.
+  predatorAggressionChance: number;    // per-tick chance a predator beside a folk strikes (kept low → a threat, not a cull)
+  combatScarThreshold: number;         // a blow this hard (Health 0..1) leaves a permanent scar
+  combatKillBlow: number;              // a counter-blow this hard slays the attacking beast
+  crimeChancePerDay: number;           // daily chance an inclined agent offends against a neighbour
+  crimeAlignmentThreshold: number;     // an agent whose `good` is below this is wicked enough to do violence
+  theftAmount: number;                 // gold a thief lifts in one theft (capped at the victim's purse)
+  warChancePerEra: number;             // chance per era a martial tribe declares war on a neighbour
+  warMartialThreshold: number;         // a tribe this martial (or more) may start a war
+  minWarMembers: number;               // a tribe needs at least this many to wage / be worth warring
+  warDurationEras: number;             // a war lasts at most this many eras before peace
+  battleChancePerTick: number;         // per-tick chance two adjacent enemies actually come to blows
   // Capabilities / magic (M3 part 2):
   magicManaMax: number;                // mana pool size for aptitude-gifted agents
   manaRegenPerDay: number;             // mana regenerated per in-sim day
@@ -204,6 +223,21 @@ export const defaultConfig: SimConfig = {
   provisionPerFarmer: 2,
   baseForagedProvisions: 18, // tuned so a typical farmer count sits supply ≈ demand near the base price
   marketHistoryLength: 60,
+  farmOperatingCostPerDay: 10, // a farm needs real sales above this + wages to survive
+  bankruptcyThreshold: 10,     // basically broke
+  bankruptcyGraceDays: 14,     // a couple of weeks of losses before folding
+  maxFarms: 8,                 // founding never exceeds this many food businesses
+  predatorAggressionChance: 0.012, // rare — an adjacent predator seldom actually strikes
+  combatScarThreshold: 0.3,        // only a deep wound leaves a lasting scar
+  combatKillBlow: 0.18,            // a solid counter-blow drives off / slays the beast
+  crimeChancePerDay: 0.03,         // most folk are honest; the wicked/desperate offend now and then
+  crimeAlignmentThreshold: 0.05,   // below this on the good axis → capable of violence
+  theftAmount: 6,
+  warChancePerEra: 0.5,            // martial tribes are quarrelsome, but wars are gated by martiality + size
+  warMartialThreshold: 0.55,       // an above-average-martial tribe can start a war
+  minWarMembers: 5,
+  warDurationEras: 2,              // wars are short, bloody feuds, then peace
+  battleChancePerTick: 0.006,      // adjacent enemies seldom actually clash on a given tick (keeps casualties bounded)
   magicManaMax: 100,
   manaRegenPerDay: 10,
   daysPerYear: 4,

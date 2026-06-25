@@ -57,7 +57,7 @@ export class EconomyDashboard extends ModalPanel {
       const staff = staffByBiz.get(e) ?? 0;
       const full = staff >= b.maxEmployees;
       return `<tr style="border-top:1px solid rgba(255,255,255,0.06)">
-        <td style="padding:4px 8px 4px 0"><span style="color:${b.color}">●</span> ${b.professionName}${b.requiresAptitude ? ' <span style="color:#d090f0">✦</span>' : ''}${b.producesFood ? ' <span title="lives on real market sales">🌾</span>' : ''}</td>
+        <td style="padding:4px 8px 4px 0"><span style="color:${b.color}">●</span> ${b.professionName}${b.requiresAptitude ? ' <span style="color:#d090f0">✦</span>' : ''}${b.producesFood ? ' <span title="lives on real market sales">🌾</span>' : ''}${(b.lowFundsDays ?? 0) > 3 ? ' <span style="color:#ff9a6a" title="losing money — may fold">⚠</span>' : ''}</td>
         <td style="padding:4px 8px;text-align:center;color:${full ? '#8fe88f' : '#ccd'}">${staff}/${b.maxEmployees}</td>
         <td style="padding:4px 8px;text-align:right">${b.balance.toFixed(0)}g</td>
         <td style="padding:4px 0;text-align:right;color:#9ab">${(b.wagePerTick * defaultConfig.ticksPerDay).toFixed(1)}/day</td>

@@ -3,6 +3,9 @@
 // the renderer. Self-contained: it carries the per-biome colour/passable/name
 // look-ups it needs so consumers don't require the content registry.
 
+import { rngInt } from '../sim/rng.ts';
+import type { RNG } from '../sim/rng.ts';
+
 export interface TileMapData {
   width: number;
   height: number;
@@ -41,4 +44,20 @@ export function colorAt(map: TileMapData, x: number, y: number): string {
 export function isPassable(map: TileMapData, x: number, y: number): boolean {
   if (!inBounds(map, x, y)) return false;
   return map.passableByBiome[biomeIndexAt(map, x, y)];
+}
+
+// A random passable tile (for placing world-gen entities and re-opened businesses).
+// Falls back to a deterministic scan if random sampling keeps missing.
+export function findPassableTile(rng: RNG, map: TileMapData): { x: number; y: number } {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const x = rngInt(rng, 0, map.width - 1);
+    const y = rngInt(rng, 0, map.height - 1);
+    if (isPassable(map, x, y)) return { x, y };
+  }
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      if (isPassable(map, x, y)) return { x, y };
+    }
+  }
+  throw new Error('World generation produced no passable tiles');
 }

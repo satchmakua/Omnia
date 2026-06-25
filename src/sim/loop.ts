@@ -13,6 +13,7 @@ import { runMovementSystem } from './systems/MovementSystem.ts';
 import { runGatherSystem }   from './systems/GatherSystem.ts';
 import { runMarketSystem }   from './systems/MarketSystem.ts';
 import { runEconomySystem }  from './systems/EconomySystem.ts';
+import { runBusinessSystem } from './systems/BusinessSystem.ts';
 import { runBuildSystem }    from './systems/BuildSystem.ts';
 import { runRentSystem }     from './systems/RentSystem.ts';
 import { runSocialSystem }   from './systems/SocialSystem.ts';
@@ -25,6 +26,8 @@ import { runMemorySystem }   from './systems/MemorySystem.ts';
 import { runHistorySystem }  from './systems/HistorySystem.ts';
 import { runEvolutionSystem } from './systems/EvolutionSystem.ts';
 import { runFaunaSystem }    from './systems/FaunaSystem.ts';
+import { runCombatSystem }   from './systems/CombatSystem.ts';
+import { runCrimeSystem }    from './systems/CrimeSystem.ts';
 import type { AIProvider } from '../ai/provider.ts';
 import { stubProvider } from '../ai/stubProvider.ts';
 
@@ -45,6 +48,7 @@ export function tick(
   runGatherSystem(world, cfg);           // deplete resource nodes being worked
   runMarketSystem(world, cfg);           // staple market: price floats with supply/demand (sets the cost of living)
   runEconomySystem(world, cfg);          // hiring, wages, cost of living (at the market price)
+  runBusinessSystem(world, cfg, rng, content); // farms fold when unprofitable; new ones open when food is dear (M15)
   runBuildSystem(world, cfg);            // settled adults build & own homes (the town grows)
   runRentSystem(world, cfg);             // homeless adults rent a landlord's spare home (income + shelter)
   runSocialSystem(world, cfg, rng);      // relationships, social need, courtship → marriage
@@ -57,6 +61,8 @@ export function tick(
   runHistorySystem(world, cfg);          // world history: sample strata + compress the Chronicle
   runEvolutionSystem(world, cfg, rng);   // culture & language drift (generational, off the hot path)
   runFaunaSystem(world, cfg, rng);       // fauna instinct (graze / breed / die)
+  runCombatSystem(world, cfg, rng);      // predators threaten folk; folk fight back (M16)
+  runCrimeSystem(world, cfg, rng);       // crime & vice: theft / assault / murder + rough justice (M16)
 }
 
 export function runTicks(

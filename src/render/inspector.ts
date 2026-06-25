@@ -2,11 +2,11 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
 import { biomeNameAt, inBounds } from '../world/tilemap.ts';
@@ -285,11 +285,22 @@ export class Inspector {
     const pers = world.getComponent<Personality>(e, C_PERSONALITY);
     const charBits = [pers ? pers.trait : '', al ? alignmentName(al) : ''].filter(Boolean).join(' · ');
     const charLine = charBits ? `<div style="color:#c9b6e6;margin-top:3px">${charBits}</div>` : '';
+    const cmb = world.getComponent<Combat>(e, C_COMBAT);
+    const combatLine = cmb && (cmb.scars > 0 || cmb.kills > 0)
+      ? `<div style="color:#e0a0a0;margin-top:3px">⚔ a veteran${cmb.kills > 0 ? ` — ${cmb.kills} ${cmb.kills === 1 ? 'kill' : 'kills'}` : ''}${cmb.scars > 0 ? `${cmb.kills > 0 ? ',' : ' —'} ${cmb.scars} ${cmb.scars === 1 ? 'scar' : 'scars'}` : ''}</div>`
+      : '';
+    const crm = world.getComponent<Crime>(e, C_CRIME);
+    const crimeBits = crm ? [
+      crm.murders ? `${crm.murders} ${crm.murders === 1 ? 'murder' : 'murders'}` : '',
+      crm.assaults ? `${crm.assaults} ${crm.assaults === 1 ? 'assault' : 'assaults'}` : '',
+      crm.thefts ? `${crm.thefts} ${crm.thefts === 1 ? 'theft' : 'thefts'}` : '',
+    ].filter(Boolean).join(', ') : '';
+    const crimeLine = crimeBits ? `<div style="color:#ff8a8a;margin-top:3px">⚖ an outlaw — ${crimeBits}</div>` : '';
     return `<hr style="${RULE}">
       <div style="${SECTION}">Body &amp; character</div>
       <div style="line-height:1.9">${score('STR', b.str)}${score('DEX', b.dex)}${score('CON', b.con)}<br>${score('INT', b.int)}${score('WIS', b.wis)}${score('CHA', b.cha)}</div>
       <div style="color:#9ab;margin-top:3px">${b.heightCm}cm · ${buildWord(b)} build · ${eyeColour(b)} eyes · ${hairColour(b)} hair</div>
-      ${charLine}`;
+      ${charLine}${combatLine}${crimeLine}`;
   }
 
   // Allegiance (M14): the tribe this person belongs to, its government, and whether they lead it.

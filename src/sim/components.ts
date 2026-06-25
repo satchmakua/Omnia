@@ -19,6 +19,8 @@ export const C_MEMORY        = 'Memory';        // memory stream + beliefs (M5)
 export const C_BODY          = 'Body';          // ability scores + heritable physical traits (M13)
 export const C_ALIGNMENT     = 'Alignment';     // dynamic 9-alignment (good/law axes) (M13)
 export const C_PERSONALITY   = 'Personality';   // an archetype trait, heritable + trauma-shifted (M13)
+export const C_COMBAT        = 'Combat';        // combat record: scars + kills (attached on first fight) (M16)
+export const C_CRIME         = 'Crime';         // rap sheet: thefts + assaults + murders (attached on first crime) (M16)
 export const C_AIRECORD      = 'AIRecord';      // singleton: recorded LLM responses for replay (M5)
 export const C_AIRUNNER      = 'AIRunner';      // singleton: async live-model queue + pending jobs (M7.5)
 export const C_CLOCK     = 'Clock';
@@ -118,6 +120,23 @@ export interface Personality {
   trait: string;
 }
 
+// Combat record (M16) — attached the first time an agent fights, so the peaceful majority
+// stay lean. Scars are permanent marks of survived violence; kills count foes slain. Either
+// makes an agent a "veteran" (legible in the inspector); both harden a fighter's prowess.
+export interface Combat {
+  scars: number;
+  kills: number;
+}
+
+// A rap sheet (M16 slice 2) — attached the first time an agent offends. Crime is driven by
+// evil alignment (and desperation for theft); a record of it makes an agent an "outlaw"
+// (legible) and a murderer notorious (a Chronicle legend).
+export interface Crime {
+  thefts: number;
+  assaults: number;
+  murders: number;
+}
+
 // Innate magic aptitude — present on only the rare agents who rolled it at birth
 // (so the LLM/capability systems can find casters cheaply, and most folk simply
 // lack this component). Holds the agent's mana pool.
@@ -149,6 +168,7 @@ export interface Business {
   requiresAptitude: boolean;  // magical employers hire only agents with magic aptitude
   gathers: string | null;     // resource id employees harvest from nodes, or null
   producesFood?: boolean;     // a food producer (farm) — its workforce supplies the staple market (M15)
+  lowFundsDays?: number;      // consecutive days struggling — folds past the grace (M15 slice 2b)
 }
 
 // The town's staple-goods market (M15): a single price that floats with supply (what the

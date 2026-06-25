@@ -9,9 +9,9 @@ import { loadContentFromDisk } from '../content/fsSource.ts';
 import {
   C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS,
   C_HEALTH, C_LINEAGE, C_TOMBSTONE, C_MEMORY, C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
-  C_CHRONICLE, C_WORLDSTATS, C_LANGUAGESTORE, C_HOME, C_ORGSTORE, C_MARKET,
+  C_CHRONICLE, C_WORLDSTATS, C_LANGUAGESTORE, C_HOME, C_ORGSTORE, C_MARKET, C_COMBAT, C_CRIME,
 } from './components.ts';
-import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock, Market } from './components.ts';
+import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock, Market, Combat, Crime } from './components.ts';
 import type { SimConfig } from './config.ts';
 import { ageInYears } from './config.ts';
 import { isPassable } from '../world/tilemap.ts';
@@ -126,13 +126,23 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     const avgAge = agents.length ? (ageSum / agents.length).toFixed(0) : '0';
     const wlth = wealthStats(world);
     const mkt = world.getComponent<Market>(world.query(C_MARKET)[0], C_MARKET);
+    const bizEnts = world.query(C_BUSINESS);
+    const foodBiz = bizEnts.filter(e => (world.getComponent(e, C_BUSINESS) as { producesFood?: boolean }).producesFood).length;
+    let vets = 0, scars = 0, kills = 0;
+    for (const e of world.query(C_COMBAT)) {
+      const c = world.getComponent<Combat>(e, C_COMBAT)!; vets++; scars += c.scars; kills += c.kills;
+    }
+    let outlaws = 0, thefts = 0, assaults = 0, murders = 0;
+    for (const e of world.query(C_CRIME)) {
+      const c = world.getComponent<Crime>(e, C_CRIME)!; outlaws++; thefts += c.thefts; assaults += c.assaults; murders += c.murders;
+    }
     const marker = inv > 0 ? ' *** VIOLATION ***' : '';
     const mix = Object.entries(bySpecies).map(([k, v]) => `${k}=${v}`).join(' ');
     console.log(
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) tribes=${tribes} drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt} food=${mkt ? mkt.price.toFixed(1) : '—'}g(s/d ${mkt ? mkt.supply.toFixed(0) : '?'}/${mkt ? mkt.demand.toFixed(0) : '?'})  invalid=${inv}${marker}`,
+      `fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) tribes=${tribes} drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt} food=${mkt ? mkt.price.toFixed(1) : '—'}g(s/d ${mkt ? mkt.supply.toFixed(0) : '?'}/${mkt ? mkt.demand.toFixed(0) : '?'}) biz=${bizEnts.length}(farm=${foodBiz}) vets=${vets}(scars=${scars} kills=${kills}) crime=${outlaws}out(t=${thefts} a=${assaults} m=${murders})  invalid=${inv}${marker}`,
     );
   }
 }
