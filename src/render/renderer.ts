@@ -387,7 +387,7 @@ export class Renderer {
     ctx.fillText(zoom, this.canvas.width - zw, this.canvas.height - 10);
   }
 
-  // Picks the most interesting entity on the clicked tile: folk > fauna > business > resource > flora > grave.
+  // Picks the most interesting entity on the clicked tile: folk > fauna > business > home > resource > flora.
   consumeClick(world: World): EntityId | null {
     if (!this._pendingClick) return null;
     const { gx, gy } = this._pendingClick;
@@ -401,7 +401,7 @@ export class Renderer {
       return null;
     };
 
-    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_BUSINESS) ?? at(C_RESOURCE) ?? at(C_FLORA);
+    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_RESOURCE) ?? at(C_FLORA);
     if (hit !== null) this.onEntityClick?.(hit);
     return hit;
   }

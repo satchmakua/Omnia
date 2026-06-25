@@ -73,11 +73,11 @@ describe('StubProvider registers (dialogue / dream / decision)', () => {
       .toContain(stubProvider.completeSync(sayP));
 
     const decP = buildDecisionPrompt('Mara', 'their child was born', 5, familyEvents);
-    expect(['vowed to put family above all else', 'resolved to keep their kin safe', 'swore to give their children a better life'])
+    expect(['vowed to put family above all else', 'resolved to keep their kin safe', 'swore to give their kin a better life'])
       .toContain(stubProvider.completeSync(decP));
 
     // Regression: the part-1 reflection register still produces a belief.
-    expect(['treasures family above all', 'lives for their kin', 'finds meaning in their children'])
+    expect(['treasures family above all', 'lives for their kin', 'finds meaning in their family'])
       .toContain(stubProvider.completeSync(buildReflectionPrompt('Mara', 5, familyEvents)));
   });
 });

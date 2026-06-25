@@ -10,7 +10,7 @@ type Mode = 'belief' | 'dream' | 'say' | 'decide';
 
 // theme keyword → candidate phrasings per mode (chosen deterministically by hash).
 const BELIEFS: Record<string, string[]> = {
-  family: ['treasures family above all', 'lives for their kin', 'finds meaning in their children'],
+  family: ['treasures family above all', 'lives for their kin', 'finds meaning in their family'],
   grief:  ['carries old grief quietly', 'has learned that all things pass', 'guards their heart against loss'],
   love:   ['believes in devotion', 'is warmed by companionship', 'holds love a steadying force'],
   frailty:['fears sickness', 'knows the body is fragile', 'is grateful for each well day'],
@@ -40,7 +40,7 @@ const SAYINGS: Record<string, string[]> = {
 };
 
 const RESOLVES: Record<string, string[]> = {
-  family: ['vowed to put family above all else', 'resolved to keep their kin safe', 'swore to give their children a better life'],
+  family: ['vowed to put family above all else', 'resolved to keep their kin safe', 'swore to give their kin a better life'],
   grief:  ['resolved to carry on for those who could not', 'vowed never to forget', 'chose to live well in their memory'],
   love:   ['resolved to build a life together', 'swore to stay by their side', 'chose devotion over doubt'],
   frailty:['resolved to live while there is time', 'vowed to guard their health', 'chose to seize each well day'],
@@ -62,8 +62,11 @@ function promptMode(prompt: string): Mode {
   return 'belief';
 }
 
+// `family` is keyed on having KIN of one's own (a child born / lost) — NOT on 'born'
+// alone, which also matches an agent's *own* birth ("was born to X"); a newborn must not
+// reflect as if it had children. So the family theme only fires from genuine parenthood.
 const THEME_KEYWORDS: [string, string[]][] = [
-  ['family', ['born', 'child', 'children', 'kin']],
+  ['family', ['child', 'children', 'kin']],
   ['grief',  ['died', 'lost', 'passed', 'grief', 'buried']],
   ['love',   ['wed', 'married', 'partner', 'love']],
   ['frailty',['ill', 'sick', 'fever', 'frail']],

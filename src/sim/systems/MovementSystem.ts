@@ -1,6 +1,6 @@
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_FAUNA, C_JOB, C_RESOURCE, C_TILEMAP } from '../components.ts';
-import type { Agent, Needs, Position, Flora, Job, Resource } from '../components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_FAUNA, C_JOB, C_RESOURCE, C_TILEMAP, C_HOME } from '../components.ts';
+import type { Agent, Needs, Position, Flora, Job, Resource, Home } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
@@ -14,6 +14,7 @@ import { pathToward } from '../pathfinding.ts';
 // little so it looks alive rather than frozen on the spot.
 const WORK_FIDGET = 0.3;
 const HUNT_MEAL = 0.7;   // hunger a hungry agent gains from hunting a fauna (M8 slice 5)
+const HOME_REST_BONUS = 1.4;   // one's own bed restores energy faster than rough sleeping (M11 s2)
 
 export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const forage = content.capabilities.require('forage');
@@ -68,13 +69,29 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
     faunaGrid.insert(p.x, p.y, fe);
   }
 
+  // An agent's own home (first owned), so a sleeper heads to their own bed (M11 s2).
+  const homeOf = new Map<EntityId, Position>();
+  for (const he of world.query(C_HOME, C_POSITION)) {
+    const owner = world.getComponent<Home>(he, C_HOME)!.owner;
+    if (!homeOf.has(owner)) homeOf.set(owner, world.getComponent<Position>(he, C_POSITION)!);
+  }
+
   for (const entity of world.query(C_AGENT, C_NEEDS, C_POSITION)) {
     const agent = world.getComponent<Agent>(entity, C_AGENT)!;
     const pos   = world.getComponent<Position>(entity, C_POSITION)!;
     const needs = world.getComponent<Needs>(entity, C_NEEDS)!;
 
     if (agent.action === 'sleep') {
-      needs.energy = Math.min(1.0, needs.energy + cfg.sleepRestorePerTick);
+      const home = homeOf.get(entity);
+      if (home && (pos.x !== home.x || pos.y !== home.y)) {
+        // Head to one's own bed, winding down on the way.
+        pathToward(pos, home.x, home.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight);
+        needs.energy = Math.min(1.0, needs.energy + cfg.sleepRestorePerTick);
+      } else {
+        // Resting in place — one's own home is more comfortable, so sleep restores faster.
+        const rate = home ? cfg.sleepRestorePerTick * HOME_REST_BONUS : cfg.sleepRestorePerTick;
+        needs.energy = Math.min(1.0, needs.energy + rate);
+      }
       continue;
     }
 

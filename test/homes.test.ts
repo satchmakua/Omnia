@@ -5,8 +5,8 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig, ticksPerYear } from '../src/sim/config.ts';
-import { C_AGENT, C_WALLET, C_POSITION, C_HOME, C_CLOCK, C_TILEMAP } from '../src/sim/components.ts';
-import type { Agent, Wallet, Home, Position, Clock } from '../src/sim/components.ts';
+import { C_AGENT, C_WALLET, C_POSITION, C_HOME, C_CLOCK, C_TILEMAP, C_TOMBSTONE } from '../src/sim/components.ts';
+import type { Agent, Wallet, Home, Position, Clock, Tombstone } from '../src/sim/components.ts';
 import type { TileMapData } from '../src/world/tilemap.ts';
 import { runBuildSystem } from '../src/sim/systems/BuildSystem.ts';
 
@@ -92,14 +92,48 @@ describe('BuildSystem — folk build & own homes (M11)', () => {
     expect(homesOf(w, a).length).toBe(2);
   });
 
-  it('a home whose owner is gone falls to ruin (pruned)', () => {
+  it('a home whose owner is gone, with no heir, falls to ruin (pruned)', () => {
     const w = town();
     const a = addAdult(w, cfg.homeCost + 5);
     runBuildSystem(w, cfg);
     expect(w.query(C_HOME).length).toBe(1);
-    w.removeComponent(a, C_AGENT);                  // owner dies/leaves (no longer an Agent)
+    w.removeComponent(a, C_AGENT);                  // owner dies/leaves, leaving no tombstone/heir
     runBuildSystem(w, cfg);
     expect(w.query(C_HOME).length).toBe(0);
+  });
+
+  // ── Inheritance (M11 slice 2): the family seat passes down ──────────────────────
+  const tomb = (children: EntityId[]): Tombstone => ({
+    name: 'X', speciesName: 'Human', sex: 'female', bornTick: 0, diedTick: 100,
+    ageYears: 40, role: null, cause: 'old age', legacy: '', partner: null, parents: [], children,
+  });
+  function die(w: World, e: EntityId, children: EntityId[]): void {
+    w.removeComponent(e, C_AGENT);
+    w.addComponent<Tombstone>(e, C_TOMBSTONE, tomb(children));
+  }
+
+  it('a home passes to a living, home-less child when its owner dies', () => {
+    const w = town();
+    const parent = addAdult(w, cfg.homeCost + 5);
+    const heir = addAdult(w, 0);                    // a living adult who owns no home
+    runBuildSystem(w, cfg);                         // parent builds a home
+    const home = homesOf(w, parent)[0];
+    die(w, parent, [heir]);
+    runBuildSystem(w, cfg);
+    expect(w.query(C_HOME).length).toBe(1);                          // not ruined
+    expect(w.getComponent<Home>(home, C_HOME)!.owner).toBe(heir);    // inherited
+  });
+
+  it('an heir who already owns a home does not inherit a second (it ruins)', () => {
+    const w = town();
+    const parent = addAdult(w, cfg.homeCost + 5);
+    const heir = addAdult(w, cfg.homeCost + 5);     // builds their own home
+    runBuildSystem(w, cfg);
+    expect(homesOf(w, heir).length).toBe(1);
+    die(w, parent, [heir]);
+    runBuildSystem(w, cfg);
+    expect(homesOf(w, heir).length).toBe(1);        // kept their own; didn't accumulate the parent's
+    expect(w.query(C_HOME).length).toBe(1);         // the parent's home ruined
   });
 
   it('placement is deterministic', () => {

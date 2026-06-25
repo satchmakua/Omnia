@@ -19,6 +19,7 @@ import { personalName, familyName } from '../lang/language.ts';
 import { getLanguageStore, getLanguage } from '../lang/languageStore.ts';
 import { getCultureStore, getCulture, cultureForLanguage, wealthGoalFactor } from '../culture/cultureStore.ts';
 import { nativeFluency } from '../lang/fluency.ts';
+import { MOOD_BASELINE } from './systems/MoodSystem.ts';
 
 export interface SpawnOpts {
   x: number;
@@ -76,6 +77,7 @@ export function spawnAgent(
     ticksAlive: opts.ageTicks, wealthGoal, sex, lifespanTicks,
     // Natively fluent in their culture's tongue; they learn others through contact (M10 s4).
     fluency: nativeFluency(culture?.language),
+    mood: MOOD_BASELINE,   // mildly content at birth; circumstance moves it (M11 s2)
   });
   world.addComponent<Health>(e, C_HEALTH, { value: 1, ill: false });
   world.addComponent<Relationships>(e, C_RELATIONSHIPS, { edges: {} });

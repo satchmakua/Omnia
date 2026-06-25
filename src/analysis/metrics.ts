@@ -487,6 +487,19 @@ export function adultWealthGini(world: World, cfg: SimConfig): number {
   return gini(gold);
 }
 
+// ── 12. Well-being: the town's mean mood (M11 slice 2) ───────────────────────────
+
+// Average contentment across the living — a glanceable "how happy is the town" reading.
+// Rises as folk settle into homes and families; falls with debt, homelessness, illness.
+export function townMood(world: World): number {
+  let sum = 0, n = 0;
+  for (const e of world.query(C_AGENT)) {
+    const m = world.getComponent<Agent>(e, C_AGENT)!.mood;
+    if (m !== undefined) { sum += m; n++; }
+  }
+  return n ? sum / n : 0;
+}
+
 // ── The bundle ───────────────────────────────────────────────────────────────────
 
 export interface WorldMetrics {
@@ -503,6 +516,7 @@ export interface WorldMetrics {
   mating: MatingAssortativity;
   occupation: OccupationDiversity;
   language: LinguisticDiversity;
+  mood: number;
 }
 
 // One pass measuring every emergent structure from the current world state.
@@ -529,5 +543,6 @@ export function measureWorld(world: World, cfg: SimConfig): WorldMetrics {
     mating: matingAssortativity(world),
     occupation: occupationDiversity(world),
     language: linguisticDiversity(world),
+    mood: townMood(world),
   };
 }
