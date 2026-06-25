@@ -140,6 +140,16 @@ export class Inspector {
     const tongueName = culture0 && lstore0 ? getLanguage(lstore0, culture0.language)?.name : undefined;
     const tongueLine = tongueName
       ? `<div><b>Tongue</b> <span style="color:#bcd">${tongueName}</span></div>` : '';
+    // Tongues picked up through contact beyond the native one (M10 slice 4): the best-known
+    // few with their fluency %, so a polyglot — and the town's mixing — reads at a glance.
+    let learnedLine = '';
+    if (agent.fluency && lstore0) {
+      const others = Object.entries(agent.fluency)
+        .filter(([id, f]) => id !== culture0?.language && f >= 0.1)
+        .sort((p, q) => q[1] - p[1]).slice(0, 3)
+        .map(([id, f]) => `${getLanguage(lstore0!, id)?.name ?? id} ${Math.round(f * 100)}%`);
+      if (others.length) learnedLine = `<div><b>Also speaks</b> <span style="color:#9ab">${others.join(', ')}</span></div>`;
+    }
     const jobLine = job
       ? `<div><b>Job</b> ${job.professionName}</div>`
       : `<div><b>Job</b> <span style="color:#a99">unemployed</span></div>`;
@@ -202,6 +212,7 @@ export class Inspector {
       ${this.title(agent.name, magic ? 'sapient · folk · mage' : 'sapient · folk')}
       ${speciesLine}
       ${tongueLine}
+      ${learnedLine}
       ${this.terrainLine(world, pos)}
       <div><b>Sex / Age</b> ${sexGlyph} · ${ageYears}y</div>
       <div><b>Action</b> ${agent.action}</div>

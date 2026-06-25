@@ -87,6 +87,10 @@ export interface SimConfig {
   minSchismMembers: number;            // a culture needs at least this many living members to schism
   schismValueNudge: number;            // how strongly a daughter culture's values jump from the parent
   maxLineages: number;                 // cap on stored cultures / tongues; oldest dead branches prune (slice 5)
+  // Language as a mechanic (M10 slice 4): tongues causally gate how readily company warms
+  // into friendship, and agents learn each other's tongues through contact (D26).
+  langLearnPerInteract: number;        // fluency gained in a neighbour's tongue per interaction (bounded growth toward 1)
+  langSynergyFloor: number;            // sentiment-warmth multiplier for speakers with NO common tongue (1 = full when shared)
   // Live-model integration (M7.5; only used when an async provider is in play):
   aiConcurrency: number;               // max in-flight model calls
   aiTimeoutMs: number;                 // per-call timeout before falling back to the deterministic stub
@@ -224,6 +228,8 @@ export const defaultConfig: SimConfig = {
   minSchismMembers: 8,            // small cultures don't fracture
   schismValueNudge: 0.2,          // the daughter starts noticeably apart from the parent
   maxLineages: 24,                // a handful of living lineages + their ancestry; dead branches prune
+  langLearnPerInteract: 0.002,    // ~a few days of contact to grow fluent in a neighbour's tongue (gradual)
+  langSynergyFloor: 0.4,          // strangers with no shared tongue still bond, at 40% rate, until they learn one
   aiConcurrency: 2,               // at most 2 live model calls in flight
   aiTimeoutMs: 8000,              // fall back to the stub after 8s so a slow model never stalls
 };

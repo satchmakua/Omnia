@@ -54,6 +54,9 @@ export interface Agent {
   surname?: string;     // family name, inherited down a lineage (M7)
   cultureId?: string;   // the culture they belong to (M7); its values bias behaviour (D26)
                         // (their displayed tongue is derived live from this culture's language)
+  fluency?: Record<string, number>;  // languageId → 0..1 command of each tongue (M10 slice 4).
+                        // Natively fluent (1) in their culture's language; others are LEARNED
+                        // through contact. Gates cross-tongue friendship warmth (D26). See src/lang/fluency.ts.
 }
 
 // Innate magic aptitude — present on only the rare agents who rolled it at birth
