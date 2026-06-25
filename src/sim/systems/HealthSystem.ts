@@ -3,8 +3,8 @@
 // with extra risk while in poor health. The dead become tombstones; notable
 // deaths are written to the Chronicle.
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_HEALTH, C_LINEAGE, C_CLOCK, C_CHRONICLE } from '../components.ts';
-import type { Agent, Health, Lineage, Clock } from '../components.ts';
+import { C_AGENT, C_HEALTH, C_LINEAGE, C_CLOCK, C_CHRONICLE, C_WALLET } from '../components.ts';
+import type { Agent, Health, Lineage, Clock, Wallet } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
@@ -44,7 +44,11 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
         remember(world, e, tick, 'fell gravely ill', 0.5);
       }
     } else {
-      health.value = Math.min(1, health.value + recovery);
+      // The indebted recover more slowly — poverty means worse food and no care, so debt
+      // finally has a cost (Economy Rebalance). A pure read of the wallet; no RNG.
+      const wallet = world.getComponent<Wallet>(e, C_WALLET);
+      const recover = wallet && wallet.debt > 0 ? recovery * (1 - cfg.debtRecoveryPenalty) : recovery;
+      health.value = Math.min(1, health.value + recover);
       if (health.ill && health.value >= 0.5) {
         health.ill = false;
         if (health.grave) {

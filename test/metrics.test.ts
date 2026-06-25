@@ -16,6 +16,7 @@ import {
   linregress, powerLawTail, socialMetrics, ageDistribution,
   zipfFit, nameFrequencies, languageFamilyShape, measureWorld,
   vowSpread, dynastyConcentration, matingAssortativity, occupationDiversity, linguisticDiversity,
+  adultWealthGini,
 } from '../src/analysis/metrics.ts';
 
 const cfg = defaultConfig;
@@ -320,6 +321,31 @@ describe('linguisticDiversity', () => {
   });
 });
 
+describe('adultWealthGini (honest inequality — Economy Rebalance)', () => {
+  function add(w: World, ageYears: number, gold: number): void {
+    const e = w.createEntity();
+    w.addComponent<Agent>(e, C_AGENT, {
+      name: 'A', action: 'wander', ticksAlive: ageYears * ticksPerYear(cfg),
+      wealthGoal: 50, sex: 'female', lifespanTicks: 1e9,
+    });
+    w.addComponent<Wallet>(e, C_WALLET, { gold, debt: 0 });
+  }
+
+  it('measures inequality among adults only — children (always 0g) are excluded', () => {
+    const w = new World();
+    add(w, 30, 50); add(w, 30, 50);   // two equal adults
+    add(w, 8, 0); add(w, 8, 0);       // two children at 0g (dependents)
+    // If children counted, the spread 50/50/0/0 would read as unequal; adults-only → 0.
+    expect(adultWealthGini(w, cfg)).toBeCloseTo(0, 6);
+  });
+
+  it('rises with real inequality among the adults', () => {
+    const w = new World();
+    add(w, 30, 0); add(w, 30, 100);
+    expect(adultWealthGini(w, cfg)).toBeGreaterThan(0.3);
+  });
+});
+
 // ── integration: emergent regularities from a live run ───────────────────────────
 
 describe('measureWorld through the live loop', () => {
@@ -341,6 +367,8 @@ describe('measureWorld through the live loop', () => {
     expect(m.social.components).toBeGreaterThanOrEqual(1);
     // Wealth fit is defined and bounded
     expect(m.wealthGini).toBeGreaterThanOrEqual(0);
+    expect(m.wealthGiniAdults).toBeGreaterThanOrEqual(0);
+    expect(m.wealthGiniAdults).toBeLessThanOrEqual(1);
     expect(m.wealthTail.alpha).toBeGreaterThanOrEqual(0);
     // Language family carries at least the seed tongues
     expect(m.family).not.toBeNull();

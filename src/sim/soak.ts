@@ -121,7 +121,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `fauna=${fauna} nodes=${nodes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) drifts=${drifts}  gini=${wlth.gini.toFixed(2)}  invalid=${inv}${marker}`,
+      `fauna=${fauna} nodes=${nodes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt}  invalid=${inv}${marker}`,
     );
   }
 }
@@ -139,7 +139,7 @@ if (finalPop > 0) {
   const f = (x: number, d = 2) => x.toFixed(d);
   console.log('\nScience — emergent structure (measured from final state):');
   console.log(
-    `  wealth:   gini=${f(m.wealthGini)}  power-law tail α=${f(m.wealthTail.alpha)} ` +
+    `  wealth:   gini=${f(m.wealthGini)} (adults ${f(m.wealthGiniAdults)})  power-law tail α=${f(m.wealthTail.alpha)} ` +
     `(over top ${m.wealthTail.k}, r²=${f(m.wealthTail.r2)})`,
   );
   console.log(

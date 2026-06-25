@@ -4,6 +4,7 @@ import type { World } from '../sim/ecs.ts';
 import { C_AGENT, C_JOB, C_BUSINESS, C_MAGIC } from '../sim/components.ts';
 import type { Agent, Job, Business } from '../sim/components.ts';
 import { wealthStats } from '../sim/wealth.ts';
+import { adultWealthGini } from '../analysis/metrics.ts';
 import { ageInYears, defaultConfig } from '../sim/config.ts';
 import { ModalPanel, SECTION } from './modalPanel.ts';
 
@@ -23,6 +24,7 @@ export class EconomyDashboard extends ModalPanel {
 
   private render(world: World): void {
     const w = wealthStats(world);
+    const giniAdults = adultWealthGini(world, defaultConfig);
     const folk = world.query(C_AGENT);
     let employed = 0, adults = 0;
     for (const e of folk) {
@@ -52,19 +54,22 @@ export class EconomyDashboard extends ModalPanel {
       <div style="${SECTION}">Wealth</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${metric('Median', `${Math.round(w.median)}g`)}
-        ${metric('Mean', `${Math.round(w.mean)}g`)}
         ${metric('Range', `${Math.round(w.min)}–${Math.round(w.max)}g`)}
-        ${metric('Gini', w.gini.toFixed(2), w.gini > 0.6 ? '#ff9ad0' : '#8fe88f')}
+        ${metric('Gini · all', w.gini.toFixed(2), w.gini > 0.6 ? '#ff9ad0' : '#8fe88f')}
+        ${metric('Gini · adults', giniAdults.toFixed(2), giniAdults > 0.6 ? '#ff9ad0' : '#8fe88f')}
         ${metric('In debt', String(w.inDebt), w.inDebt > 0 ? '#ff9a6a' : '#8fe88f')}
       </div>
       <div style="color:#889;font-size:11px;margin-top:4px">
-        Gini = wealth inequality: <b>0</b> everyone holds the same, <b>1</b> one person holds it all (≈0.2 even, ≈0.6+ very unequal).
+        Gini = wealth inequality (<b>0</b> all equal · <b>1</b> one holds everything). <b>All</b> counts every soul by gold —
+        children are dependents (always 0g), so they pull it up; <b>adults</b> is the real working economy. Debt is bounded;
+        the jobless scrape by on odd jobs.
       </div>
       <div style="${SECTION}">Employment</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${metric('Folk', String(folk.length))}
         ${metric('Adults', String(adults))}
         ${metric('Employed', String(employed))}
+        ${metric('Jobless', String(Math.max(0, adults - employed)), (adults - employed) > 0 ? '#e8d28f' : '#8fe88f')}
         ${metric('Mages', String(world.query(C_AGENT, C_MAGIC).length), '#d090f0')}
       </div>
       <div style="${SECTION}">Businesses</div>

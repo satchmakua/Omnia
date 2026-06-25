@@ -194,6 +194,26 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD:** culture (all axes), beliefs, and language each **measurably change behaviour** (a test shows each shifting an outcome distribution — ✓ all three as of S43); the master tabbed view holds every global view incl. Conversation + Language (✓ S44); Mind lives in the entity inspector (its natural per-agent home); the sleep/work jitter is gone (S39); all legible; determinism + soak hold. **→ M10 DoD met (S38–S44).**
 
+## ✅ Mini-milestone — The Kids Pass: children as dependents with their own minds  *(done — 2026-06-25)*
+
+**Goal:** stop adult mechanics leaking onto children, and give childhood its own legible inner life. *(From a play-review: children were going into debt from birth, dragging the whole economy, and reflecting into adult vows.)*
+
+- [x] **Children are economic dependents (D38).** *(S45: `EconomySystem` no longer charges the daily cost of living to under-`adultAgeYears` folk — they neither work nor pay upkeep, so they stop marching into debt from birth, and adults enter adulthood **solvent** instead of carrying ~190g of childhood debt. Inspector shows a child "A child — a dependent (no work or upkeep yet)" livelihood line instead of job/goal/debt. Illness & mortality kept by design.)*
+- [x] **Children have age-appropriate minds that graduate (D38).** *(S45: `distill(events, isChild)` carries a parallel **child vow** vocabulary — make a true friend / be brave / stay close to family / learn all they can / see what the world holds — selected by age in `AISystem.reflectPass`. When a child comes of age the same memory-themes resolve into the **adult** vow, announced as a "comes of age, resolving …" feed line and recorded as a milestone memory — you watch the mind grow up. +6 `test/childhood.test.ts`.)*
+
+**DoD met (S45):** no child in debt (100%→0%, all seeds); child vows are child-appropriate (100% "to make a true friend"); a coming-of-age transition fires; tests + soak green (0 violations, pop stable, determinism holds). **Knock-on win:** total-in-debt 75–80%→0–45%, Gini 0.87(climbing)→~0.66(stable).
+
+## ✅ Mini-milestone — Economy Rebalance: jobs, debt, and Gini  *(done — 2026-06-25)*
+
+**Goal:** finish what the Kids Pass started — a town where most working adults can stay solvent, debt means something, and inequality is believable rather than an artefact. *(D39.)*
+
+- [x] **Enough work to go round.** *(S46: a **subsistence floor** — jobless adults scrape by on odd-jobs/foraging (`subsistencePerDay` 2.5, just under upkeep) so unemployment is *poverty*, not a bottomless spiral — plus more employers (`businessCount` 8→12) so most working-age adults find real work. Result: adult debt now tracks unemployment only, 14–31% across seeds (was 33–47%), with the majority solvent.)*
+- [x] **Debt has teeth *and* an escape.** *(S46: debt is **bounded** (`maxDebt` 40 — poverty, not a hole), has a **consequence** (the indebted recover from illness `debtRecoveryPenalty` 40% slower — `HealthSystem` reads the wallet), and an **escape** (subsistence + `earn` pays debt before gold, so a job clears it). `.debt` is no longer inert.)*
+- [x] **Gini is honest.** *(S46: new `adultWealthGini` (gold among working-age adults) added to `measureWorld` + the soak line + the Economy tab beside the all-folk Gini, with an explanation that children (dependents at 0g) inflate the "all" figure — so e.g. all=0.74 / adults=0.17 reads correctly as "equal working economy, lots of kids".)*
+- [ ] **(Watch) demographic boom-bust.** Total population is stable at the cap, but the **age structure oscillates** (children 13%→75%→15% across a run) — generational waves that swing the adult/job ratio. Still a note, not a fix; the subsistence floor makes the peaks survivable.
+
+**DoD met (S46):** across 5 seeds a majority of working-age adults stay solvent; debt is bounded (≤40) and meaningful (slows healing); the Economy tab reports the honest adults-only Gini (0.28–0.50) alongside the all-folk one; soak 0 violations, pop stable, determinism holds. Seed-8 soak: Gini 0.87(climbing)→0.51 (adults 0.38), in-debt 47→~10.
+
 ## ▶ Milestone 11 — Homes & Property  *(next — pulled from old M12; requested)*
 
 **Goal:** folk build and own homes that matter — visible town growth, not pre-placed boxes.

@@ -20,8 +20,11 @@ resourceDensity: 0.01
 maxFlora: 500
 maxFauna: 120
 faunaBreedChancePerDay: 0.6
-businessCount: 8
+businessCount: 12
 dailyUpkeep: 3
+subsistencePerDay: 2.5
+maxDebt: 40
+debtRecoveryPenalty: 0.4
 wealthGoalMin: 30
 wealthGoalMax: 110
 businessStartBalance: 300
