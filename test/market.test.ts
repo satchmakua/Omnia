@@ -9,7 +9,7 @@ import {
 } from '../src/sim/components.ts';
 import type { Agent, Wallet, Business, Clock, Market } from '../src/sim/components.ts';
 import {
-  createMarket, getMarket, measureSupplyDemand, clearingPrice,
+  createMarket, getMarket, measureSupplyDemand, clearingPrice, foodSalesGold, foodBusinessWorkers,
 } from '../src/sim/market.ts';
 import { runMarketSystem } from '../src/sim/systems/MarketSystem.ts';
 import { runEconomySystem } from '../src/sim/systems/EconomySystem.ts';
@@ -46,6 +46,23 @@ function farm(w: World, workers: number): void {
       professionId: 'farmer', professionName: 'Farmer', employer: b, wagePerTick: 0.03, gathers: null,
     });
   }
+}
+// A food business with a given balance + worker count, returning its entity id.
+function foodBiz(w: World, balance: number, workers: number): EntityId {
+  const b = w.createEntity();
+  w.addComponent<Business>(b, C_BUSINESS, {
+    professionId: 'farmer', professionName: 'Farmer', color: '#80b060',
+    balance, maxEmployees: 9, wagePerTick: 0.03, revenuePerWorkerPerTick: 0.04,
+    requiresAptitude: false, gathers: null, producesFood: true,
+  });
+  w.addComponent(b, C_POSITION, { x: 0, y: 0 });
+  for (let i = 0; i < workers; i++) {
+    const e = adult(w);
+    w.addComponent(e, C_JOB, {
+      professionId: 'farmer', professionName: 'Farmer', employer: b, wagePerTick: 0.03, gathers: null,
+    });
+  }
+  return b;
 }
 
 // ── Pure pricing helpers ──────────────────────────────────────────────────────────
@@ -156,5 +173,68 @@ describe('market at world-gen (M15)', () => {
     const mkt = getMarket(world)!;
     expect(mkt).toBeDefined();
     expect(mkt.price).toBe(defaultConfig.provisionBasePrice);
+  });
+});
+
+// ── Slice 2: real sales revenue ──────────────────────────────────────────────────────
+describe('food businesses earn from real sales (M15 slice 2)', () => {
+  it('foodSalesGold: scarcity sells the whole farm output; a glut leaves output unsold', () => {
+    const scarce = foodSalesGold(cfg.baseForagedProvisions + 10, 40, 3, cfg);  // farmSupply 10 < demand 40
+    expect(scarce).toBeCloseTo(10 * 3, 6);                                      // all 10 rations sell
+    const glut = foodSalesGold(cfg.baseForagedProvisions + 50, 5, 3, cfg);      // farmSupply 50 > demand 5
+    expect(glut).toBeCloseTo(5 * 3, 6);                                         // only the 5 eaten sell
+  });
+
+  it('foodBusinessWorkers counts only workers at food producers', () => {
+    const w = town();
+    foodBiz(w, 100, 2);
+    // a non-food business with a worker
+    const m = w.createEntity();
+    w.addComponent<Business>(m, C_BUSINESS, {
+      professionId: 'miner', professionName: 'Miner', color: '#909',
+      balance: 100, maxEmployees: 4, wagePerTick: 0.04, revenuePerWorkerPerTick: 0.05,
+      requiresAptitude: false, gathers: 'ore',
+    });
+    const e = adult(w);
+    w.addComponent(e, C_JOB, { professionId: 'miner', professionName: 'Miner', employer: m, wagePerTick: 0.04, gathers: 'ore' });
+    expect(foodBusinessWorkers(w).total).toBe(2);   // the miner is not counted
+  });
+
+  it('MarketSystem credits food businesses by their workforce share', () => {
+    const w = town();
+    w.addComponent<Market>(w.createEntity(), C_MARKET, createMarket(cfg));
+    const big = foodBiz(w, 100, 2);   // 2 workers
+    const small = foodBiz(w, 100, 1); // 1 worker
+    for (let i = 0; i < 30; i++) adult(w, 30);   // plenty of demand → farm output all sells
+    runMarketSystem(w, cfg);
+    const bigGain = w.getComponent<Business>(big, C_BUSINESS)!.balance - 100;
+    const smallGain = w.getComponent<Business>(small, C_BUSINESS)!.balance - 100;
+    expect(smallGain).toBeGreaterThan(0);
+    expect(bigGain).toBeCloseTo(2 * smallGain, 4);   // 2:1 worker split
+  });
+
+  it('a food business gets no synthetic per-worker revenue (only wages move its balance)', () => {
+    const w = town();
+    const biz = foodBiz(w, 100, 0);
+    const e = adult(w);
+    w.getComponent<Agent>(e, C_AGENT)!.action = 'work';
+    w.addComponent(e, C_JOB, { professionId: 'farmer', professionName: 'Farmer', employer: biz, wagePerTick: 2, gathers: null });
+    runEconomySystem(w, { ...cfg, subsistencePerDay: 0 });   // no market → no sales; producesFood → no synthetic revenue
+    expect(w.getComponent<Business>(biz, C_BUSINESS)!.balance).toBe(98);   // 100 − wage only
+  });
+
+  it('a non-food business still books its synthetic revenue (no goods market yet)', () => {
+    const w = town();
+    const m = w.createEntity();
+    w.addComponent<Business>(m, C_BUSINESS, {
+      professionId: 'miner', professionName: 'Miner', color: '#909',
+      balance: 100, maxEmployees: 4, wagePerTick: 2, revenuePerWorkerPerTick: 3,
+      requiresAptitude: false, gathers: 'ore',   // producesFood omitted → false
+    });
+    const e = adult(w);
+    w.getComponent<Agent>(e, C_AGENT)!.action = 'work';
+    w.addComponent(e, C_JOB, { professionId: 'miner', professionName: 'Miner', employer: m, wagePerTick: 2, gathers: 'ore' });
+    runEconomySystem(w, { ...cfg, subsistencePerDay: 0 });
+    expect(w.getComponent<Business>(m, C_BUSINESS)!.balance).toBe(101);   // 100 − wage 2 + revenue 3
   });
 });
