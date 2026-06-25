@@ -7,7 +7,7 @@
 // never perturbs the trajectory beyond the gold it moves.
 import { C_MARKET, C_AGENT, C_JOB, C_BUSINESS } from './components.ts';
 import type { Market, Agent, Job, Business } from './components.ts';
-import type { World } from './ecs.ts';
+import type { World, EntityId } from './ecs.ts';
 import type { SimConfig } from './config.ts';
 import { ageInYears } from './config.ts';
 
@@ -50,4 +50,25 @@ export function clearingPrice(price: number, supply: number, demand: number, cfg
     cfg.provisionPriceMin, cfg.provisionPriceMax,
   );
   return clamp(price + (target - price) * cfg.priceAdjustRate, cfg.provisionPriceMin, cfg.provisionPriceMax);
+}
+
+// The gold households spend on FARM-produced food in a day (M15 slice 2): they buy the
+// farms' output at the market price, but never more rations than are actually eaten — so an
+// over-supplied glut leaves farms with unsold output (and thin revenue). The foraged commons
+// is self-gathered, so no business earns from it.
+export function foodSalesGold(supply: number, demand: number, price: number, cfg: SimConfig): number {
+  const farmSupply = Math.max(0, supply - cfg.baseForagedProvisions);
+  return Math.min(farmSupply, demand) * price;
+}
+
+// Workers employed at each food-producing business, and the total across them all.
+export function foodBusinessWorkers(world: World): { byBiz: Map<EntityId, number>; total: number } {
+  const byBiz = new Map<EntityId, number>();
+  let total = 0;
+  for (const e of world.query(C_AGENT, C_JOB)) {
+    const j = world.getComponent<Job>(e, C_JOB)!;
+    const biz = world.getComponent<Business>(j.employer, C_BUSINESS);
+    if (biz?.producesFood) { byBiz.set(j.employer, (byBiz.get(j.employer) ?? 0) + 1); total++; }
+  }
+  return { byBiz, total };
 }

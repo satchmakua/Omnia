@@ -86,7 +86,10 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
       biz.balance -= job.wagePerTick;
       earn(world.getComponent<Wallet>(e, C_WALLET)!, job.wagePerTick);
     }
-    biz.balance += biz.revenuePerWorkerPerTick;
+    // Food producers earn from real market sales (MarketSystem), so they get no synthetic
+    // revenue — that's what lets an unprofitable farm actually go broke (M15 slice 2). Other
+    // trades still book abstract revenue until their goods get markets (a later M15 slice).
+    if (!biz.producesFood) biz.balance += biz.revenuePerWorkerPerTick;
   }
 
   // ── Cost of living (once per day) ─────────────────────────────────────────────

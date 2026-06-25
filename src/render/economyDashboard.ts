@@ -4,7 +4,7 @@ import type { World } from '../sim/ecs.ts';
 import { C_AGENT, C_JOB, C_BUSINESS, C_MAGIC } from '../sim/components.ts';
 import type { Agent, Job, Business } from '../sim/components.ts';
 import { wealthStats } from '../sim/wealth.ts';
-import { getMarket } from '../sim/market.ts';
+import { getMarket, foodSalesGold } from '../sim/market.ts';
 import { adultWealthGini } from '../analysis/metrics.ts';
 import { ageInYears, defaultConfig } from '../sim/config.ts';
 import { ModalPanel, SECTION } from './modalPanel.ts';
@@ -57,7 +57,7 @@ export class EconomyDashboard extends ModalPanel {
       const staff = staffByBiz.get(e) ?? 0;
       const full = staff >= b.maxEmployees;
       return `<tr style="border-top:1px solid rgba(255,255,255,0.06)">
-        <td style="padding:4px 8px 4px 0"><span style="color:${b.color}">●</span> ${b.professionName}${b.requiresAptitude ? ' <span style="color:#d090f0">✦</span>' : ''}</td>
+        <td style="padding:4px 8px 4px 0"><span style="color:${b.color}">●</span> ${b.professionName}${b.requiresAptitude ? ' <span style="color:#d090f0">✦</span>' : ''}${b.producesFood ? ' <span title="lives on real market sales">🌾</span>' : ''}</td>
         <td style="padding:4px 8px;text-align:center;color:${full ? '#8fe88f' : '#ccd'}">${staff}/${b.maxEmployees}</td>
         <td style="padding:4px 8px;text-align:right">${b.balance.toFixed(0)}g</td>
         <td style="padding:4px 0;text-align:right;color:#9ab">${(b.wagePerTick * defaultConfig.ticksPerDay).toFixed(1)}/day</td>
@@ -71,17 +71,20 @@ export class EconomyDashboard extends ModalPanel {
       const trend = dear ? 'provisions are dear — farming lags the mouths to feed'
         : cheap ? 'provisions are cheap — the farms have a glut'
         : 'provisions are steady — supply roughly meets demand';
+      const farmSales = foodSalesGold(mkt.supply, mkt.demand, mkt.price, defaultConfig);
       return `
       <div style="${SECTION}">Market — staple provisions</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         ${metric('Price', `${mkt.price.toFixed(1)}g/day`, dear ? '#ff9a6a' : cheap ? '#8fe88f' : '#e6e6f0')}
         ${metric('Supply', `${mkt.supply.toFixed(0)}`)}
         ${metric('Demand', `${mkt.demand.toFixed(0)}`)}
+        ${metric('Farm sales', `${farmSales.toFixed(0)}g/day`, '#9fdca0')}
         <div>${priceSparkline(mkt.history, defaultConfig.provisionPriceMin, defaultConfig.provisionPriceMax)}</div>
       </div>
       <div style="color:#889;font-size:11px;margin-top:4px">
         The daily cost of living is the price of a day's food. It floats with <b>supply</b> (the town's
-        farmers + wild foraging) against <b>demand</b> (the adult mouths to feed) — ${trend}.
+        farmers + wild foraging) against <b>demand</b> (the adult mouths to feed) — ${trend}. That spending
+        is the <b>farms' income</b> (🌾 below): they live on real sales, not a fixed wage.
       </div>`;
     })() : '';
 
