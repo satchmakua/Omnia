@@ -174,6 +174,7 @@ if (finalPop > 0) {
     `mean=${f(m.language.meanTongues, 2)}/head  lingua franca=${m.language.linguaFranca ?? '—'} ` +
     `(${f(m.language.francaShare * 100, 0)}% command)`,
   );
+  console.log(`  wellbeing: mean mood=${f(m.mood)}`);
 }
 
 if (violations > 0) {

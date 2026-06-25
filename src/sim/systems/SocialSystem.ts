@@ -21,6 +21,7 @@ import { remember } from '../../ai/memory.ts';
 import { getCultureStore, getCulture, bondFactor, prefersEndogamy } from '../../culture/cultureStore.ts';
 import type { CultureStoreData, RuntimeCulture } from '../../culture/cultureStore.ts';
 import { intelligibility, langSynergy, learnTongue } from '../../lang/fluency.ts';
+import { moodWarmth, MOOD_BASELINE } from './MoodSystem.ts';
 
 // An agent's culture (D26 coupling), or undefined if they have none / no store yet.
 function cultureOf(world: World, cstore: CultureStoreData | undefined, e: EntityId): RuntimeCulture | undefined {
@@ -117,7 +118,9 @@ function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId, cstore
   const agentB = world.getComponent<Agent>(b, C_AGENT)!;
   const bond = bondFactor(ca, cb);
   const synergy = langSynergy(intelligibility(agentA.fluency, agentB.fluency), cfg.langSynergyFloor);
-  const warm = cfg.sentimentGainPerInteract * bond * synergy;
+  // Content folk warm to each other more readily; the lonely & miserable less so (D26).
+  const mood = moodWarmth(agentA.mood ?? MOOD_BASELINE, agentB.mood ?? MOOD_BASELINE);
+  const warm = cfg.sentimentGainPerInteract * bond * synergy * mood;
 
   const ea = edge(world.getComponent<Relationships>(a, C_RELATIONSHIPS)!, b);
   const eb = edge(world.getComponent<Relationships>(b, C_RELATIONSHIPS)!, a);

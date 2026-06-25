@@ -37,11 +37,20 @@ describe('StubProvider', () => {
     expect(stubProvider.completeSync(p)).toBe(stubProvider.completeSync(p));
   });
 
+  const FAMILY_BELIEFS = ['treasures family above all', 'lives for their kin', 'finds meaning in their family'];
+
   it('themes the belief from the memories in the prompt', () => {
     const family = stubProvider.completeSync('memories: a child was born; another child was born');
-    expect(['treasures family above all', 'lives for their kin', 'finds meaning in their children']).toContain(family);
+    expect(FAMILY_BELIEFS).toContain(family);
     const grief = stubProvider.completeSync('memories: lost their spouse; their parent died');
     expect(['carries old grief quietly', 'has learned that all things pass', 'guards their heart against loss']).toContain(grief);
+  });
+
+  it('a self-birth memory does NOT read as having children; a child being born does', () => {
+    // A newborn reflecting on its OWN birth must not get a family ("their children") belief.
+    expect(FAMILY_BELIEFS).not.toContain(stubProvider.completeSync('Reflecting on Pip: was born to Mara.'));
+    // A parent whose child was born does.
+    expect(FAMILY_BELIEFS).toContain(stubProvider.completeSync('Reflecting on Mara: their child Pip was born.'));
   });
 
   it('complete() resolves to the same text as completeSync', async () => {

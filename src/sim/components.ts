@@ -58,6 +58,9 @@ export interface Agent {
   fluency?: Record<string, number>;  // languageId → 0..1 command of each tongue (M10 slice 4).
                         // Natively fluent (1) in their culture's language; others are LEARNED
                         // through contact. Gates cross-tongue friendship warmth (D26). See src/lang/fluency.ts.
+  mood?: number;        // 0..1 well-being / contentment (M11 slice 2). Drifts toward a target set
+                        // by circumstance — a home, family, solvency, health lift it; debt,
+                        // homelessness, illness lower it. Warms friendship (D26). See MoodSystem.
 }
 
 // Innate magic aptitude — present on only the rare agents who rolled it at birth

@@ -398,5 +398,8 @@ describe('measureWorld through the live loop', () => {
     expect(m.language.linguaFranca).not.toBeNull();
     expect(m.language.francaShare).toBeGreaterThan(0);
     expect(m.language.francaShare).toBeLessThanOrEqual(1);
+    // Well-being (slice 2): a sane mean mood in (0,1].
+    expect(m.mood).toBeGreaterThan(0);
+    expect(m.mood).toBeLessThanOrEqual(1);
   }, 20_000);
 });

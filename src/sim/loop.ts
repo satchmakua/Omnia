@@ -16,6 +16,7 @@ import { runBuildSystem }    from './systems/BuildSystem.ts';
 import { runSocialSystem }   from './systems/SocialSystem.ts';
 import { runReproductionSystem } from './systems/ReproductionSystem.ts';
 import { runHealthSystem }   from './systems/HealthSystem.ts';
+import { runMoodSystem }     from './systems/MoodSystem.ts';
 import { runAISystem }       from './systems/AISystem.ts';
 import { runMemorySystem }   from './systems/MemorySystem.ts';
 import { runHistorySystem }  from './systems/HistorySystem.ts';
@@ -44,6 +45,7 @@ export function tick(
   runSocialSystem(world, cfg, rng);      // relationships, social need, courtship → marriage
   runReproductionSystem(world, cfg, rng, content); // births → children + lineage
   runHealthSystem(world, cfg, rng);      // illness, ageing, death → tombstones
+  runMoodSystem(world, cfg);             // daily well-being: home / family / solvency / health → mood
   runAISystem(world, cfg, provider);     // the "soul": reflection / dialogue / dreams / decisions (rare)
   runMemorySystem(world, cfg);           // multi-resolution rollup: old memories → episodic summaries
   runHistorySystem(world, cfg);          // world history: sample strata + compress the Chronicle

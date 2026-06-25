@@ -177,6 +177,9 @@ export class Inspector {
         if (!firstHome) firstHome = world.getComponent<Position>(he, C_POSITION);
       }
     }
+    const moodVal = agent.mood ?? 0.6;
+    const moodWord = moodVal >= 0.66 ? 'content' : moodVal >= 0.4 ? 'unsettled' : 'low';
+    const moodLine = `<div>Mood ${bar(moodVal)} <span style="color:#889">${moodWord}</span></div>`;
     const homeLine = homeCount === 0
       ? `<div><b>Home</b> <span style="color:#a99">none yet</span></div>`
       : homeCount === 1
@@ -252,6 +255,7 @@ export class Inspector {
       <div>Hunger ${bar(needs.hunger)}</div>
       <div>Energy ${bar(needs.energy)}</div>
       <div>Social ${bar(needs.social)}</div>
+      ${moodLine}
       ${healthBlock}
       ${livelihoodBlock}
       ${family}

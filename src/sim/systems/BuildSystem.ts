@@ -7,9 +7,9 @@
 // inheritance is a slice-2 refinement).
 import type { World, EntityId } from '../ecs.ts';
 import {
-  C_AGENT, C_WALLET, C_HOME, C_BUSINESS, C_POSITION, C_CLOCK, C_TILEMAP,
+  C_AGENT, C_WALLET, C_HOME, C_BUSINESS, C_POSITION, C_CLOCK, C_TILEMAP, C_TOMBSTONE,
 } from '../components.ts';
-import type { Agent, Wallet, Home, Position, Clock } from '../components.ts';
+import type { Agent, Wallet, Home, Position, Clock, Tombstone } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 import { spend } from '../economy.ts';
@@ -55,14 +55,35 @@ export function runBuildSystem(world: World, cfg: SimConfig): void {
     occupied.add(p.y * W + p.x);
   }
 
-  // Prune ruined homes (owner no longer a living agent), then tally what the living own.
+  // Tally what the living own; set aside homes whose owner has died (orphans).
   const owned = new Map<EntityId, number>();
+  const orphans: EntityId[] = [];
   for (const e of world.query(C_HOME, C_POSITION)) {
     const home = world.getComponent<Home>(e, C_HOME)!;
-    if (!world.hasComponent(home.owner, C_AGENT)) { world.destroyEntity(e); continue; }
-    owned.set(home.owner, (owned.get(home.owner) ?? 0) + 1);
+    if (world.hasComponent(home.owner, C_AGENT)) {
+      owned.set(home.owner, (owned.get(home.owner) ?? 0) + 1);
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      occupied.add(p.y * W + p.x);
+    } else {
+      orphans.push(e);
+    }
+  }
+
+  // Inheritance (M11 slice 2): a home outliving its owner passes to a living child who has
+  // no home of their own — the family seat, kept down the line — and falls to ruin only when
+  // there's no such heir. Homes thus run in families AND stay bounded (each agent's total is
+  // capped by the escalating build cost, so the count can't grow without limit).
+  for (const e of orphans) {
+    const home = world.getComponent<Home>(e, C_HOME)!;
+    const tomb = world.getComponent<Tombstone>(home.owner, C_TOMBSTONE);
+    const heir = tomb?.children.find(c => world.hasComponent(c, C_AGENT) && (owned.get(c) ?? 0) === 0);
+    if (heir === undefined) { world.destroyEntity(e); continue; }
+    home.owner = heir;
+    owned.set(heir, 1);
     const p = world.getComponent<Position>(e, C_POSITION)!;
     occupied.add(p.y * W + p.x);
+    emitEvent(world, 'work', `${world.getComponent<Agent>(heir, C_AGENT)!.name} inherited the family home.`);
+    remember(world, heir, tick, 'inherited the family home', 0.55);
   }
 
   // A settled adult with the means builds a home where they stand. The cost escalates with
