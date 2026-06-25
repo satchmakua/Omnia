@@ -1,5 +1,5 @@
 import { World } from './ecs.ts';
-import { createRNG, rngInt, rngFloat } from './rng.ts';
+import { createRNG, rngFloat } from './rng.ts';
 import {
   C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_WORLDSTATS, C_CULTURESTORE, C_LANGUAGESTORE,
   C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_CIVIC, C_ORGSTORE, C_MARKET,
@@ -13,7 +13,7 @@ import type { Content } from '../content/loader.ts';
 import type { Species } from '../content/schema.ts';
 import { spawnAgent } from './spawnAgent.ts';
 import { generateTileMap } from '../world/worldgen.ts';
-import { isPassable, inBounds } from '../world/tilemap.ts';
+import { isPassable, inBounds, findPassableTile } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { populateWorld } from '../world/populate.ts';
 import { spawnBusiness } from '../world/spawn.ts';
@@ -70,20 +70,6 @@ function pairFounders(world: World, cfg: SimConfig): void {
 
 // Find a passable tile by rejection sampling, falling back to a deterministic
 // scan if the random draws keep landing on water (keeps spawns off impassable tiles).
-function findPassableTile(rng: RNG, map: TileMapData): { x: number; y: number } {
-  for (let attempt = 0; attempt < 100; attempt++) {
-    const x = rngInt(rng, 0, map.width - 1);
-    const y = rngInt(rng, 0, map.height - 1);
-    if (isPassable(map, x, y)) return { x, y };
-  }
-  for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) {
-      if (isPassable(map, x, y)) return { x, y };
-    }
-  }
-  throw new Error('World generation produced no passable tiles');
-}
-
 // The town's shared civic landmarks (M11 slice 3). Placed deterministically AFTER all
 // RNG-consuming generation, so they're purely additive — the trajectory is unchanged. They
 // have no mechanical role yet: legible hooks for institutions (M14) and religion (M15).

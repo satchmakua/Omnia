@@ -3,16 +3,18 @@
 // over the eras (new tribes emerge alongside cultures & tongues). Runs daily (succession is
 // cheap and need not be instant); schism evaluates on the culture/language era cadence.
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_CLOCK } from '../components.ts';
+import { C_AGENT, C_CLOCK, C_CHRONICLE } from '../components.ts';
 import type { Agent, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
-import { getOrgStore, forkOrg, pruneOrgs } from '../../org/orgStore.ts';
+import { getOrgStore, forkOrg, pruneOrgs, areAtWar, declareWar, endWar } from '../../org/orgStore.ts';
 import type { OrgStoreData } from '../../org/orgStore.ts';
 import { getCultureStore, getCulture } from '../../culture/cultureStore.ts';
 import { getLanguageStore, getLanguage } from '../../lang/languageStore.ts';
 import { word } from '../../lang/language.ts';
 import { emitEvent } from '../../history/eventlog.ts';
+import { chronicleAdd } from '../../history/chronicle.ts';
+import type { ChronicleData } from '../../history/chronicle.ts';
 
 const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -86,6 +88,39 @@ export function runOrgSystem(world: World, cfg: SimConfig, rng: RNG): void {
       store.byId[daughter].leader = eldest(world, sorted.slice(half));
       store.byId[id].leader = eldest(world, sorted.slice(0, half));
       emitEvent(world, 'culture', `The ${name} broke away from the ${org.name}.`);
+    }
+
+    // ── War (M16 slice 3): end decided/exhausted wars, then maybe start a new one ──
+    const eraTicks = cfg.evolutionIntervalDays * cfg.ticksPerDay;
+    const sizeOf = (id: string): number => members.get(id)?.length ?? 0;
+    for (const war of [...(store.wars ?? [])]) {
+      const a = store.byId[war.a], b = store.byId[war.b];
+      const aN = sizeOf(war.a), bN = sizeOf(war.b);
+      const routed = aN === 0 || bN === 0 || Math.min(aN, bN) < Math.max(aN, bN) * 0.4;
+      const exhausted = tick - war.since >= cfg.warDurationEras * eraTicks;
+      if (!a || !b || a.extinct || b.extinct || routed || exhausted) {
+        endWar(store, war.a, war.b);
+        if (a && b && !a.extinct && !b.extinct) {
+          const winner = aN >= bN ? a : b, loser = aN >= bN ? b : a;
+          emitEvent(world, 'culture', routed
+            ? `The ${winner.name} broke the ${loser.name} in war.`
+            : `The ${a.name} and the ${b.name} made peace.`);
+        }
+      }
+    }
+    const eligible = Object.keys(store.byId).filter(id => !store.byId[id].extinct && sizeOf(id) >= cfg.minWarMembers);
+    const aggressors = eligible.filter(id => store.byId[id].values.martial >= cfg.warMartialThreshold);
+    if (aggressors.length > 0 && eligible.length >= 2 && rng() < cfg.warChancePerEra) {
+      const a = aggressors[Math.floor(rng() * aggressors.length)];
+      const targets = eligible.filter(id => id !== a && !areAtWar(store, a, id));
+      if (targets.length > 0) {
+        const b = targets[Math.floor(rng() * targets.length)];
+        declareWar(store, a, b, tick);
+        emitEvent(world, 'culture', `The ${store.byId[a].name} declared war on the ${store.byId[b].name}.`);
+        const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
+        if (ch) chronicleAdd(ch, { tick, importance: 0.8, kind: 'war',
+          text: `The ${store.byId[a].name} went to war with the ${store.byId[b].name}.` }, cfg.chronicleImportanceThreshold);
+      }
     }
   }
 

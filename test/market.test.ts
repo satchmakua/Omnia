@@ -13,7 +13,9 @@ import {
 } from '../src/sim/market.ts';
 import { runMarketSystem } from '../src/sim/systems/MarketSystem.ts';
 import { runEconomySystem } from '../src/sim/systems/EconomySystem.ts';
+import { runBusinessSystem } from '../src/sim/systems/BusinessSystem.ts';
 import { createSimulation } from '../src/sim/world.ts';
+import { createRNG } from '../src/sim/rng.ts';
 import { testContent } from './helpers.ts';
 
 const cfg = defaultConfig;
@@ -236,5 +238,68 @@ describe('food businesses earn from real sales (M15 slice 2)', () => {
     w.addComponent(e, C_JOB, { professionId: 'miner', professionName: 'Miner', employer: m, wagePerTick: 2, gathers: 'ore' });
     runEconomySystem(w, { ...cfg, subsistencePerDay: 0 });
     expect(w.getComponent<Business>(m, C_BUSINESS)!.balance).toBe(101);   // 100 − wage 2 + revenue 3
+  });
+});
+
+// ── Slice 2b: business turnover (fixed cost → bankruptcy; demand-driven founding) ──────
+describe('business turnover (M15 slice 2b)', () => {
+  const advance = (w: World, days: number) => {
+    const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+    for (let d = 1; d <= days; d++) { clock.tick = d * cfg.ticksPerDay; runBusinessSystem(w, cfg, createRNG(1), testContent()); }
+  };
+
+  it('an unprofitable farm drains under the operating cost and folds past the grace', () => {
+    const w = town();
+    const biz = foodBiz(w, cfg.bankruptcyThreshold + 5, 0);   // no sales; overhead eats it
+    advance(w, cfg.bankruptcyGraceDays + 2);
+    expect(w.isAlive(biz)).toBe(false);
+  });
+
+  it('a well-funded farm survives the operating cost', () => {
+    const w = town();
+    const biz = foodBiz(w, 1000, 0);
+    advance(w, cfg.bankruptcyGraceDays + 5);
+    expect(w.isAlive(biz)).toBe(true);
+    expect(w.getComponent<Business>(biz, C_BUSINESS)!.lowFundsDays).toBe(0);
+  });
+
+  it('a non-food business pays no operating cost and never folds', () => {
+    const w = town();
+    const b = w.createEntity();
+    w.addComponent<Business>(b, C_BUSINESS, {
+      professionId: 'miner', professionName: 'Miner', color: '#909',
+      balance: 0, maxEmployees: 4, wagePerTick: 0.04, revenuePerWorkerPerTick: 0.05,
+      requiresAptitude: false, gathers: 'ore',
+    });
+    advance(w, cfg.bankruptcyGraceDays + 5);
+    expect(w.isAlive(b)).toBe(true);
+  });
+
+  it('founds a new farm when food is dear and the existing farms are all full', () => {
+    const sim = createSimulation({ ...defaultConfig, seed: 3 }, testContent());
+    const { world, rng } = sim;
+    for (const e of world.query(C_BUSINESS)) {
+      if (world.getComponent<Business>(e, C_BUSINESS)!.producesFood) world.destroyEntity(e);   // no farms → vacuously "all full"
+    }
+    const mkt = getMarket(world)!;
+    mkt.supply = defaultConfig.baseForagedProvisions;   // farmSupply 0
+    mkt.demand = 40;                                     // scarce
+    world.getComponent<Clock>(world.query(C_CLOCK)[0], C_CLOCK)!.tick = defaultConfig.ticksPerDay;
+    runBusinessSystem(world, defaultConfig, rng, sim.content);
+    expect(world.query(C_BUSINESS).filter(e => world.getComponent<Business>(e, C_BUSINESS)!.producesFood).length).toBe(1);
+  });
+
+  it('does not found a farm when food supply already meets demand', () => {
+    const sim = createSimulation({ ...defaultConfig, seed: 3 }, testContent());
+    const { world, rng } = sim;
+    for (const e of world.query(C_BUSINESS)) {
+      if (world.getComponent<Business>(e, C_BUSINESS)!.producesFood) world.destroyEntity(e);
+    }
+    const mkt = getMarket(world)!;
+    mkt.supply = defaultConfig.baseForagedProvisions + 50;   // plenty
+    mkt.demand = 10;
+    world.getComponent<Clock>(world.query(C_CLOCK)[0], C_CLOCK)!.tick = defaultConfig.ticksPerDay;
+    runBusinessSystem(world, defaultConfig, rng, sim.content);
+    expect(world.query(C_BUSINESS).filter(e => world.getComponent<Business>(e, C_BUSINESS)!.producesFood).length).toBe(0);
   });
 });

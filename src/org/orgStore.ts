@@ -11,14 +11,34 @@ type Values = Organization['values'];
 const AXES = ['communal', 'martial', 'traditional', 'open'] as const;
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 
+// An active war between two tribes (M16 slice 3). Symmetric; members fight enemy members on
+// sight until it ends (duration or one side routed).
+export interface War {
+  a: string;
+  b: string;
+  since: number;
+}
+
 export interface OrgStoreData {
   byId: Record<string, Organization>;
   created: number;         // total tribes ever formed — spaces the colour hues
   lastEvolveTick: number;  // the org-evolution (schism) clock
+  wars: War[];             // active inter-tribe wars (M16)
 }
 
 export function createOrgStore(): OrgStoreData {
-  return { byId: {}, created: 0, lastEvolveTick: 0 };
+  return { byId: {}, created: 0, lastEvolveTick: 0, wars: [] };
+}
+
+export function areAtWar(store: OrgStoreData, a: string, b: string): boolean {
+  return (store.wars ?? []).some(w => (w.a === a && w.b === b) || (w.a === b && w.b === a));
+}
+export function declareWar(store: OrgStoreData, a: string, b: string, tick: number): void {
+  if (!store.wars) store.wars = [];
+  if (!areAtWar(store, a, b)) store.wars.push({ a, b, since: tick });
+}
+export function endWar(store: OrgStoreData, a: string, b: string): void {
+  store.wars = (store.wars ?? []).filter(w => !((w.a === a && w.b === b) || (w.a === b && w.b === a)));
 }
 
 export function getOrgStore(world: World): OrgStoreData | undefined {
