@@ -43,6 +43,7 @@ const CONTROLS: [string, string][] = [
   ['V', 'Conversation — what the town is saying'],
   ['N', 'Language — tongues, sounds &amp; fluency'],
   ['K', 'Tribes — factions, leaders &amp; governments'],
+  ['X', 'Conflict — wars, champions, outlaws &amp; deaths'],
   ['L', 'toggle the Legend key'],
   ['H', 'toggle Town Happenings'],
 ];

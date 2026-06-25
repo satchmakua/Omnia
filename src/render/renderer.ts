@@ -3,11 +3,12 @@ import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
   C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME, C_CIVIC,
-  C_CLOCK, C_TILEMAP,
+  C_CLOCK, C_TILEMAP, C_EVENTLOG,
 } from '../sim/components.ts';
 import type {
   Position, Agent, Health, Flora, Fauna, Resource, Business, Clock,
 } from '../sim/components.ts';
+import type { EventLogData } from '../history/eventlog.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import { ageInYears, calendarOf } from '../sim/config.ts';
@@ -61,6 +62,11 @@ export class Renderer {
   private lastX = 0;
   private lastY = 0;
 
+  // Combat FX (M16 legibility): brief fading marks at the sites of fights & deaths, ingested
+  // render-only from the EventLog (combat events now carry a position). Zero sim cost.
+  private flashes: { x: number; y: number; kind: string; age: number }[] = [];
+  private lastFxTick = -1;
+
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private cfg: SimConfig,
@@ -84,6 +90,8 @@ export class Renderer {
     this.scale = 1;
     this.offsetX = 0;
     this.offsetY = 0;
+    this.flashes = [];
+    this.lastFxTick = -1;
     this.clampOffset();
   }
 
@@ -233,11 +241,14 @@ export class Renderer {
       this.iconFolk(p.x, p.y, child, {
         mage: world.hasComponent(e, C_MAGIC),
         ill: !!health?.ill,
+        wounded: !!health && health.value < 0.55,   // visibly hurt (combat or illness)
         action: agent.action,
         chatting: inCompany(p),
         bodyColor: agent.orgId && orgStore ? orgStore.byId[agent.orgId]?.color : undefined,
       });
     }
+
+    this.drawCombatFx(world, elapsedMs);   // fading clash/death marks (still in world space)
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.drawHud(world, clockEntity, elapsedMs);
@@ -253,7 +264,7 @@ export class Renderer {
     ctx.restore();
   }
 
-  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; action: string; chatting: boolean; bodyColor?: string }): void {
+  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; wounded: boolean; action: string; chatting: boolean; bodyColor?: string }): void {
     const ctx = this.ctx;
     this.at(gx, gy, child ? 0.72 : 1, () => {
       ctx.fillStyle = st.bodyColor ?? CATEGORY_COLOR.folk;   // tinted by tribe (M14)
@@ -270,8 +281,52 @@ export class Renderer {
         ctx.beginPath(); ctx.arc(-7, -7, 1.3, 0, Math.PI * 2); ctx.arc(-3.4, -7, 1.3, 0, Math.PI * 2); ctx.fill();
       }
       if (st.ill) { ctx.strokeStyle = BADGE.ill; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-7, -7); ctx.lineTo(-7, -3); ctx.moveTo(-9, -5); ctx.lineTo(-5, -5); ctx.stroke(); }
+      if (st.wounded) { ctx.strokeStyle = '#ff5050'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-4, 11); ctx.lineTo(4, 11); ctx.stroke(); }  // a red "hurt" bar at the feet
       if (st.mage) { ctx.fillStyle = BADGE.mage; this.spark(7, -9); }
     });
+  }
+
+  // Combat FX: brief fading marks at the sites of recent fights & deaths. Ingested render-
+  // only from the EventLog's positioned combat events — the simulation is never touched.
+  private drawCombatFx(world: World, elapsedMs: number): void {
+    const FX_LIFE = 750;
+    const logEnts = world.query(C_EVENTLOG);
+    const clockEnts = world.query(C_CLOCK);
+    if (logEnts.length && clockEnts.length) {
+      const tick = world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick;
+      if (tick < this.lastFxTick) { this.flashes = []; this.lastFxTick = tick; }   // sim reset / replay
+      if (tick > this.lastFxTick) {
+        const log = world.getComponent<EventLogData>(logEnts[0], C_EVENTLOG)!;
+        for (const ev of log.entries) {
+          if (ev.tick > this.lastFxTick && ev.x !== undefined && ev.y !== undefined) {
+            this.flashes.push({ x: ev.x, y: ev.y, kind: ev.kind, age: 0 });
+          }
+        }
+        if (this.flashes.length > 64) this.flashes.splice(0, this.flashes.length - 64);
+        this.lastFxTick = tick;
+      }
+    }
+    const ctx = this.ctx;
+    for (const f of this.flashes) f.age += elapsedMs;
+    this.flashes = this.flashes.filter(f => f.age < FX_LIFE);
+    for (const f of this.flashes) {
+      const t = f.age / FX_LIFE;
+      const death = f.kind === 'death';
+      const color = death ? '#ff4040' : f.kind === 'crime' ? '#ff7a3a' : '#ffd24a';
+      const spokes = death ? 8 : 6;
+      this.at(f.x, f.y, 1 + t * (death ? 1.6 : 0.9), () => {
+        ctx.globalAlpha = 1 - t;
+        ctx.strokeStyle = color; ctx.lineWidth = death ? 2 : 1.6; ctx.lineCap = 'round';
+        for (let i = 0; i < spokes; i++) {
+          const a = (i / spokes) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * 3, Math.sin(a) * 3);
+          ctx.lineTo(Math.cos(a) * 9, Math.sin(a) * 9);
+          ctx.stroke();
+        }
+        if (death) { ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.stroke(); }
+      });
+    }
   }
 
   // Small action badges, drawn in design space at (bx,by).

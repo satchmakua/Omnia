@@ -82,6 +82,10 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
     if (victim === null) continue;
     const vName = world.getComponent<Agent>(victim, C_AGENT)!.name;
     const trait = world.getComponent<Personality>(e, C_PERSONALITY)?.trait;
+    // Crime-site positions for on-map FX (captured now, before any killAgent strips them).
+    const cpos = { ...world.getComponent<Position>(e, C_POSITION)! };
+    const vp = world.getComponent<Position>(victim, C_POSITION)!;
+    const vpos = { x: vp.x, y: vp.y };
 
     if (wicked && trait && AGGRESSIVE.has(trait)) {
       // ── Assault: a short brawl. The aggressor strikes; the victim defends each round. It
@@ -100,20 +104,22 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
         if (ah.value <= 0) { outcome = 'felled'; break; }
       }
       if (outcome === 'murder') {
-        const tomb = killAgent(world, victim, tick, `murdered by ${agent.name}`, tpy);
+        // The cause is a *fixed* category (the killer's name lives in the feed/legend) so the
+        // cumulative cause-of-death histogram (WorldStats) keeps its small, bounded key-set.
+        const tomb = killAgent(world, victim, tick, 'murdered', tpy);
         markCrime(world, e, 'murder');
         harden(al, 0.08);
-        emitEvent(world, 'crime', `${agent.name} murdered ${tomb.name}.`);
+        emitEvent(world, 'crime', `${agent.name} murdered ${tomb.name}.`, vpos);
         const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
         if (ch) chronicleAdd(ch, { tick, importance: 0.82, kind: 'death', text: `${agent.name} murdered ${tomb.name}.` }, cfg.chronicleImportanceThreshold);
       } else {
         markCrime(world, e, 'assault');
         harden(al, 0.03);
-        emitEvent(world, 'crime', `${agent.name} assaulted ${vName}.`);
+        emitEvent(world, 'crime', `${agent.name} assaulted ${vName}.`, vpos);
         if (outcome === 'felled') {
           markCombat(world, victim, 0, 1);
-          const tomb = killAgent(world, e, tick, `killed defending against ${vName}`, tpy);
-          emitEvent(world, 'crime', `${tomb.name} died attacking ${vName}.`);
+          const tomb = killAgent(world, e, tick, 'killed while attacking', tpy);   // fixed cause key
+          emitEvent(world, 'crime', `${tomb.name} died attacking ${vName}.`, cpos);
         }
       }
     } else {
@@ -126,7 +132,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
       markCrime(world, e, 'theft');
       harden(al, 0.02);
       rivalrise(victim, e);
-      emitEvent(world, 'crime', `${agent.name} robbed ${vName} of ${loot.toFixed(0)} gold.`);
+      emitEvent(world, 'crime', `${agent.name} robbed ${vName} of ${loot.toFixed(0)} gold.`, vpos);
     }
 
     // ── Rough justice: a good neighbour confronts the criminal (if still standing) ──
@@ -140,7 +146,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
           if (ah.value <= 0) {
             markCombat(world, avenger, 0, 1);
             const tomb = killAgent(world, e, tick, 'struck down for their crimes', tpy);
-            emitEvent(world, 'crime', `${tomb.name} was struck down for their crimes.`);
+            emitEvent(world, 'crime', `${tomb.name} was struck down for their crimes.`, cpos);
           }
         }
       }

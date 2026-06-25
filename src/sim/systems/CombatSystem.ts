@@ -52,6 +52,7 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const def = combatantOf(world, folk);
     const health = world.getComponent<Health>(folk, C_HEALTH)!;
     const agent = world.getComponent<Agent>(folk, C_AGENT)!;
+    const fpos = world.getComponent<Position>(folk, C_POSITION)!;   // where the clash happens (for FX)
 
     // The beast strikes.
     const dmg = rollAttack(atk, def, rng);
@@ -60,7 +61,7 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
       if (dmg >= cfg.combatScarThreshold) markCombat(world, folk, 1, 0);
       if (health.value <= 0) {
         const tomb = killAgent(world, folk, tick, `slain by a ${beast.name.toLowerCase()}`, tpy);
-        emitEvent(world, 'death', `${tomb.name} was slain by a ${beast.name.toLowerCase()}.`);
+        emitEvent(world, 'death', `${tomb.name} was slain by a ${beast.name.toLowerCase()}.`, fpos);
         const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
         if (ch) chronicleAdd(ch, {
           tick, importance: 0.72, kind: 'death',
@@ -69,7 +70,7 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
         folkAt.delete(ppos.y * cfg.gridWidth + ppos.x); // (folk tile freed; harmless if mismatched)
         continue;
       }
-      emitEvent(world, 'illness', `${agent.name} was mauled by a ${beast.name.toLowerCase()}.`);
+      emitEvent(world, 'illness', `${agent.name} was mauled by a ${beast.name.toLowerCase()}.`, fpos);
     }
 
     // The folk fights back; a telling blow drives off (slays) the beast.
@@ -77,7 +78,7 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
     if (back >= cfg.combatKillBlow) {
       markCombat(world, folk, 0, 1);
       world.destroyEntity(pe);
-      emitEvent(world, 'work', `${agent.name} fought off and slew a ${beast.name.toLowerCase()}.`);
+      emitEvent(world, 'work', `${agent.name} fought off and slew a ${beast.name.toLowerCase()}.`, fpos);
     }
   }
 
@@ -86,9 +87,10 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
   if (!store || (store.wars?.length ?? 0) === 0) return;
   const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
   const fellInBattle = (victim: EntityId, slayer: EntityId): void => {
+    const vpos = world.getComponent<Position>(victim, C_POSITION);   // capture before killAgent strips it
     markCombat(world, slayer, 0, 1);
     const tomb = killAgent(world, victim, tick, 'fell in battle', tpy);
-    emitEvent(world, 'death', `${tomb.name} fell in battle.`);
+    emitEvent(world, 'death', `${tomb.name} fell in battle.`, vpos ?? undefined);
     if (ch) chronicleAdd(ch, { tick, importance: 0.66, kind: 'war', text: `${tomb.name} fell in battle.` }, cfg.chronicleImportanceThreshold);
   };
 
