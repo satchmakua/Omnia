@@ -35,11 +35,15 @@ export class OrgDashboard extends ModalPanel {
       const leader = o.leader != null && world.hasComponent(o.leader, C_AGENT)
         ? world.getComponent<Agent>(o.leader, C_AGENT)!.name : '—';
       const parent = o.parent && store.byId[o.parent] ? ` <span style="color:#889">⟵ ${store.byId[o.parent].name}</span>` : '';
+      const foes = (store.wars ?? [])
+        .filter(w => w.a === o.id || w.b === o.id)
+        .map(w => store.byId[w.a === o.id ? w.b : w.a]?.name).filter(Boolean);
+      const war = foes.length ? `<div style="color:#ff7a6a;font-size:11px">⚔ at war with ${foes.join(', ')}</div>` : '';
       return `<div style="display:flex;align-items:center;gap:8px;margin:5px 0;border-top:1px solid rgba(255,255,255,0.07);padding-top:6px">
         <span style="width:13px;height:13px;border-radius:3px;background:${o.color};display:inline-block;flex:0 0 auto"></span>
         <div style="flex:1;min-width:0">
           <div style="color:#e6e6f0">${o.name}${parent}</div>
-          <div style="color:#889;font-size:11px">${o.government} · ${n} folk · led by ${leader}</div>
+          <div style="color:#889;font-size:11px">${o.government} · ${n} folk · led by ${leader}</div>${war}
         </div></div>`;
     }).join('');
 
