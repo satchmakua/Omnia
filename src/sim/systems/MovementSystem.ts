@@ -1,6 +1,6 @@
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_FAUNA, C_JOB, C_RESOURCE, C_TILEMAP, C_HOME } from '../components.ts';
-import type { Agent, Needs, Position, Flora, Job, Resource, Home } from '../components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_FAUNA, C_JOB, C_RESOURCE, C_TILEMAP, C_HOME, C_QUEST } from '../components.ts';
+import type { Agent, Needs, Position, Flora, Job, Resource, Home, Quest } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
@@ -153,6 +153,13 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       if (flora) { pathToward(pos, flora.x, flora.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight); continue; }
     }
 
+    // A folk on an explore quest walks toward the ruins they vowed to seek, rather than
+    // wandering aimlessly (M20 s3 — active pursuit; ArchaeologySystem discovers it on arrival).
+    const quest = world.getComponent<Quest>(entity, C_QUEST);
+    if (quest && quest.kind === 'explore' && quest.tx !== undefined && (pos.x !== quest.tx || pos.y !== quest.ty)) {
+      pathToward(pos, quest.tx, quest.ty!, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight);
+      continue;
+    }
     wanderStep(pos, rng, enterable, occ, cfg.wanderIdleChance);   // aimless wandering: linger more, pace less
   }
 }

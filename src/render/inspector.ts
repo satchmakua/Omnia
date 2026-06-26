@@ -2,11 +2,11 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
 import { socialClassOf } from '../sim/society.ts';
@@ -113,6 +113,8 @@ export class Inspector {
       body = this._business(world, entity, pos);
     } else if (world.hasComponent(entity, C_HOME)) {
       body = this._home(world, entity, pos);
+    } else if (world.hasComponent(entity, C_WONDERSITE)) {
+      body = this._wonder(world, entity, pos);
     } else if (world.hasComponent(entity, C_RUIN)) {
       body = this._ruin(world, entity, pos);
     } else if (world.hasComponent(entity, C_CIVIC)) {
@@ -245,6 +247,9 @@ export class Inspector {
     }
     const healthBlock = health
       ? `<div>Health ${bar(health.value)}${health.ill ? ' <span style="color:#f99">(ill)</span>' : ''}</div>` : '';
+    // A procedural quest the soul has taken up (M20 s3).
+    const quest = world.getComponent<Quest>(e, C_QUEST);
+    const questLine = quest ? `<div style="color:#ffd27a">⚑ on a quest — to ${quest.text}</div>` : '';
 
     // Carried materials & goods + craft skill (M23): what the gatherer/crafter holds & can make.
     const inv = world.getComponent<Inventory>(e, C_INVENTORY);
@@ -300,6 +305,7 @@ export class Inspector {
       <div>Social ${bar(needs.social)}</div>
       ${moodLine}
       ${healthBlock}
+      ${questLine}
       ${livelihoodBlock}
       ${carryingBlock}
       ${family}
@@ -420,6 +426,20 @@ export class Inspector {
       <div style="${SECTION}">Home</div>
       <div><b>Owner</b> ${ownerName}</div>
       <div style="color:#889">Built in year ${builtYear}</div>`;
+  }
+
+  private _wonder(world: World, e: EntityId, pos: Position): string {
+    const w = world.getComponent<WonderSite>(e, C_WONDERSITE)!;
+    const builtYear = Math.floor(w.builtTick / (defaultConfig.ticksPerDay * defaultConfig.daysPerYear));
+    return `
+      ${this.title(w.name, 'a wonder of the age')}
+      ${this.terrainLine(world, pos)}
+      <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
+      <hr style="${RULE}">
+      <div style="${SECTION}">Wonder</div>
+      <div style="color:#e8c674">🏛 ${w.name}</div>
+      <div style="color:#9ab">a town-scale work, raised by the labour of generations</div>
+      <div style="color:#889;font-size:11px">completed in year ${builtYear}</div>`;
   }
 
   private _ruin(world: World, e: EntityId, pos: Position): string {

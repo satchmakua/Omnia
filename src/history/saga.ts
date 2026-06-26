@@ -5,10 +5,10 @@
 // state always tells the same story. Rendered in the Legends view.
 import type { World } from '../sim/ecs.ts';
 import {
-  C_ACHIEVEMENTS, C_FIGURES, C_ARTIFACTS, C_CLOCK, C_AGENT, C_RUIN,
+  C_ACHIEVEMENTS, C_FIGURES, C_ARTIFACTS, C_CLOCK, C_AGENT, C_RUIN, C_WONDERS, C_WONDERSITE,
 } from '../sim/components.ts';
 import type {
-  AchievementsData, FiguresData, ArtifactsData, Clock, Ruin,
+  AchievementsData, FiguresData, ArtifactsData, Clock, Ruin, WondersData, WonderSite,
 } from '../sim/components.ts';
 import type { SimConfig } from '../sim/config.ts';
 import { ticksPerYear } from '../sim/config.ts';
@@ -84,6 +84,16 @@ export function worldHistory(world: World, cfg: SimConfig): SagaSection[] {
     sections.push({ heading: 'Relics of the Masters', text:
       `Its master smiths forged ${arts.length} ${arts.length === 1 ? 'work' : 'works'} of legend${borne.length ? ` — among them ${list(borne)}` : ''}.` +
       (lost > 0 ? ` ${lost} ${lost === 1 ? 'lies' : 'lie'} lost to history${redisc > 0 ? `, though ${redisc} ${redisc === 1 ? 'has' : 'have'} since been unearthed` : ''}.` : '') });
+  }
+
+  // ── Wonders ──
+  const sites = world.query(C_WONDERSITE).map(e => world.getComponent<WonderSite>(e, C_WONDERSITE)!);
+  const wdata = get<WondersData>(world, C_WONDERS);
+  if (sites.length > 0) {
+    sections.push({ heading: 'Wonders of the Age', text:
+      `The town raised ${list(sites.map(s => s.name))} — ${sites.length === 1 ? 'a wonder' : 'wonders'} of the re-ascended world.${wdata?.current ? ' Another rises even now.' : ''}` });
+  } else if (wdata?.current) {
+    sections.push({ heading: 'Wonders of the Age', text: `A great work rises — the town's first wonder, still abuilding.` });
   }
 
   // ── Fallen clans & ruins ──

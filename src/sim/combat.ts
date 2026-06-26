@@ -5,8 +5,8 @@
 // the existing health/mortality machinery. Used by hunting, crime (M16 s2), and war (M16 s3).
 import type { RNG } from './rng.ts';
 import type { World, EntityId } from './ecs.ts';
-import { C_BODY, C_COMBAT, C_AGENT, C_EQUIPMENT } from './components.ts';
-import type { Body, Combat, Agent, Equipment } from './components.ts';
+import { C_BODY, C_COMBAT, C_AGENT, C_EQUIPMENT, C_QUEST } from './components.ts';
+import type { Body, Combat, Agent, Equipment, Quest } from './components.ts';
 import { getCultureStore, getCulture } from '../culture/cultureStore.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 
@@ -68,6 +68,9 @@ export function combatantOf(world: World, e: EntityId): Combatant {
     if (c) martial = c.values.martial;
   }
   const trait = world.getComponent<{ trait: string }>(e, 'Personality')?.trait;
+  // A folk on a hunt/avenge quest fights with purpose — they press harder (M20 s3 — pursuit).
+  const quest = world.getComponent<Quest>(e, C_QUEST);
+  const questZeal = quest && (quest.kind === 'hunt' || quest.kind === 'avenge') ? 1.2 : 1;
   let arms = 0;
   const ostore = getOrgStore(world);
   if (ostore && agent?.orgId) arms = ostore.byId[agent.orgId]?.effects?.arms ?? 0;
@@ -77,7 +80,7 @@ export function combatantOf(world: World, e: EntityId): Combatant {
     dex: body?.dex ?? 10,
     con: body?.con ?? 10,
     martial,
-    ferocity: ferocityOf(trait),
+    ferocity: ferocityOf(trait) * questZeal,
     prowess: combat ? combat.scars + combat.kills * 2 : 0,
     arms,
     weapon: eq?.weapon ?? 0,
