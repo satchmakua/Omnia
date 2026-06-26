@@ -26,6 +26,7 @@ import { runAchievementSystem } from './systems/AchievementSystem.ts';
 import { runAISystem }       from './systems/AISystem.ts';
 import { runMemorySystem }   from './systems/MemorySystem.ts';
 import { runHistorySystem }  from './systems/HistorySystem.ts';
+import { runEventSystem }    from './systems/EventSystem.ts';
 import { runEvolutionSystem } from './systems/EvolutionSystem.ts';
 import { runReligionSystem } from './systems/ReligionSystem.ts';
 import { runFaunaSystem }    from './systems/FaunaSystem.ts';
@@ -65,6 +66,7 @@ export function tick(
   runAISystem(world, cfg, provider);     // the "soul": reflection / dialogue / dreams / decisions (rare)
   runMemorySystem(world, cfg);           // multi-resolution rollup: old memories → episodic summaries
   runHistorySystem(world, cfg);          // world history: sample strata + compress the Chronicle
+  runEventSystem(world, cfg, rng, content); // world events: harvests/festivals/discoveries → effects + feed/Chronicle (M19)
   runEvolutionSystem(world, cfg, rng);   // culture & language drift (generational, off the hot path)
   runReligionSystem(world, cfg, rng);    // faiths: extinction + schism into sects over the eras (M18)
   runFaunaSystem(world, cfg, rng);       // fauna instinct (graze / breed / die)

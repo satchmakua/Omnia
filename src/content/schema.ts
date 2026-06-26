@@ -193,6 +193,27 @@ export const TechSchema = z.object({
 
 export type Tech = z.infer<typeof TechSchema>;
 
+// ── World event (M19) ──────────────────────────────────────────────────────────
+// A thing that *happens* to the world — a bountiful harvest, a festival, a famine,
+// a ghost. Data declares the event (when it can fire, how notable it is, which
+// code-side effect it triggers, what to write in the feed/Chronicle); the
+// EventSystem implements *how* events are scheduled, and code implements what each
+// `effect` tag actually does (the data/behaviour boundary, D9). Adding a new event
+// is data-only as long as its effect tag already has an implementation.
+export const WorldEventSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  category: z.enum(['fortune', 'seasonal', 'disaster', 'paranormal']).default('fortune'),
+  chancePerDay: z.number().min(0).max(1),   // deterministic scheduled trigger (rolled once a day)
+  importance: z.number().min(0).max(1).default(0.6),  // ≥ chronicle threshold → a legend; below → feed only
+  effect: z.string().min(1),                // code-side effect tag (src/event/effects.ts)
+  message: z.string().min(1),               // the line shown in the feed / Chronicle when it fires
+  minPopulation: z.number().int().min(0).default(0),  // a simple trigger guard (won't fire below this many folk)
+  season: z.enum(['Spring', 'Summer', 'Autumn', 'Winter']).optional(),  // restrict to a season (M19 seasons slice)
+}).strict();
+
+export type WorldEvent = z.infer<typeof WorldEventSchema>;
+
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
 export const FOLDER_SCHEMAS = {
@@ -206,6 +227,7 @@ export const FOLDER_SCHEMAS = {
   languages: LanguageSchema,
   cultures: CultureSchema,
   tech: TechSchema,
+  events: WorldEventSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

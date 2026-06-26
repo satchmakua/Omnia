@@ -1,0 +1,10 @@
+# A flash of insight: someone works out something the fallen world had forgotten,
+# and the tribes' research leaps forward.
+id: "great_discovery"
+name: "A Great Discovery"
+category: "fortune"
+chancePerDay: 0.015
+importance: 0.7          # a turning point — a Chronicle legend
+effect: "great_discovery"
+message: "A great discovery quickened every tribe's understanding of the world."
+minPopulation: 1

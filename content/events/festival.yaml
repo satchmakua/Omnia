@@ -1,0 +1,9 @@
+# A day of gladness — feasting, music, and good company lift the town's spirits.
+id: "festival"
+name: "A Festival"
+category: "fortune"
+chancePerDay: 0.03
+importance: 0.5          # a happy day, but not a legend — feed only
+effect: "festival"
+message: "The town held a festival — a day of feasting and gladness."
+minPopulation: 4

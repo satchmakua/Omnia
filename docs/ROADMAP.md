@@ -318,8 +318,8 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **Goal:** things *happen* — the world has weather, holidays, and the occasional ghost.
 
-- [ ] A **content-driven Event pipeline (D9):** deterministic scheduled + triggered events → Chronicle/feed; effects are code, definitions are data.
-- [ ] **Seasons** (ecology/farming/top-bar); **holidays**, bountiful harvests, great discoveries.
+- [x] A **content-driven Event pipeline (D9):** deterministic scheduled + triggered events → Chronicle/feed; effects are code, definitions are data. *(S69 — slice 1: new `events` content type (`content/events/*.yaml` → `WorldEventSchema` + loader wiring + a fail-loud boundary check that each event's `effect` has a code impl, mirroring capabilities) and a daily **`EventSystem`** that rolls each authored event under its trigger guards (a population floor + an optional `season`) and fires it with `chancePerDay` — applying a **code-side effect** (`src/event/effects.ts`), writing a feed line (new ✷ `event` kind), and recording a **Chronicle legend** if importance ≥ the chronicle threshold (lesser events stay feed-only). One RNG draw per event/day, effects draw no RNG → deterministic & replayable. Three benign "fortune" events ship to prove it end-to-end (bountiful harvest → flora ripen; festival → town mood lift; great discovery → tribes' research windfall). +10 tests; soak 0 violations, pop stable; 14 fires over a 40k run, byte-identical on replay.)*
+- [ ] **Seasons** (ecology/farming/top-bar); **holidays**, bountiful harvests, great discoveries. *(the season guard + seasonal event content land here; the calendar/season already exists, D-S33.)*
 - [ ] **Disasters** (famine/plague/quake/fire/storm) — feeds the deferred famine→thrift culture hook.
 - [ ] **Paranormal** (alien abductions, ghost encounters, magical catastrophes) — uncommon, nontrivial, with consequences.
 - [ ] Inspector: an **events/timeline** view.

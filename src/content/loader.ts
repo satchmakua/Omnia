@@ -6,10 +6,11 @@ import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { FOLDER_SCHEMAS } from './schema.ts';
 import type {
-  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, ContentFolder,
+  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, ContentFolder,
 } from './schema.ts';
 import { Registry } from './registry.ts';
 import { isKnownEffectTag } from '../capability/effects.ts';
+import { isKnownEventEffect } from '../event/effects.ts';
 
 export interface Content {
   species: Registry<Species>;
@@ -22,6 +23,7 @@ export interface Content {
   languages: Registry<Language>;
   cultures: Registry<Culture>;
   tech: Registry<Tech>;
+  events: Registry<WorldEvent>;
 }
 
 // Relative path like "species/human.yaml" -> "species".
@@ -45,7 +47,7 @@ function formatZodError(relPath: string, err: z.ZodError): string {
  */
 export function loadContent(files: Map<string, string>): Content {
   const buckets: Record<ContentFolder, unknown[]> = {
-    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [],
+    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [],
   };
   const errors: string[] = [];
 
@@ -89,6 +91,14 @@ export function loadContent(files: Map<string, string>): Content {
       }
     }
   }
+  // Same boundary for world events: a declared effect must have a code implementation.
+  for (const ev of buckets.events as WorldEvent[]) {
+    if (!isKnownEventEffect(ev.effect)) {
+      errors.push(
+        `events/${ev.id}: effect '${ev.effect}' has no implementation in src/event/effects.ts`,
+      );
+    }
+  }
 
   if (errors.length > 0) {
     throw new Error(
@@ -107,6 +117,7 @@ export function loadContent(files: Map<string, string>): Content {
   let languages: Registry<Language>;
   let cultures: Registry<Culture>;
   let tech: Registry<Tech>;
+  let events: Registry<WorldEvent>;
   try {
     species = new Registry(buckets.species as Species[]);
     capabilities = new Registry(buckets.capabilities as Capability[]);
@@ -118,6 +129,7 @@ export function loadContent(files: Map<string, string>): Content {
     languages = new Registry(buckets.languages as Language[]);
     cultures = new Registry(buckets.cultures as Culture[]);
     tech = new Registry(buckets.tech as Tech[]);
+    events = new Registry(buckets.events as WorldEvent[]);
   } catch (e) {
     throw new Error(`Content failed to load: ${(e as Error).message}`);
   }
@@ -167,5 +179,5 @@ export function loadContent(files: Map<string, string>): Content {
     );
   }
 
-  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech };
+  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events };
 }

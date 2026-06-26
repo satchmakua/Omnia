@@ -1,0 +1,9 @@
+# A fat season: the land gives freely and the plants ripen all at once.
+id: "bountiful_harvest"
+name: "Bountiful Harvest"
+category: "fortune"
+chancePerDay: 0.02
+importance: 0.6          # notable enough to enter the Chronicle
+effect: "bountiful_harvest"
+message: "A bountiful harvest blessed the land — the fields ripened all at once."
+minPopulation: 1
