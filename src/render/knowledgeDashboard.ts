@@ -32,8 +32,8 @@ export class KnowledgeDashboard extends ModalPanel {
 
     const intro =
       `<div style="color:#8b8b9e;font-size:11px;line-height:1.5;margin-bottom:8px">
-        The arts of the fallen world, re-ascended rung by rung — each tribe researches its own way up.
-        ✓ = a living tribe commands it; the brighter, the more do. An art whose last knowers die out is
+        The arts of the fallen world, re-ascended rung by rung — each clan researches its own way up.
+        ✓ = a living clan commands it; the brighter, the more do. An art whose last knowers die out is
         <span style="color:#e0883c">lost</span> until rediscovered.</div>`;
 
     // The tree by tier/age.
@@ -45,7 +45,7 @@ export class KnowledgeDashboard extends ModalPanel {
         const n = holders.get(t.id) ?? 0;
         const isLost = lost.has(t.id);
         const mark = isLost ? '<span style="color:#e0883c">✗ lost</span>'
-          : n > 0 ? `<span style="color:#8fe88f">✓ ${n} tribe${n === 1 ? '' : 's'}</span>`
+          : n > 0 ? `<span style="color:#8fe88f">✓ ${n} clan${n === 1 ? '' : 's'}</span>`
           : '<span style="color:#667">○ unknown</span>';
         const color = isLost ? '#caa078' : n > 0 ? '#dde' : '#778';
         const effects = t.effects.length ? ` <span style="color:#789;font-size:10px">[${t.effects.join(', ')}]</span>` : '';
@@ -70,7 +70,7 @@ export class KnowledgeDashboard extends ModalPanel {
 
     this.body.innerHTML =
       `<div style="${SECTION}">Knowledge</div>${intro}${treeHtml}` +
-      `<hr style="border-color:rgba(255,255,255,0.1);margin:12px 0"><div style="${SECTION}">Tribes' progress</div>` +
-      `${tribeRows || '<div style="color:#778">no tribes</div>'}${lostHtml}`;
+      `<hr style="border-color:rgba(255,255,255,0.1);margin:12px 0"><div style="${SECTION}">Clans' progress</div>` +
+      `${tribeRows || '<div style="color:#778">no clans</div>'}${lostHtml}`;
   }
 }
