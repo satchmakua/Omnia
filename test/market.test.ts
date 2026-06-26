@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
-import { defaultConfig, ticksPerYear } from '../src/sim/config.ts';
+import { defaultConfig, ticksPerYear, seasonGrowthFactor } from '../src/sim/config.ts';
 import {
   C_AGENT, C_WALLET, C_JOB, C_BUSINESS, C_POSITION, C_CLOCK, C_MARKET,
 } from '../src/sim/components.ts';
@@ -129,7 +129,8 @@ describe('MarketSystem (M15)', () => {
     for (let d = 1; d <= cfg.marketHistoryLength + 10; d++) { clock.tick = d * cfg.ticksPerDay; runMarketSystem(w, cfg); }
     const mkt = getMarket(w)!;
     expect(mkt.demand).toBe(5 * cfg.provisionPerAdult);
-    expect(mkt.supply).toBe(cfg.baseForagedProvisions);
+    // Supply is the foraged commons, now scaled by the season (M19) — no farms here.
+    expect(mkt.supply).toBeCloseTo(cfg.baseForagedProvisions * seasonGrowthFactor(clock.tick, cfg), 5);
     expect(mkt.history.length).toBe(cfg.marketHistoryLength);   // bounded
   });
 

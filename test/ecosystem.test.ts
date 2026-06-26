@@ -48,13 +48,15 @@ function addFauna(world: World, x: number, y: number, over: Partial<Fauna> = {})
 describe('FloraSystem', () => {
   it('grows flora toward maturity, capped at 1', () => {
     const w = new World();
+    // No clock → tick 0 → Spring, so growth is scaled by the spring abundance (M19).
+    const grow = cfg.seasonGrowthSpring;
     const e = addFlora(w, 1, 1, { maturity: 0.5, growthPerTick: 0.1 });
     runFloraSystem(w, cfg, createRNG(1));
-    expect(w.getComponent<Flora>(e, C_FLORA)!.maturity).toBeCloseTo(0.6);
+    expect(w.getComponent<Flora>(e, C_FLORA)!.maturity).toBeCloseTo(0.5 + 0.1 * grow);
 
     const e2 = addFlora(w, 2, 2, { maturity: 0.98, growthPerTick: 0.1 });
     runFloraSystem(w, cfg, createRNG(1));
-    expect(w.getComponent<Flora>(e2, C_FLORA)!.maturity).toBe(1);
+    expect(w.getComponent<Flora>(e2, C_FLORA)!.maturity).toBe(1);   // capped at 1
   });
 
   it('mature flora spreads to an adjacent empty passable tile', () => {

@@ -1,0 +1,10 @@
+# A spring holiday — the first blossoms are greeted with music and dancing.
+id: "spring_bloom"
+name: "First Bloom"
+category: "seasonal"
+season: "Spring"
+chancePerDay: 0.4
+importance: 0.5          # a recurring holiday — feed flavour, not a legend
+effect: "festival"
+message: "The town kept First Bloom — they danced to greet the spring."
+minPopulation: 4

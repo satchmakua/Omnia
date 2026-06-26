@@ -6,6 +6,7 @@ import type { World } from '../ecs.ts';
 import { C_CLOCK, C_BUSINESS } from '../components.ts';
 import type { Clock, Business } from '../components.ts';
 import type { SimConfig } from '../config.ts';
+import { seasonGrowthFactor } from '../config.ts';
 import {
   getMarket, measureSupplyDemand, clearingPrice, foodSalesGold, foodBusinessWorkers,
 } from '../market.ts';
@@ -19,7 +20,10 @@ export function runMarketSystem(world: World, cfg: SimConfig): void {
   const market = getMarket(world);
   if (!market) return;
 
-  const { supply, demand } = measureSupplyDemand(world, cfg);
+  // The seasonal commons: a lean winter shrinks the foraged baseline → food gets dear;
+  // a lush summer relieves it (M19). Same factor that drives plant growth, so they agree.
+  const forage = seasonGrowthFactor(clock.tick, cfg);
+  const { supply, demand } = measureSupplyDemand(world, cfg, forage);
   market.supply = supply;
   market.demand = demand;
   market.price = clearingPrice(market.price, supply, demand, cfg);
@@ -29,7 +33,7 @@ export function runMarketSystem(world: World, cfg: SimConfig): void {
   // Real sales (M15 slice 2): the day's farm-food spend flows to the food businesses,
   // split by their workforce. This is their *only* revenue (EconomySystem withholds the
   // synthetic per-worker revenue from food producers), so a farm lives or dies by demand.
-  const sales = foodSalesGold(supply, demand, market.price, cfg);
+  const sales = foodSalesGold(supply, demand, market.price, cfg, forage);
   if (sales > 0) {
     const { byBiz, total } = foodBusinessWorkers(world);
     if (total > 0) {

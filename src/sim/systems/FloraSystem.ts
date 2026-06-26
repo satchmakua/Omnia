@@ -2,10 +2,10 @@
 // neighbouring open, passable tile. Spreading is bounded by cfg.maxFlora so the
 // world stays within the performance budget.
 import type { World } from '../ecs.ts';
-import { C_FLORA, C_POSITION, C_TILEMAP } from '../components.ts';
-import type { Flora, Position } from '../components.ts';
+import { C_FLORA, C_POSITION, C_TILEMAP, C_CLOCK } from '../components.ts';
+import type { Flora, Position, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
-import { scaledMaxFlora } from '../config.ts';
+import { scaledMaxFlora, seasonGrowthFactor } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { isPassable } from '../../world/tilemap.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
@@ -15,6 +15,12 @@ const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
 export function runFloraSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const mapEnts = world.query(C_TILEMAP);
   const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
+
+  // Plants grow lush in spring/summer, slowly in autumn, barely in winter (M19) — the
+  // land's abundance breathes with the seasons. Deterministic (reads the clock, no RNG).
+  const clockEnts = world.query(C_CLOCK);
+  const tick = clockEnts.length ? world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick : 0;
+  const season = seasonGrowthFactor(tick, cfg);
 
   const florae = world.query(C_FLORA, C_POSITION);
   const maxFlora = scaledMaxFlora(cfg);
@@ -33,7 +39,7 @@ export function runFloraSystem(world: World, cfg: SimConfig, rng: RNG): void {
 
   for (const e of florae) {
     const flora = world.getComponent<Flora>(e, C_FLORA)!;
-    if (flora.maturity < 1) flora.maturity = Math.min(1, flora.maturity + flora.growthPerTick);
+    if (flora.maturity < 1) flora.maturity = Math.min(1, flora.maturity + flora.growthPerTick * season);
 
     // Mature flora may seed a neighbour.
     if (map && flora.maturity >= 1 && count < maxFlora && rng() < flora.spreadChancePerTick) {

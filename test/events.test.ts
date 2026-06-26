@@ -119,8 +119,8 @@ describe('EventSystem scheduling (M19)', () => {
 
   it('respects the season guard', () => {
     const w = evWorld();
-    const here = calendarOf(cfg.ticksPerDay, cfg).season;
-    const elsewhere = here === 'Winter' ? 'Summer' : 'Winter';
+    const here = calendarOf(cfg.ticksPerDay, cfg).season as WorldEvent['season'];
+    const elsewhere: WorldEvent['season'] = here === 'Winter' ? 'Summer' : 'Winter';
     const a = moodAgent(w, 0.5);
     runEventSystem(w, cfg, createRNG(1), content([ev({ chancePerDay: 1, season: elsewhere })]));
     expect(w.getComponent<Agent>(a, C_AGENT)!.mood).toBe(0.5);   // wrong season → no fire

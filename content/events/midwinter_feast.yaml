@@ -1,0 +1,10 @@
+# A midwinter feast — warmth and good cheer against the dark, lean season.
+id: "midwinter_feast"
+name: "Midwinter Feast"
+category: "seasonal"
+season: "Winter"
+chancePerDay: 0.4
+importance: 0.5
+effect: "festival"
+message: "The town held its Midwinter Feast — warmth and cheer against the dark."
+minPopulation: 4
