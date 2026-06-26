@@ -66,6 +66,14 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
       return `<path d="M-9 -1 L0 -9 L9 -1 Z" fill="${color}"/><rect x="-7" y="-1" width="14" height="10" fill="${color}"/>` +
         `<rect x="-2" y="3" width="4" height="6" fill="rgba(0,0,0,0.45)"/>` +
         `<path d="M0 -9 L0 -13 L4 -12 L0 -11 Z" fill="${color}"/>`;
+    case 'ruin':    // broken stubs of fallen columns (M20)
+      return `<rect x="-9" y="-2" width="3" height="9" fill="${color}"/><rect x="-2.5" y="-8" width="3.5" height="15" fill="${color}"/>` +
+        `<rect x="5" y="0" width="3" height="7" fill="${color}"/><rect x="-11" y="7" width="22" height="2.6" fill="${color}"/>`;
+    case 'wonder':  // a gleaming spire with a beacon (M20)
+      return `<path d="M-6 9 L0 -13 L6 9 Z" fill="${color}"/><circle cx="0" cy="-13" r="2.4" fill="#fff7d8"/>`;
+    case 'grave':   // a rounded headstone with a cross
+      return `<path d="M-6 8 V-3 Q-6 -9 0 -9 Q6 -9 6 -3 V8 Z" fill="${color}"/>` +
+        `<rect x="-1.2" y="-5" width="2.4" height="8" fill="rgba(0,0,0,0.4)"/><rect x="-3.5" y="-3" width="7" height="2.2" fill="rgba(0,0,0,0.4)"/>`;
     default:
       return '';
   }
@@ -83,4 +91,6 @@ export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; lab
   { key: 'building', label: 'Workplace', desc: 'a business that employs folk' },
   { key: 'home', label: 'Home', desc: 'a dwelling folk build and own' },
   { key: 'civic', label: 'Civic', desc: 'a shared place — hall, well, or shrine' },
+  { key: 'ruin', label: 'Ruin', desc: 'remains of a fallen clan / lost relic — folk discover them' },
+  { key: 'wonder', label: 'Wonder', desc: 'a town-scale mega-project (the space elevator)' },
 ];
