@@ -16,6 +16,7 @@ import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
 import { EVENT_EFFECTS } from '../../event/effects.ts';
 import { emitEvent } from '../../history/eventlog.ts';
+import type { EventKind } from '../../history/eventlog.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
 
@@ -45,9 +46,11 @@ export function runEventSystem(world: World, cfg: SimConfig, rng: RNG, content: 
     if (rng() >= ev.chancePerDay) continue;
 
     const effect = EVENT_EFFECTS[ev.effect];
-    if (effect) effect({ world, cfg });
+    if (effect) effect({ world, cfg, rng });
 
-    emitEvent(world, 'event', ev.message);
+    // Disasters get their own (alarming) feed kind; fortune/seasonal read as ✷ events.
+    const kind: EventKind = ev.category === 'disaster' ? 'disaster' : 'event';
+    emitEvent(world, kind, ev.message);
     if (chronicle) {
       chronicleAdd(chronicle, { tick: clock.tick, importance: ev.importance, text: ev.message, kind: 'event' },
         cfg.chronicleImportanceThreshold);

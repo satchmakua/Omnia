@@ -1,0 +1,9 @@
+# A sickness sweeps the town — many fall ill; the hale recover, the frail may not.
+id: "plague"
+name: "Plague"
+category: "disaster"
+chancePerDay: 0.005
+importance: 0.85
+effect: "plague"
+message: "A plague swept through the town — a sickness in every other house."
+minPopulation: 8

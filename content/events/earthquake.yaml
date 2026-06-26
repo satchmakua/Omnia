@@ -1,0 +1,9 @@
+# The ground heaves — folk near the epicenter are hurt and a home is toppled to ruin.
+id: "earthquake"
+name: "Earthquake"
+category: "disaster"
+chancePerDay: 0.004
+importance: 0.8
+effect: "earthquake"
+message: "An earthquake shook the ground — homes cracked and folk were thrown down."
+minPopulation: 1
