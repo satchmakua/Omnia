@@ -90,6 +90,7 @@ reproMinHunger: 0.5
 reproMinHealth: 0.5
 childMageAptitudeChance: 0.25
 gatherPerDay: 0.3
+inventoryMaxPerItem: 20
 workingMemorySize: 30
 reflectionIntervalDays: 30
 maxReflectionsPerTick: 2

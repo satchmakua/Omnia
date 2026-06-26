@@ -4,8 +4,9 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig, ticksPerYear } from '../src/sim/config.ts';
-import { C_AGENT, C_CLOCK, C_ORGSTORE, C_BODY, C_HEALTH, C_POSITION } from '../src/sim/components.ts';
+import { C_AGENT, C_CLOCK, C_ORGSTORE, C_BODY, C_HEALTH, C_POSITION, C_CULTURESTORE } from '../src/sim/components.ts';
 import type { Agent, Clock, Body, Health } from '../src/sim/components.ts';
+import type { CultureStoreData, RuntimeCulture } from '../src/culture/cultureStore.ts';
 import { createRNG } from '../src/sim/rng.ts';
 import {
   createOrgStore, createOrg, areAtWar, declareWar, endWar,
@@ -74,6 +75,21 @@ describe('OrgSystem war (M16 slice 3)', () => {
     clock.tick = (cfg.warDurationEras + 1) * era;
     runOrgSystem(w, { ...warCfg, warChancePerEra: 0 }, createRNG(1));
     expect(areAtWar(store, a, b)).toBe(false);
+  });
+
+  it('declaring war hardens both belligerents’ cultures toward martial (D26)', () => {
+    const { w, store } = orgWorld(era);
+    const culture: RuntimeCulture = { id: 'c', name: 'C', language: 'l', values: { communal: 0.5, martial: 0.5, traditional: 0.5, open: 0.5 }, practices: [], cohesion: 0.5 };
+    const cs: CultureStoreData = { byId: { c: culture }, lastEvolveTick: 0 };
+    w.addComponent<CultureStoreData>(w.createEntity(), C_CULTURESTORE, cs);
+    const a = createOrg(store, 'Korvu', VALUES, 0.6, 0);
+    const b = createOrg(store, 'Drass', VALUES, 0.6, 0);
+    members(w, a, 6); members(w, b, 6);
+    for (const e of w.query(C_AGENT)) w.getComponent<Agent>(e, C_AGENT)!.cultureId = 'c';
+    const before = culture.values.martial;
+    runOrgSystem(w, warCfg, createRNG(1));
+    expect(areAtWar(store, a, b)).toBe(true);
+    expect(culture.values.martial).toBeGreaterThan(before);   // war → militarism
   });
 
   it('a small, peaceful pair never goes to war', () => {

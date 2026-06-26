@@ -2,13 +2,14 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
+import { socialClassOf } from '../sim/society.ts';
 import { schoolOf } from '../magic/schools.ts';
 import { getReligionStore, getReligion } from '../religion/religionStore.ts';
 import { biomeNameAt, inBounds } from '../world/tilemap.ts';
@@ -204,6 +205,15 @@ export class Inspector {
       : homeCount === 1
         ? `<div><b>Home</b> at (${firstHome!.x}, ${firstHome!.y})</div>`
         : `<div><b>Home</b> owns ${homeCount} <span style="color:#caa46a">— a landlord${tenants ? ` (${tenants} tenant${tenants > 1 ? 's' : ''})` : ''}</span></div>`;
+    // Social standing & class (M14 thread): esteem from deeds & means → a class label.
+    const isOutlaw = world.hasComponent(e, C_CRIME);
+    const orgStore0 = getOrgStore(world);
+    const isLeader0 = !!orgStore0 && Object.values(orgStore0.byId).some(o => o.leader === e);
+    const standingVal = agent.standing ?? 0.5;
+    const klass = socialClassOf(standingVal, isOutlaw, isLeader0, homeCount >= 2);
+    const standingLine = child ? '' :
+      `<div>Standing ${bar(standingVal)}</div><div style="color:#cbb6e0">${klass}</div>`;
+
     // Livelihood reads differently for a child: a dependent — no job, no cost of living,
     // no wealth goal yet (the Kids Pass). Adults keep the full job / gold / debt / goal block.
     const livelihoodBlock = child
@@ -217,7 +227,8 @@ export class Inspector {
          <div>Gold ${wallet.gold.toFixed(1)}</div>
          ${debtLine}
          <div style="color:#889">Goal ${Math.round(agent.wealthGoal)}g</div>
-         ${homeLine}`;
+         ${homeLine}
+         ${standingLine}`;
 
     // Family: name the partner if alive; count living children & friends.
     let family = '';
@@ -232,6 +243,14 @@ export class Inspector {
     }
     const healthBlock = health
       ? `<div>Health ${bar(health.value)}${health.ill ? ' <span style="color:#f99">(ill)</span>' : ''}</div>` : '';
+
+    // Carried materials & goods (M23): what the gatherer/crafter holds in hand.
+    const inv = world.getComponent<Inventory>(e, C_INVENTORY);
+    const carryingBlock = inv && Object.keys(inv.items).length
+      ? `<hr style="${RULE}"><div style="${SECTION}">Carrying</div>` +
+        Object.entries(inv.items).sort((a, b) => b[1] - a[1]).map(([id, q]) =>
+          `<div><span style="color:#cdb89a">${id.charAt(0).toUpperCase() + id.slice(1)}</span> <span style="color:#9ab">${q.toFixed(1)}</span></div>`).join('')
+      : '';
 
     // The inner life: beliefs (from reflection), recent dreams/sayings/resolutions,
     // and a couple of recent memories.
@@ -277,6 +296,7 @@ export class Inspector {
       ${moodLine}
       ${healthBlock}
       ${livelihoodBlock}
+      ${carryingBlock}
       ${family}
       ${this._bodyBlock(world, e)}
       ${this._allegianceBlock(world, e, agent)}

@@ -7,6 +7,7 @@ import type { World, EntityId } from '../ecs.ts';
 import { C_AGENT, C_JOB, C_POSITION, C_RESOURCE } from '../components.ts';
 import type { Agent, Job, Position, Resource } from '../components.ts';
 import type { SimConfig } from '../config.ts';
+import { ensureInventory, addItem } from '../inventory.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 
 export function runGatherSystem(world: World, cfg: SimConfig): void {
@@ -31,7 +32,11 @@ export function runGatherSystem(world: World, cfg: SimConfig): void {
     const res = world.getComponent<Resource>(nodeE, C_RESOURCE)!;
     if (res.typeId !== job.gathers || res.amount <= 0) continue;
 
+    const before = res.amount;
     res.amount = Math.max(0, res.amount - gatherPerTick);
+    // The worker keeps what they extracted (M23): the raw material goes into their bag,
+    // bounded by the carrying cap. Crafting consumes it into goods (slice 2).
+    addItem(ensureInventory(world, e), res.typeId, before - res.amount, cfg.inventoryMaxPerItem);
     if (res.amount <= 0 && !res.renewable) exhausted.push({ e: nodeE, res, x: pos.x, y: pos.y });
   }
 

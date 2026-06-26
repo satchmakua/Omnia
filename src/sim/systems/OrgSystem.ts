@@ -41,6 +41,25 @@ function cultureLangOf(world: World, e: EntityId): string | undefined {
   return cid && cstore ? getCulture(cstore, cid)?.language : undefined;
 }
 
+// War→militarism (D26): going to war hardens both belligerents' cultures toward `martial`
+// — the matching response to famine→thrift (S71). Each represented culture is nudged once;
+// bounded + clamped, deterministic (no RNG). The era value-drift counterbalances it, so
+// martiality breathes rather than ratchets to a permanent war footing.
+function militarize(world: World, aId: string, bId: string, members: Map<string, EntityId[]>): void {
+  const cstore = getCultureStore(world);
+  if (!cstore) return;
+  const touched = new Set<string>();
+  for (const tribe of [aId, bId]) {
+    for (const e of members.get(tribe) ?? []) {
+      const cid = world.getComponent<Agent>(e, C_AGENT)!.cultureId;
+      if (!cid || touched.has(cid)) continue;
+      touched.add(cid);
+      const c = getCulture(cstore, cid);
+      if (c) c.values.martial = Math.min(1, c.values.martial + 0.05);
+    }
+  }
+}
+
 export function runOrgSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const store = getOrgStore(world);
   if (!store) return;
@@ -120,6 +139,7 @@ export function runOrgSystem(world: World, cfg: SimConfig, rng: RNG): void {
       if (targets.length > 0) {
         const b = targets[Math.floor(rng() * targets.length)];
         declareWar(store, a, b, tick);
+        militarize(world, a, b, members);   // war hardens both cultures toward martial (D26)
         emitEvent(world, 'culture', `The ${store.byId[a].name} declared war on the ${store.byId[b].name}.`);
         const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
         if (ch) chronicleAdd(ch, { tick, importance: 0.8, kind: 'war',

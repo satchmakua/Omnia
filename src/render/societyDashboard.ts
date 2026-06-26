@@ -2,10 +2,12 @@
 // 3×3 alignment grid, the leaning of each axis, how the outlaws compare (so the crime↔
 // alignment link is visible), and the spread of personalities. A pure read of the Alignment/
 // Personality/Crime components (M13). Answers "what kind of people live here?".
-import type { World } from '../sim/ecs.ts';
-import { C_AGENT, C_PERSONALITY } from '../sim/components.ts';
-import type { Personality } from '../sim/components.ts';
+import type { World, EntityId } from '../sim/ecs.ts';
+import { C_AGENT, C_PERSONALITY, C_CRIME, C_HOME } from '../sim/components.ts';
+import type { Agent, Personality, Home } from '../sim/components.ts';
 import { alignmentCensus } from '../analysis/metrics.ts';
+import { socialClassOf } from '../sim/society.ts';
+import { getOrgStore } from '../org/orgStore.ts';
 import { ModalPanel, SECTION, bar } from './modalPanel.ts';
 
 // The 3×3 grid laid out as alignmentName() spells the cells (rows: moral; cols: order).
@@ -64,6 +66,29 @@ export class SocietyDashboard extends ModalPanel {
           than the town (good ${c.meanGood.toFixed(2)}, law ${c.meanLaw.toFixed(2)}).</div>`
       : '<div style="color:#778;font-size:12px">No outlaws — the town keeps the peace.</div>';
 
+    // The social order: every soul's class, derived from standing + role.
+    const homesOwned = new Map<EntityId, number>();
+    for (const e of world.query(C_HOME)) {
+      const o = world.getComponent<Home>(e, C_HOME)!.owner;
+      homesOwned.set(o, (homesOwned.get(o) ?? 0) + 1);
+    }
+    const store = getOrgStore(world);
+    const leaders = new Set<EntityId>();
+    if (store) for (const o of Object.values(store.byId)) if (o.leader != null) leaders.add(o.leader);
+    const classes = new Map<string, number>();
+    let classTotal = 0;
+    for (const e of world.query(C_AGENT)) {
+      const a = world.getComponent<Agent>(e, C_AGENT)!;
+      const klass = socialClassOf(a.standing ?? 0.5, world.hasComponent(e, C_CRIME), leaders.has(e), (homesOwned.get(e) ?? 0) >= 2);
+      classes.set(klass, (classes.get(klass) ?? 0) + 1);
+      classTotal++;
+    }
+    const maxC = Math.max(1, ...classes.values());
+    const classRows = [...classes.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) =>
+      `<div style="display:flex;align-items:center;gap:8px;margin:2px 0">
+        <span style="width:110px;color:#cdd;text-align:right">${k}</span>
+        ${bar(n / maxC, '#e0c886', 150)}<span style="color:#9ab;width:24px">${n}</span></div>`).join('');
+
     // Personality archetypes, most common first.
     const traits = new Map<string, number>();
     for (const e of world.query(C_AGENT, C_PERSONALITY)) {
@@ -80,6 +105,7 @@ export class SocietyDashboard extends ModalPanel {
       `<div style="${SECTION}">Alignment <span style="color:#789">(${c.total} folk)</span></div>${intro}${grid}` +
       `<div style="${SECTION}">The town's leaning</div>${leanLine}` +
       `<div style="${SECTION}">The criminal class</div>${crimeLine}` +
+      `<div style="${SECTION}">The social order <span style="color:#789">(by standing &amp; role)</span></div>${classRows || '<div style="color:#778">—</div>'}` +
       `<div style="${SECTION}">Personalities</div>${persRows || '<div style="color:#778">—</div>'}`;
   }
 }
