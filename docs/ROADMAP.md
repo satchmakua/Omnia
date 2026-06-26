@@ -302,16 +302,17 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD met (S63–S66):** tribes research up a **visible tech tree** (Tribes tab eras, soak Modern by yr 38 / Sci-Fi by ~yr 93) **and** a **magic tree** (per-mage schools + spell ladder, inspector sheet); tech & magic **do things** (arms/medicine bonuses, mages blast/heal); **mages are inspectable & useful**; **knowledge can be lost & rediscovered** (tracked, legends, tested); **achievements fire & are viewable** (Legends 🏆); determinism + soak hold (0 violations, pop stable). *Deferred: magic items/golems, resource→craft→goods + skill gating, a dedicated Knowledge-tree tab, content-ifying the magic schools.*
 
-## ▶ Milestone 18 — Religion & Belief  *(in progress)*
+## ✅ Milestone 18 — Religion & Belief  *(DoD met — 2026-06-25)*
 
 **Goal:** living faiths that evolve and split like languages.
 
 - [x] **Religions emerge from culture/values + schism (the faith engine).** *(S67 — slice 1: `src/religion/religionStore.ts` mirrors the tribe/culture engines (D12/D33) — a singleton of `Religion` records agents follow by `religionId`. **World-gen founds one faith per seed culture** (its deity is language-coined, its tenets & `fervor` derive from the culture's values — communal→communal worship, martial→warrior creed, traditional→ancestor rites & more devout); founders take their culture's faith and **children inherit the mother's**. A `ReligionSystem` (daily/era) handles **extinction** (no followers → a forgotten faith) and **schism** — a large, loose faith fractures into a **sect** (`forkReligion`: new deity/name, nudged fervor, descent), gathering half the faithful (verified live: 2 founding faiths → 5 incl. 3 sects). **Causal (D26):** a shared faith **warms bonds** between the faithful (`faithFactor` in SocialSystem, scaled by fervor; the differently-faithed a touch cooler). +6 tests; soak 0 violations, pop stable.)*
 - [x] Inspector + view: a **Faiths tab** (hotkey R — deity, tenets, fervor, followers, descent, forgotten faiths) + a per-agent **Faith** line in the inspector. *(S67.)*
-- [~] Beliefs bias behaviour (D26) — *faith→bonding done (S67); **holidays**, **cults**, **living gods**, divine effects remain.*
-- [ ] **Founding myths**; **conversion/spread** through contact (faith currently spreads by birth, not persuasion).
+- [x] **Beliefs bias behaviour (D26)** — faith→**bonding** (co-religionists draw closer, S67) + faith→**mood** (a devout faith comforts its followers, S68). *(holidays/cults/living-gods/divine-effects deferred — richer flavour beyond the DoD.)*
+- [x] **Conversion / spread through contact.** *(S68: a folk standing beside a **more-devout** faith may adopt it (a daily, throttled, adjacency pass in `ReligionSystem`) — so faith spreads by persuasion, not only birth, and devout faiths grow while lax ones wither (verified: conversion on vs off shifts the faith shares; "X converted to the Faith of Y" in the feed). Founding faiths now carry a real **spread of devotion** so conversion has direction. Bounded — schism keeps it from monoculture.)*
+- [ ] *Deferred (beyond DoD):* **founding myths**, **holidays**, **cults**, **living gods** (rare/embodied) + divine effects.
 
-**DoD:** ≥1 religion founds, spreads, and schisms over deep time tied to culture; faith visibly affects behaviour and events; legible; soak-stable. *(Founding ✓, schism ✓, faith→behaviour ✓, legible ✓, soak ✓ — S67; conversion-spread, myths, holidays/gods/divine-effects remain.)*
+**DoD met (S67–S68):** faiths **found** from each culture, **spread** (by birth + contact-conversion), and **schism** into sects over deep time tied to culture; faith **visibly affects behaviour** (bonding + mood) **and events** (conversions/schisms in the feed & Chronicle); **legible** (Faiths tab R + inspector Faith line); determinism + soak hold (0 violations, faiths bounded). *Holidays/living-gods/myths are deferred flavour.*
 
 ## Milestone 19 — Events, Seasons & the Paranormal
 

@@ -166,7 +166,7 @@ function seedReligions(world: World, cfg: SimConfig, rng: RNG): void {
     ];
     if (v.traditional > 0.55) tenets.push('ancestor rites');
     const deity = cap(lang ? word(lang, `god-${rstore.created}`) : `God${rstore.created}`);
-    const fervor = cl(0.4 + v.traditional * 0.4 + (rng() * 2 - 1) * 0.1);   // traditional cultures are more devout
+    const fervor = cl(0.35 + v.traditional * 0.5 + (rng() * 2 - 1) * 0.18);   // traditional cultures are more devout; real spread of devotion
     byCulture.set(culture.id, createReligion(rstore, `the Faith of ${deity}`, deity, tenets, fervor, 0));
   }
   for (const e of world.query(C_AGENT)) {
