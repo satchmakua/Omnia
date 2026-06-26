@@ -1,0 +1,13 @@
+# Bergmund — a hearty fantasy-German of the halfling hill-folk (closed syllables,
+# stops and clusters, compounded family names). Orderly and guttural-but-homely:
+# think of hearty village names — Steinbach, Grummold, Waldfurt. Spoken by halflings.
+id: "bergmund"
+name: "Bergmund"
+phonemes:
+  consonants: ["g", "k", "t", "d", "b", "r", "n", "m", "h", "w", "l", "sch", "st", "gr"]
+  vowels: ["a", "o", "u", "e", "au"]
+syllableShapes: ["CVC", "CV"]   # closed & weighty — Germanic heft (sch/st/gr give the clusters)
+namePatterns:
+  personal: ["{syl}{syl}", "{syl}{syl}{syl}"]
+  family: ["{syl}{syl}", "{syl}{syl}-{syl}"]   # compounded, like German surnames
+soundChangeRate: 0.18

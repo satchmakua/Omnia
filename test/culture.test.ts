@@ -65,9 +65,10 @@ describe('causal coupling (D26): communal value lowers wealth goal', () => {
 describe('agents belong to a culture, and children inherit the mother’s', () => {
   it('founders take their species’ culture', () => {
     const { world } = createSimulation({ ...defaultConfig, seed: 5 }, content);
+    const known = new Set(content.cultures.all().map(c => c.id));   // every founder belongs to a seeded culture
     for (const e of world.query(C_AGENT)) {
       const a = world.getComponent<Agent>(e, C_AGENT)!;
-      expect(a.cultureId === 'vant_kin' || a.cultureId === 'drakhan_clans').toBe(true);
+      expect(a.cultureId !== undefined && known.has(a.cultureId)).toBe(true);
     }
   });
 

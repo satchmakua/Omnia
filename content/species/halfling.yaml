@@ -1,0 +1,15 @@
+# Halflings — small, nimble, hardy hill-folk, fond of hearth, harvest and good
+# company. Peaceable and close-knit. Named from the hearty Bergmund tongue.
+id: "halfling"
+name: "Halfling"
+lifespanYears: { min: 80, max: 130 }   # a touch longer-lived than humans
+size: "small"
+spawnWeight: 3
+color: "#d8a45c"        # warm wheat-brown — hearth and harvest
+tags: ["sapient"]
+needs:
+  hunger: 1.1           # hearty eaters
+  energy: 0.95
+magicAptitudeChance: 0.02
+language: "bergmund"       # halflings are named from the hearty hill-tongue
+abilityMods: { dex: 1, con: 1, cha: 1, str: -1 }   # nimble, hardy, affable, slight

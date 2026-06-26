@@ -1,0 +1,15 @@
+# Elves — graceful, long-lived, keen of mind and hand, and the most magical of the
+# folk. Slow to anger, slow to breed, slow to die. Named from the melodic Sylvaen.
+id: "elf"
+name: "Elf"
+lifespanYears: { min: 260, max: 460 }   # the longest-lived of the folk
+size: "medium"
+spawnWeight: 2
+color: "#a9e0c0"        # pale luminous green — moonlit verdure
+tags: ["sapient", "fey"]
+needs:
+  hunger: 0.85          # eat lightly
+  energy: 0.9           # tire slowly
+magicAptitudeChance: 0.09   # by far the most magical folk (humans 0.03, dwarves 0.01)
+language: "sylvaen"         # elves are named from the flowing romance tongue
+abilityMods: { dex: 2, int: 1, cha: 1, con: -1, str: -1 }   # graceful, keen, fragile
