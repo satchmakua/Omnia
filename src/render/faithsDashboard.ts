@@ -28,7 +28,7 @@ export class FaithsDashboard extends ModalPanel {
     const intro =
       `<div style="color:#8b8b9e;font-size:11px;line-height:1.5;margin-bottom:8px">
         The faiths the folk keep — each born of a founding culture's values, each with a god, a few tenets,
-        and a devoutness that draws the faithful closer. Faiths split into sects over the ages, like tongues and tribes.</div>`;
+        and a devoutness that draws the faithful closer. Faiths split into sects over the ages, like tongues and clans.</div>`;
 
     const piety = (f: number) => f > 0.66 ? 'devout' : f > 0.4 ? 'observant' : 'lax';
     const rows = living.map(r => {

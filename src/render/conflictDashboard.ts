@@ -61,7 +61,7 @@ export class ConflictDashboard extends ModalPanel {
 
     // ── Most combative / most peaceful living tribes ──
     const living = store ? Object.values(store.byId).filter(o => !o.extinct && (members.get(o.id) ?? 0) > 0) : [];
-    let tribesLine = '<div style="color:#778;font-size:12px">no tribes</div>';
+    let tribesLine = '<div style="color:#778;font-size:12px">no clans</div>';
     if (living.length > 0) {
       const scored = living.map(o => ({ o, wars: warCount(o.id), kills: tribeKills.get(o.id) ?? 0 }));
       const combative = [...scored].sort((x, y) => (y.wars - x.wars) || (y.kills - x.kills) || (y.o.values.martial - x.o.values.martial))[0];
@@ -128,11 +128,11 @@ export class ConflictDashboard extends ModalPanel {
     const none = '<div style="color:#778;font-size:12px">none yet</div>';
     this.body.innerHTML =
       `<div style="color:#8b8b9e;font-size:11px;line-height:1.5;margin-bottom:6px">
-        The town's violent life — wars between tribes, the folk who've made their name in battle, the
+        The town's violent life — wars between clans, the folk who've made their name in battle, the
         outlaws who prey on their neighbours, and how the dead met their end (${violentDeaths} of ${total} by violence).</div>` +
       sub('Active wars') + (activeRows || none) +
       sub('War history') + (historyRows || none) +
-      sub('Tribes') + tribesLine +
+      sub('Clans') + tribesLine +
       sub('Champions <span style="color:#789">(most foes slain)</span>') + (champRows || none) +
       sub('Most wanted') + (wantedRows || none) +
       sub('Who killed whom') + (slayRows || none) +

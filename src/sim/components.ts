@@ -38,6 +38,7 @@ export const C_RELIGIONSTORE = 'ReligionStore'; // singleton: live religions / f
 export const C_MARKET     = 'Market';     // singleton: the staple-goods market — price floats with supply/demand (M15)
 export const C_ACHIEVEMENTS = 'Achievements'; // singleton: civ + agent milestones that have fired (M17 s4)
 export const C_FIGURES      = 'Figures';      // singleton: historical figures enshrined by their deeds (M20)
+export const C_ARTIFACTS    = 'Artifacts';    // singleton: named legendary items with histories (M20 s2)
 
 export interface Position {
   x: number;
@@ -252,6 +253,25 @@ export interface HistoricalFigure {
 }
 export interface FiguresData {
   figures: HistoricalFigure[];
+}
+
+// A legendary artifact (M20 s2): a master smith's masterwork (a crafted weapon or armour),
+// named and remembered with its forging history. Borne by its maker until death, then lost to
+// history as a relic (discoverable by archaeology, later). Bounded; the oldest lost ones prune.
+export interface Artifact {
+  id: string;
+  name: string;          // a coined name from the maker's tongue
+  kind: 'weapon' | 'armour';
+  power: number;
+  bearer: number | null; // entity id of the current bearer, or null once lost
+  forgedBy: string;      // the maker's name
+  forgedTick: number;
+  deeds: string;         // a one-line history ("a master smith's blade · 9 foes slain")
+  lost?: boolean;
+  lostTick?: number;
+}
+export interface ArtifactsData {
+  artifacts: Artifact[];
 }
 
 // The town's staple-goods market (M15): a single price that floats with supply (what the

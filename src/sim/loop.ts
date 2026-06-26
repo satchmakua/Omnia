@@ -27,6 +27,7 @@ import { runOrgSystem }      from './systems/OrgSystem.ts';
 import { runResearchSystem } from './systems/ResearchSystem.ts';
 import { runAchievementSystem } from './systems/AchievementSystem.ts';
 import { runLegendSystem }    from './systems/LegendSystem.ts';
+import { runArtifactSystem }  from './systems/ArtifactSystem.ts';
 import { runAISystem }       from './systems/AISystem.ts';
 import { runMemorySystem }   from './systems/MemorySystem.ts';
 import { runHistorySystem }  from './systems/HistorySystem.ts';
@@ -71,6 +72,7 @@ export function tick(
   runResearchSystem(world, cfg, content); // tribes accumulate research & climb the tech ladder (M17)
   runAchievementSystem(world, cfg);      // civ + agent milestones fire once (M17)
   runLegendSystem(world, cfg);           // enshrine notable folk as historical figures (M20)
+  runArtifactSystem(world, cfg);         // master-crafted masterworks become named artifacts (M20 s2)
   runAISystem(world, cfg, provider);     // the "soul": reflection / dialogue / dreams / decisions (rare)
   runMemorySystem(world, cfg);           // multi-resolution rollup: old memories → episodic summaries
   runHistorySystem(world, cfg);          // world history: sample strata + compress the Chronicle

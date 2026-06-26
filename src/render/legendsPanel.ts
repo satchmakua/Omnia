@@ -4,8 +4,8 @@
 // **statistical strata** — the forgotten in aggregate — as small lo-fi charts.
 // Read-only: it only reads sim state (sim/render separation holds).
 import type { World } from '../sim/ecs.ts';
-import { C_CHRONICLE, C_WORLDSTATS, C_CLOCK, C_ACHIEVEMENTS, C_FIGURES, C_AGENT, C_TOMBSTONE } from '../sim/components.ts';
-import type { Clock, AchievementsData, FiguresData, Agent, Tombstone } from '../sim/components.ts';
+import { C_CHRONICLE, C_WORLDSTATS, C_CLOCK, C_ACHIEVEMENTS, C_FIGURES, C_AGENT, C_ARTIFACTS } from '../sim/components.ts';
+import type { Clock, AchievementsData, FiguresData, ArtifactsData } from '../sim/components.ts';
 import { chronicleRecent } from '../history/chronicle.ts';
 import type { ChronicleData } from '../history/chronicle.ts';
 import type { WorldStatsData, StatSample } from '../history/stats.ts';
@@ -65,7 +65,7 @@ export class LegendsPanel {
     this.contentEl.innerHTML =
       `<div style="color:#99a;margin-bottom:12px">the town's history, in year ${year}</div>
        ${this.figuresHtml(world)}
-       ${this.dynastiesHtml(world)}
+       ${this.artifactsHtml(world)}
        ${this.achievementsHtml(world)}
        ${this.chronicleHtml(chronicle)}
        ${this.strataHtml(stats)}
@@ -87,39 +87,20 @@ export class LegendsPanel {
     return `<div style="color:#ffd08a;text-transform:uppercase;font-size:11px;letter-spacing:1px;margin:6px 0 4px">Figures of legend <span style="color:#789">(${data.figures.length})</span></div>${rows}<hr style="border-color:rgba(255,255,255,0.08);margin:12px 0">`;
   }
 
-  // Dynasties (M20): the great surname-lines, by how many souls (living + buried) they've
-  // numbered — the families the town is built from.
-  private dynastiesHtml(world: World): string {
-    const surnameOf = (name: string): string => name.trim().split(/\s+/).slice(-1)[0] ?? '';
-    const living = new Map<string, number>();
-    const total = new Map<string, number>();
-    for (const e of world.query(C_AGENT)) {
-      const a = world.getComponent<Agent>(e, C_AGENT)!;
-      const s = a.surname ?? surnameOf(a.name);
-      if (!s) continue;
-      living.set(s, (living.get(s) ?? 0) + 1);
-      total.set(s, (total.get(s) ?? 0) + 1);
-    }
-    for (const e of world.query(C_TOMBSTONE)) {
-      const s = surnameOf(world.getComponent<Tombstone>(e, C_TOMBSTONE)!.name);
-      if (s) total.set(s, (total.get(s) ?? 0) + 1);
-    }
-    // Figures per surname (a dynasty that has bred legends).
-    const figs = this.get<FiguresData>(world, C_FIGURES);
-    const figBySurname = new Map<string, number>();
-    if (figs) for (const f of figs.figures) { const s = surnameOf(f.name); if (s) figBySurname.set(s, (figBySurname.get(s) ?? 0) + 1); }
-
-    const houses = [...total.entries()].filter(([, n]) => n >= 3)
-      .sort((a, b) => b[1] - a[1]).slice(0, 6);
-    if (houses.length === 0) return '';
-    const rows = houses.map(([s, n]) => {
-      const liv = living.get(s) ?? 0;
-      const nf = figBySurname.get(s) ?? 0;
+  // Legendary artifacts (M20 s2): named masterworks and the relics lost to history.
+  private artifactsHtml(world: World): string {
+    const data = this.get<ArtifactsData>(world, C_ARTIFACTS);
+    if (!data || data.artifacts.length === 0) return '';
+    const sorted = [...data.artifacts].sort((a, b) =>
+      Number(!!a.lost) - Number(!!b.lost) || b.forgedTick - a.forgedTick);
+    const rows = sorted.slice(0, 20).map(a => {
+      const glyph = a.kind === 'weapon' ? '⚔' : '🛡';
       return `<div style="margin:2px 0">
-        <span style="color:#cfe0ff">the ${s} clan</span>
-        <span style="color:#9ab">— ${liv} living of ${n} all told</span>${nf ? ` <span style="color:#ffd08a;font-size:11px">· ${nf} ${nf === 1 ? 'legend' : 'legends'}</span>` : ''}</div>`;
+        <span style="color:${a.lost ? '#b0a8c0' : '#ffe0a0'}">${glyph} ${a.name}</span>
+        <span style="color:#9ab">— ${a.deeds}</span>
+        <span style="color:#677;font-size:11px">· forged by ${a.forgedBy}, yr ${yearOf(a.forgedTick)}</span>${a.lost ? ' <span style="color:#877;font-size:11px">(lost)</span>' : ''}</div>`;
     }).join('');
-    return `<div style="color:#bcd4ff;text-transform:uppercase;font-size:11px;letter-spacing:1px;margin:6px 0 4px">Great clans <span style="color:#789">(by bloodline)</span></div>${rows}<hr style="border-color:rgba(255,255,255,0.08);margin:12px 0">`;
+    return `<div style="color:#ffcf9a;text-transform:uppercase;font-size:11px;letter-spacing:1px;margin:6px 0 4px">Artifacts &amp; relics <span style="color:#789">(${data.artifacts.length})</span></div>${rows}<hr style="border-color:rgba(255,255,255,0.08);margin:12px 0">`;
   }
 
   // Achievements (M17 s4): the milestones the town has reached, newest first.

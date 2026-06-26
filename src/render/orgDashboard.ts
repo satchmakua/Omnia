@@ -1,4 +1,4 @@
-// The Tribes lens (M14, hotkey K): the town's organizations — kin-bands that hold together,
+// The Clans lens (M14, hotkey K): the town's organizations — kin-bands that hold together,
 // govern themselves, and split as they grow. Each has its own colour (visible on the map as
 // the folk tint) and a government emergent from its values. A pure read of the OrgStore.
 import type { World } from '../sim/ecs.ts';
@@ -7,17 +7,17 @@ import type { Agent } from '../sim/components.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import { ModalPanel, SECTION } from './modalPanel.ts';
 
-// Tech-tier → era label (M17), so the Tribes view reads a tribe's level of advancement.
+// Tech-tier → era label (M17), so the Clans view reads a clan's level of advancement.
 const ERA_NAMES = ['Tribal Age', 'Tribal Age', 'Bronze Age', 'Iron Age', 'Medieval Age', 'Industrial Age', 'Modern Age', 'Sci-Fi Age'];
 
 export class OrgDashboard extends ModalPanel {
-  constructor() { super('Tribes', '560px'); }
+  constructor() { super('Clans', '560px'); }
 
   update(world: World): void { this.render(world); }
 
   private render(world: World): void {
     const store = getOrgStore(world);
-    if (!store) { this.body.innerHTML = '<div style="color:#778">No tribes.</div>'; return; }
+    if (!store) { this.body.innerHTML = '<div style="color:#778">No clans.</div>'; return; }
 
     const members = new Map<string, number>();
     for (const e of world.query(C_AGENT)) {
@@ -30,7 +30,7 @@ export class OrgDashboard extends ModalPanel {
 
     const intro =
       `<div style="color:#8b8b9e;font-size:11px;line-height:1.5;margin-bottom:8px">
-        Kin-bands that hold together, govern themselves, and split as they grow. Each tribe has its own
+        Kin-bands that hold together, govern themselves, and split as they grow. Each clan has its own
         colour — that's the tint on its folk out on the map — and a government that emerges from its values.</div>`;
 
     const rows = living.map((o) => {
@@ -57,12 +57,12 @@ export class OrgDashboard extends ModalPanel {
     }).join('');
 
     const lostHtml = lost.length
-      ? `<hr style="border-color:rgba(255,255,255,0.1);margin:12px 0"><div style="${SECTION}">Fallen tribes</div>` +
+      ? `<hr style="border-color:rgba(255,255,255,0.1);margin:12px 0"><div style="${SECTION}">Fallen clans</div>` +
         lost.map(o => `<div style="color:#889;margin:2px 0">† ${o.name}${o.parent && store.byId[o.parent] ? ` <span style="color:#677">⟵ ${store.byId[o.parent].name}</span>` : ''}</div>`).join('')
       : '';
 
     this.body.innerHTML =
-      `<div style="${SECTION}">Tribes <span style="color:#789">(${living.length})</span></div>${intro}` +
+      `<div style="${SECTION}">Clans <span style="color:#789">(${living.length})</span></div>${intro}` +
       `${rows || '<div style="color:#778">none yet</div>'}${lostHtml}`;
   }
 }
