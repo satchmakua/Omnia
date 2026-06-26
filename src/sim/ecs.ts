@@ -39,16 +39,29 @@ export class World {
     this.components.get(name)?.delete(entity);
   }
 
-  // Returns alive entities that possess ALL of the listed components.
+  // Returns alive entities that possess ALL of the listed components, in the first
+  // component's insertion order (deterministic — systems rely on this order). Drives off
+  // the first listed store and resolves the remaining stores ONCE (not per entity), so the
+  // per-entity check is a handful of Map.has() calls rather than a Map lookup-by-name each.
   query(...componentNames: string[]): EntityId[] {
     if (componentNames.length === 0) return [...this.alive];
     const [first, ...rest] = componentNames;
     const firstStore = this.components.get(first);
     if (!firstStore) return [];
+    const restStores: Map<EntityId, unknown>[] = [];
+    for (const name of rest) {
+      const store = this.components.get(name);
+      if (!store) return [];   // a required component has no entities → nothing can match
+      restStores.push(store);
+    }
     const result: EntityId[] = [];
     for (const id of firstStore.keys()) {
       if (!this.alive.has(id)) continue;
-      if (rest.every(name => this.hasComponent(id, name))) result.push(id);
+      let ok = true;
+      for (let i = 0; i < restStores.length; i++) {
+        if (!restStores[i].has(id)) { ok = false; break; }
+      }
+      if (ok) result.push(id);
     }
     return result;
   }

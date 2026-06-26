@@ -10,13 +10,14 @@
 // identical measurements every run.
 import type { World } from '../sim/ecs.ts';
 import {
-  C_AGENT, C_WALLET, C_RELATIONSHIPS, C_TOMBSTONE, C_MEMORY, C_LINEAGE, C_JOB,
+  C_AGENT, C_WALLET, C_RELATIONSHIPS, C_TOMBSTONE, C_MEMORY, C_LINEAGE, C_JOB, C_ALIGNMENT, C_CRIME,
 } from '../sim/components.ts';
 import type {
-  Agent, Wallet, Relationships, Tombstone, Memory, Lineage, Job,
+  Agent, Wallet, Relationships, Tombstone, Memory, Lineage, Job, Alignment,
 } from '../sim/components.ts';
 import type { SimConfig } from '../sim/config.ts';
 import { ageInYears } from '../sim/config.ts';
+import { alignmentName } from '../sim/heredity.ts';
 import { gini } from '../sim/wealth.ts';
 import { getLanguageStore } from '../lang/languageStore.ts';
 import type { LanguageStoreData } from '../lang/languageStore.ts';
@@ -498,6 +499,50 @@ export function townMood(world: World): number {
     if (m !== undefined) { sum += m; n++; }
   }
   return n ? sum / n : 0;
+}
+
+// ── 13. The town's moral makeup (M13 alignment) ──────────────────────────────────
+
+export interface AlignmentCensus {
+  total: number;
+  byCell: Record<string, number>;   // grid-cell name → count (the 3×3 alignment distribution)
+  meanGood: number;
+  meanLaw: number;
+  goodFrac: number; evilFrac: number;       // share clearly Good / Evil on the moral axis
+  lawfulFrac: number; chaoticFrac: number;  // share clearly Lawful / Chaotic on the order axis
+  outlaws: number;
+  outlawMeanGood: number;   // the criminal class's mean alignment (0 if no outlaws) — the
+  outlawMeanLaw: number;    // crime↔alignment link, made measurable
+}
+
+// Census the alignment of the living: the 3×3 grid distribution, the means on each axis,
+// and how the outlaws (crime rap-sheet holders) compare — so the moral makeup of the town,
+// and the fact that crime tracks alignment, are both legible (D35). Pure read, no RNG.
+export function alignmentCensus(world: World): AlignmentCensus {
+  const byCell: Record<string, number> = {};
+  let total = 0, gSum = 0, lSum = 0, good = 0, evil = 0, lawful = 0, chaotic = 0;
+  let oN = 0, oG = 0, oL = 0;
+  for (const e of world.query(C_AGENT, C_ALIGNMENT)) {
+    const al = world.getComponent<Alignment>(e, C_ALIGNMENT)!;
+    const cell = alignmentName(al);
+    byCell[cell] = (byCell[cell] ?? 0) + 1;
+    total++; gSum += al.good; lSum += al.law;
+    if (al.good > 0.33) good++; else if (al.good < -0.33) evil++;
+    if (al.law > 0.33) lawful++; else if (al.law < -0.33) chaotic++;
+    if (world.hasComponent(e, C_CRIME)) { oN++; oG += al.good; oL += al.law; }
+  }
+  return {
+    total, byCell,
+    meanGood: total ? gSum / total : 0,
+    meanLaw: total ? lSum / total : 0,
+    goodFrac: total ? good / total : 0,
+    evilFrac: total ? evil / total : 0,
+    lawfulFrac: total ? lawful / total : 0,
+    chaoticFrac: total ? chaotic / total : 0,
+    outlaws: oN,
+    outlawMeanGood: oN ? oG / oN : 0,
+    outlawMeanLaw: oN ? oL / oN : 0,
+  };
 }
 
 // ── The bundle ───────────────────────────────────────────────────────────────────
