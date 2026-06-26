@@ -65,6 +65,7 @@ export interface SimConfig {
   // Religion (M18): faiths schism into sects over the eras, like cultures/tongues/tribes.
   religionSchismChancePerEra: number;  // per-era chance a large, loose faith fractures into a sect
   minFaithFollowers: number;           // a faith needs at least this many followers to spawn a sect
+  conversionChancePerDay: number;      // daily chance a folk beside a more-devout faith adopts it (faith spreads)
   // Capabilities / magic (M3 part 2):
   magicManaMax: number;                // mana pool size for aptitude-gifted agents
   manaRegenPerDay: number;             // mana regenerated per in-sim day
@@ -250,6 +251,7 @@ export const defaultConfig: SimConfig = {
   researchPerMemberPerDay: 1.0,
   religionSchismChancePerEra: 0.4, // faiths fracture into sects now and then over deep time
   minFaithFollowers: 8,
+  conversionChancePerDay: 0.05,    // faith spreads by contact — a devout neighbour wins the odd convert
   magicManaMax: 100,
   manaRegenPerDay: 10,
   daysPerYear: 4,

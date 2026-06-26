@@ -59,6 +59,7 @@ researchBasePerDay: 2
 researchPerMemberPerDay: 1.0
 religionSchismChancePerEra: 0.4
 minFaithFollowers: 8
+conversionChancePerDay: 0.05
 magicManaMax: 100
 manaRegenPerDay: 10
 daysPerYear: 4

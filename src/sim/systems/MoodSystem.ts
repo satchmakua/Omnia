@@ -9,6 +9,7 @@ import { C_AGENT, C_WALLET, C_HEALTH, C_LINEAGE, C_HOME, C_CLOCK } from '../comp
 import type { Agent, Wallet, Health, Lineage, Home, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
+import { getReligionStore } from '../../religion/religionStore.ts';
 
 export const MOOD_BASELINE = 0.6;   // a fresh soul starts mildly content; spawnAgent seeds this
 
@@ -17,6 +18,7 @@ const HOME_BONUS = 0.20;        // a home of one's own — security & comfort
 const FAMILY_BONUS = 0.15;      // a living partner / parent / child — companionship
 const DEBT_PENALTY = 0.20;      // owing more than you have wears on you (debt's bite, D39 via mood)
 const HOMELESS_PENALTY = 0.10;  // an adult with no home of their own
+const FAITH_COMFORT = 0.12;     // a devout faith is a solace (scaled by its fervor) (M18 s2)
 const ILL_PENALTY = 0.15;       // sickness saps contentment
 const ADJUST_PER_DAY = 0.34;    // mood drifts ~⅓ of the way to its target each day (days, not instant)
 
@@ -37,6 +39,7 @@ export function runMoodSystem(world: World, cfg: SimConfig): void {
   // Who owns a home? (one pass, so the per-agent check is O(1)).
   const homeowners = new Set<EntityId>();
   for (const e of world.query(C_HOME)) homeowners.add(world.getComponent<Home>(e, C_HOME)!.owner);
+  const faithStore = getReligionStore(world);   // a devout faith comforts its followers (M18 s2)
 
   const alive = (id: number) => world.hasComponent(id, C_AGENT);
   for (const e of world.query(C_AGENT)) {
@@ -58,6 +61,8 @@ export function runMoodSystem(world: World, cfg: SimConfig): void {
     // A roof — even a rented one — spares the homeless penalty (children are dependents anyway).
     if (adult && !owns && agent.rentsFrom === undefined) target -= HOMELESS_PENALTY;
     if (health && health.ill) target -= ILL_PENALTY;
+    // Faith is a solace — a follower draws comfort scaled by how devout their faith is.
+    if (faithStore && agent.religionId) target += FAITH_COMFORT * (faithStore.byId[agent.religionId]?.fervor ?? 0);
     target = clamp01(target);
 
     const mood = agent.mood ?? MOOD_BASELINE;

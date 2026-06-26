@@ -4,8 +4,8 @@
 // gathering half the faithful. Mirrors the schism machinery of cultures/tongues/tribes. The
 // faith's fervour also drifts a touch each era. Runs daily; schism evaluates per era.
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_CLOCK, C_CHRONICLE } from '../components.ts';
-import type { Agent, Clock } from '../components.ts';
+import { C_AGENT, C_CLOCK, C_CHRONICLE, C_POSITION } from '../components.ts';
+import type { Agent, Clock, Position } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { getReligionStore, forkReligion, pruneReligions } from '../../religion/religionStore.ts';
@@ -49,6 +49,42 @@ export function runReligionSystem(world: World, cfg: SimConfig, rng: RNG): void 
     const r = store.byId[id];
     if (r.extinct) continue;
     if (!followers.get(id)?.length) { r.extinct = true; r.diedTick = tick; }
+  }
+
+  // Conversion (M18 s2): faith spreads by contact — a folk standing beside a *more devout*
+  // faith may adopt it. Most keep their faith; the gate (more fervent) means devout faiths
+  // win converts and grow (until they schism). One roll per folk per day → bounded RNG.
+  const W = cfg.gridWidth;
+  const folkAt = new Map<number, EntityId>();
+  for (const e of world.query(C_AGENT, C_POSITION)) {
+    const p = world.getComponent<Position>(e, C_POSITION)!;
+    folkAt.set(p.y * W + p.x, e);
+  }
+  const OFF = [-1, 0, 1];
+  for (const e of world.query(C_AGENT, C_POSITION)) {
+    const agent = world.getComponent<Agent>(e, C_AGENT)!;
+    const fA = agent.religionId;
+    if (!fA) continue;
+    if (rng() >= cfg.conversionChancePerDay) continue;
+    const fervA = store.byId[fA]?.fervor ?? 0;
+    const p = world.getComponent<Position>(e, C_POSITION)!;
+    let converted = false;
+    for (const dy of OFF) {
+      for (const dx of OFF) {
+        if (dx === 0 && dy === 0) continue;
+        const o = folkAt.get((p.y + dy) * W + (p.x + dx));
+        if (o === undefined) continue;
+        const fB = world.getComponent<Agent>(o, C_AGENT)!.religionId;
+        if (!fB || fB === fA || !store.byId[fB] || store.byId[fB].extinct) continue;
+        if (store.byId[fB].fervor > fervA) {
+          agent.religionId = fB;
+          emitEvent(world, 'culture', `${agent.name} converted to ${store.byId[fB].name}.`);
+          converted = true;
+          break;
+        }
+      }
+      if (converted) break;
+    }
   }
 
   // Schism + drift on the era cadence.
