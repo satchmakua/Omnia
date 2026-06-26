@@ -3,10 +3,11 @@ import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
   C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN, C_WONDERSITE,
+  C_QUEST, C_CRIME, C_COMBAT,
   C_CLOCK, C_TILEMAP, C_EVENTLOG,
 } from '../sim/components.ts';
 import type {
-  Position, Agent, Health, Flora, Fauna, Resource, Business, Clock, Ruin,
+  Position, Agent, Health, Flora, Fauna, Resource, Business, Clock, Ruin, Combat,
 } from '../sim/components.ts';
 import type { EventLogData } from '../history/eventlog.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -276,6 +277,7 @@ export class Renderer {
       const p = world.getComponent<Position>(e, C_POSITION)!;
       const child = ageInYears(agent.ticksAlive, cfg) < cfg.adultAgeYears;
       const health = world.getComponent<Health>(e, C_HEALTH);
+      const cmb = world.getComponent<Combat>(e, C_COMBAT);
       this.iconFolk(drawX(e, p.x), drawY(e, p.y), child, {
         mage: world.hasComponent(e, C_MAGIC),
         ill: !!health?.ill,
@@ -283,6 +285,9 @@ export class Renderer {
         action: agent.action,
         chatting: inCompany(p),
         bodyColor: agent.orgId && orgStore ? orgStore.byId[agent.orgId]?.color : undefined,
+        quest: world.hasComponent(e, C_QUEST),                       // ⚑ on a quest (M20 s3)
+        veteran: !!cmb && (cmb.kills > 0 || cmb.scars > 0),          // ⚔ a fighter (M16)
+        outlaw: world.hasComponent(e, C_CRIME),                      // ⚖ an outlaw (M16)
       });
     }
 
@@ -302,7 +307,7 @@ export class Renderer {
     ctx.restore();
   }
 
-  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; wounded: boolean; action: string; chatting: boolean; bodyColor?: string }): void {
+  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; wounded: boolean; action: string; chatting: boolean; bodyColor?: string; quest?: boolean; veteran?: boolean; outlaw?: boolean }): void {
     const ctx = this.ctx;
     this.at(gx, gy, child ? 0.72 : 1, () => {
       ctx.fillStyle = st.bodyColor ?? CATEGORY_COLOR.folk;   // tinted by tribe (M14)
@@ -321,6 +326,19 @@ export class Renderer {
       if (st.ill) { ctx.strokeStyle = BADGE.ill; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-7, -7); ctx.lineTo(-7, -3); ctx.moveTo(-9, -5); ctx.lineTo(-5, -5); ctx.stroke(); }
       if (st.wounded) { ctx.strokeStyle = '#ff5050'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-4, 11); ctx.lineTo(4, 11); ctx.stroke(); }  // a red "hurt" bar at the feet
       if (st.mage) { ctx.fillStyle = BADGE.mage; this.spark(7, -9); }
+      // ⚑ on a quest: a small gold pennant above the head (M20 s3).
+      if (st.quest) {
+        ctx.strokeStyle = '#ffd278'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, -10.5); ctx.lineTo(0, -15.5); ctx.stroke();
+        ctx.fillStyle = '#ffd278'; ctx.beginPath(); ctx.moveTo(0, -15.5); ctx.lineTo(5, -13.7); ctx.lineTo(0, -12.2); ctx.closePath(); ctx.fill();
+      }
+      // ⚔ a veteran fighter: tiny crossed swords at the lower right (M16).
+      if (st.veteran) {
+        ctx.strokeStyle = '#d6dae4'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(5, 2); ctx.lineTo(9.5, 6.5); ctx.moveTo(9.5, 2); ctx.lineTo(5, 6.5); ctx.stroke();
+      }
+      // ⚖ an outlaw: a small red mark at the lower left (M16).
+      if (st.outlaw) { ctx.fillStyle = '#ff5a5a'; ctx.beginPath(); ctx.arc(-7.5, 4, 1.7, 0, Math.PI * 2); ctx.fill(); }
     });
   }
 
