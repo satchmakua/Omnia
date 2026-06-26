@@ -26,6 +26,15 @@ import { nativeFluency } from '../lang/fluency.ts';
 import { MOOD_BASELINE } from './systems/MoodSystem.ts';
 import { SCHOOL_IDS } from '../magic/schools.ts';
 
+// Re-surname a living agent to their clan (M20): their family name IS the clan's word, so a
+// clan reassignment (world-gen founding, or a schism) renames them. Keeps the given name.
+export function renameToClan(agent: Agent, clanWord: string): void {
+  if (!clanWord) return;   // defensive (e.g. a pre-M20 save whose clan has no `surname`)
+  const given = agent.name.split(' ').slice(0, -1).join(' ');
+  agent.name = given ? `${given} ${clanWord}` : `${agent.name} ${clanWord}`;
+  agent.surname = clanWord;
+}
+
 export interface SpawnOpts {
   x: number;
   y: number;

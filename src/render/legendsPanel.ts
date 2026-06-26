@@ -116,10 +116,10 @@ export class LegendsPanel {
       const liv = living.get(s) ?? 0;
       const nf = figBySurname.get(s) ?? 0;
       return `<div style="margin:2px 0">
-        <span style="color:#cfe0ff">House ${s}</span>
+        <span style="color:#cfe0ff">the ${s} clan</span>
         <span style="color:#9ab">— ${liv} living of ${n} all told</span>${nf ? ` <span style="color:#ffd08a;font-size:11px">· ${nf} ${nf === 1 ? 'legend' : 'legends'}</span>` : ''}</div>`;
     }).join('');
-    return `<div style="color:#bcd4ff;text-transform:uppercase;font-size:11px;letter-spacing:1px;margin:6px 0 4px">Dynasties</div>${rows}<hr style="border-color:rgba(255,255,255,0.08);margin:12px 0">`;
+    return `<div style="color:#bcd4ff;text-transform:uppercase;font-size:11px;letter-spacing:1px;margin:6px 0 4px">Great clans <span style="color:#789">(by bloodline)</span></div>${rows}<hr style="border-color:rgba(255,255,255,0.08);margin:12px 0">`;
   }
 
   // Achievements (M17 s4): the milestones the town has reached, newest first.

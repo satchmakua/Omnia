@@ -12,7 +12,7 @@ import type { EntityId } from './ecs.ts';
 import type { RNG } from './rng.ts';
 import type { Content } from '../content/loader.ts';
 import type { Species } from '../content/schema.ts';
-import { spawnAgent } from './spawnAgent.ts';
+import { spawnAgent, renameToClan } from './spawnAgent.ts';
 import { generateTileMap } from '../world/worldgen.ts';
 import { isPassable, inBounds, findPassableTile } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -146,6 +146,8 @@ function seedTribes(world: World, cfg: SimConfig, rng: RNG): void {
     const partnerOrg = lin.partner != null && world.hasComponent(lin.partner, C_AGENT)
       ? world.getComponent<Agent>(lin.partner, C_AGENT)!.orgId : undefined;
     agent.orgId = partnerOrg ?? tribeIds[(next++) % count];
+    // A clan IS the family line (M20): the member carries the clan's word as their surname.
+    renameToClan(agent, store.byId[agent.orgId].surname);
   }
 }
 
