@@ -21,6 +21,7 @@ export const C_ALIGNMENT     = 'Alignment';     // dynamic 9-alignment (good/law
 export const C_PERSONALITY   = 'Personality';   // an archetype trait, heritable + trauma-shifted (M13)
 export const C_COMBAT        = 'Combat';        // combat record: scars + kills (attached on first fight) (M16)
 export const C_CRIME         = 'Crime';         // rap sheet: thefts + assaults + murders (attached on first crime) (M16)
+export const C_INVENTORY     = 'Inventory';     // carried materials & goods (attached on first gather) (M23)
 export const C_AIRECORD      = 'AIRecord';      // singleton: recorded LLM responses for replay (M5)
 export const C_AIRUNNER      = 'AIRunner';      // singleton: async live-model queue + pending jobs (M7.5)
 export const C_CLOCK     = 'Clock';
@@ -51,6 +52,13 @@ export interface Wallet {
   debt: number;   // >= 0; what the agent owes (no negative gold without a debt record)
 }
 
+// Carried materials & goods (M23): an id → quantity bag. Gatherers fill it with raw
+// materials (timber/ore/crystal); crafters consume materials into goods (M23 slice 2).
+// Bounded per item by `inventoryMaxPerItem`, so it stays tenable. See src/sim/inventory.ts.
+export interface Inventory {
+  items: Record<string, number>;
+}
+
 export type AgentAction = 'wander' | 'seek_food' | 'sleep' | 'work' | 'socialize';
 
 export type Sex = 'male' | 'female';
@@ -75,6 +83,10 @@ export interface Agent {
                         // a rented roof spares the homeless mood penalty. See RentSystem.
   orgId?: string;       // the tribe/faction this agent belongs to (M14); inherited from the mother.
   religionId?: string;  // the faith this agent follows (M18); inherited from the mother.
+  standing?: number;    // 0..1 social standing / reputation (M14 thread): esteem in the community,
+                        // derived daily from deeds & means — leadership, landholding, valour, and
+                        // wealth lift it; crime and debt sink it. Drives social class + warms how
+                        // readily others seek one's company (D26). See StatusSystem / society.ts.
 }
 
 // A social structure — a tribe/faction (M14, D33). Like cultures, organizations are a few

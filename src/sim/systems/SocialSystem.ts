@@ -12,6 +12,7 @@ import type {
   Agent, Needs, Position, Relationships, RelationEdge, Lineage, Clock, Body, Alignment,
 } from '../components.ts';
 import { charismaWarmth, alignmentWarmth } from '../heredity.ts';
+import { standingWarmth } from '../society.ts';
 import { getReligionStore, faithFactor } from '../../religion/religionStore.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
@@ -131,7 +132,9 @@ function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId, cstore
   // …and a shared faith warms bonds (M18, D26): co-religionists draw closer, scaled by how
   // devout the faith is; the differently-faithed are a touch cooler (neutral when unbelieving).
   const faith = faithFactor(getReligionStore(world), agentA.religionId, agentB.religionId);
-  const warm = cfg.sentimentGainPerInteract * bond * synergy * mood * charisma * align * faith;
+  // …and the esteemed are sought out (M14 class/reputation): folk warm to the well-regarded.
+  const standing = standingWarmth(agentA.standing ?? 0.5, agentB.standing ?? 0.5);
+  const warm = cfg.sentimentGainPerInteract * bond * synergy * mood * charisma * align * faith * standing;
 
   const ea = edge(world.getComponent<Relationships>(a, C_RELATIONSHIPS)!, b);
   const eb = edge(world.getComponent<Relationships>(b, C_RELATIONSHIPS)!, a);

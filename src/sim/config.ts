@@ -104,6 +104,8 @@ export interface SimConfig {
   childMageAptitudeChance: number;     // aptitude chance for a child with a mage parent (heritable)
   // Resource gathering (M4.5):
   gatherPerDay: number;                // how fast one worker depletes a resource node
+  // Inventory & crafting (M23):
+  inventoryMaxPerItem: number;         // carrying cap per material/good — keeps inventories bounded
   // The soul / memory (M5):
   workingMemorySize: number;           // raw-memory high-water mark; rollup triggers above this
   reflectionIntervalDays: number;      // min sim-days between an agent's reflections
@@ -302,6 +304,7 @@ export const defaultConfig: SimConfig = {
   reproMinHealth: 0.5,
   childMageAptitudeChance: 0.25,  // heritable but diluting — magic stays uncommon
   gatherPerDay: 0.3,
+  inventoryMaxPerItem: 20,         // a worker carries up to ~20 units of any one material
   workingMemorySize: 30,
   reflectionIntervalDays: 30,
   maxReflectionsPerTick: 2,
