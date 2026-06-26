@@ -43,6 +43,7 @@ export const C_RUIN         = 'Ruin';         // a discoverable site of the past
 export const C_QUEST        = 'Quest';        // a procedural goal an agent has taken up (M20 s3)
 export const C_WONDERS      = 'Wonders';      // singleton: town-scale mega-project progress (M20 s3b)
 export const C_WONDERSITE   = 'WonderSite';   // a completed wonder, a landmark on the map (M20 s3b)
+export const C_SPECIAL      = 'Special';      // a special agent — a monster / uncanny visitor that roams the map (M21)
 
 export interface Position {
   x: number;
@@ -304,6 +305,25 @@ export interface Quest {
   baseKills?: number;    // hunt/avenge: the agent's kill count when they vowed (fulfil when it rises)
   tx?: number;           // explore: the target ruin's tile
   ty?: number;
+}
+
+// A special agent (M21): a monster or uncanny visitor that roams the map for a while, then
+// despawns. Unlike folk it has no Agent brain, job, needs, or lineage — it is Position + Health
+// + Special. Two behaviours: a `predator` hunts the nearest folk and trades blows (a slain
+// predator makes a hero of its killer + a legend); a `haunt` only unsettles the folk it drifts
+// past (a mood dip + an eerie memory), drawing no blood. See SpecialAgentSystem.
+export interface Special {
+  kind: string;          // the monster's content id (e.g. "dragon", "vampire")
+  name: string;          // display name ("a dragon")
+  icon: string;          // which creature glyph to draw
+  behavior: 'predator' | 'haunt';
+  str: number;
+  dex: number;
+  con: number;
+  ferocity: number;      // damage multiplier when it lands a blow
+  spawnTick: number;     // when it appeared
+  despawnTick: number;   // when it leaves of its own accord (if not slain first)
+  lastHauntTick?: number; // haunt throttle — when it last unsettled the folk
 }
 
 // Town-scale mega-projects (M20 s3b). One wonder is built at a time, gated by tech, raised by

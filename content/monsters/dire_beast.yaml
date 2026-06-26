@@ -1,0 +1,11 @@
+# A generic horror of the wilds — the most common monster.
+id: "dire_beast"
+name: "a dire beast"
+icon: "monster"
+behavior: "predator"
+str: 14
+dex: 11
+con: 13
+ferocity: 1.35
+spawnChancePerDay: 0.006
+despawnDays: 10

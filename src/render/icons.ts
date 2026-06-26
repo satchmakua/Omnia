@@ -17,6 +17,14 @@ export const CATEGORY_COLOR = {
   ruin:     '#8c8270',
   wonder:   '#e8c674',
   hostile:  '#d06b6b',
+  // Special agents (M21) — monsters & uncanny visitors. Each icon carries its own palette;
+  // the colour here is just the legend/category accent.
+  dragon:   '#c87a52',
+  vampire:  '#b03a4a',
+  undead:   '#d6d8e0',
+  monster:  '#d06b6b',
+  ghost:    '#aec4ea',
+  alien:    '#5cc95c',
 } as const;
 
 export type Category = keyof typeof CATEGORY_COLOR;
@@ -74,6 +82,51 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
     case 'grave':   // a rounded headstone with a cross
       return `<path d="M-6 8 V-3 Q-6 -9 0 -9 Q6 -9 6 -3 V8 Z" fill="${color}"/>` +
         `<rect x="-1.2" y="-5" width="2.4" height="8" fill="rgba(0,0,0,0.4)"/><rect x="-3.5" y="-3" width="7" height="2.2" fill="rgba(0,0,0,0.4)"/>`;
+    case 'dragon':  // a heraldic wyvern: spread membranous wings, horned head, red eyes, a curling tail
+      return `<path d="M-1 -2 L-11 -7 L-8 -2 L-11 2 L-8 3 L-1 4 Z" fill="#8f4f33"/>` +
+        `<path d="M1 -2 L11 -7 L8 -2 L11 2 L8 3 L1 4 Z" fill="#8f4f33"/>` +
+        `<path d="M0 -7 Q3 -1 1.6 7 L-1.6 7 Q-3 -1 0 -7 Z" fill="${color}"/>` +
+        `<path d="M-1.4 7 Q-3 10 -0.5 11.5" stroke="${color}" stroke-width="1.5" fill="none" stroke-linecap="round"/>` +
+        `<circle cx="0" cy="-8" r="2.7" fill="${color}"/>` +
+        `<path d="M-2.4 -9.5 L-3.6 -12 M2.4 -9.5 L3.6 -12" stroke="#e7c39c" stroke-width="1.2" fill="none" stroke-linecap="round"/>` +
+        `<circle cx="-1" cy="-8" r="0.8" fill="#ffd24a"/><circle cx="1" cy="-8" r="0.8" fill="#ffd24a"/>`;
+    case 'vampire': { // a classic count: high-collared cape, pale face, widow's-peak hair, red eyes, white fangs
+      const cape = '#3a1830', face = '#ede2d0', hair = '#131019';
+      return `<path d="M-9 9 L-6 -1 Q0 -4 6 -1 L9 9 Z" fill="${cape}"/>` +
+        `<path d="M-6 -1 L-2.5 3 L-1 -2 Z M6 -1 L2.5 3 L1 -2 Z" fill="${cape}"/>` +
+        `<circle cx="0" cy="-4" r="3.9" fill="${face}"/>` +
+        `<path d="M-3.9 -4.6 Q-4.4 -8.4 0 -8.4 Q4.4 -8.4 3.9 -4.6 Q2 -6.3 0 -4 Q-2 -6.3 -3.9 -4.6 Z" fill="${hair}"/>` +
+        `<circle cx="-1.6" cy="-4" r="0.85" fill="#d12a2a"/><circle cx="1.6" cy="-4" r="0.85" fill="#d12a2a"/>` +
+        `<path d="M-1.3 -1 L-0.5 0.7 L0.1 -1 Z M0.3 -1 L1.1 0.7 L1.7 -1 Z" fill="#ffffff"/>`;
+    }
+    case 'undead': { // a bare skull: black sockets, nasal void, a row of teeth
+      const bone = '#d6d8e0';
+      return `<path d="M-6 -2 Q-6 -9 0 -9 Q6 -9 6 -2 Q6 2 4 3.2 L4 6 L-4 6 L-4 3.2 Q-6 2 -6 -2 Z" fill="${bone}"/>` +
+        `<circle cx="-2.7" cy="-3" r="1.9" fill="#101018"/><circle cx="2.7" cy="-3" r="1.9" fill="#101018"/>` +
+        `<path d="M0 -1.5 L-1.1 1.4 L1.1 1.4 Z" fill="#101018"/>` +
+        `<path d="M-3 4 H3 M-1.6 4 V6.4 M0 4 V6.4 M1.6 4 V6.4" stroke="#101018" stroke-width="0.8" fill="none"/>`;
+    }
+    case 'monster': { // a snarling horned beast: glowing eyes, jagged fangs
+      const hide = '#d06b6b';
+      return `<path d="M-5 -4 L-8.5 -11 L-2.5 -5.5 Z M5 -4 L8.5 -11 L2.5 -5.5 Z" fill="#a84a4a"/>` +
+        `<path d="M-7 -1 Q-7 -7 0 -7 Q7 -7 7 -1 Q7 6 0 8 Q-7 6 -7 -1 Z" fill="${hide}"/>` +
+        `<path d="M-4.2 -1.8 L-1.4 -0.6 L-4 0.6 Z M4.2 -1.8 L1.4 -0.6 L4 0.6 Z" fill="#ffe08a"/>` +
+        `<path d="M-3.4 3 L-2.4 5.6 L-1.4 3 L-0.4 5.6 L0.6 3 L1.6 5.6 L2.6 3 Z" fill="#ffffff"/>`;
+    }
+    case 'ghost': { // a hovering wraith: rounded cowl, wavy hem, dark hollows
+      const pale = '#aec4ea';
+      return `<path d="M-6 7 L-6 -2 Q-6 -9 0 -9 Q6 -9 6 -2 L6 7 L4 5.2 L2 7 L0 5.2 L-2 7 L-4 5.2 Z" fill="${pale}" opacity="0.9"/>` +
+        `<ellipse cx="-2.3" cy="-3" rx="1.3" ry="1.8" fill="#2a3550"/><ellipse cx="2.3" cy="-3" rx="1.3" ry="1.8" fill="#2a3550"/>` +
+        `<ellipse cx="0" cy="1" rx="1.1" ry="1.6" fill="#2a3550"/>`;
+    }
+    case 'alien': { // a grey in green: bulbous head, big slanted black eyes, slender body
+      const skin = '#5cc95c';
+      return `<path d="M-2 11 L-1.4 1 L1.4 1 L2 11 Z" fill="${skin}"/>` +
+        `<path d="M-4 9 L-1.6 5 M4 9 L1.6 5" stroke="${skin}" stroke-width="1.3" fill="none" stroke-linecap="round"/>` +
+        `<path d="M0 -10 Q7 -8.5 5.2 -1.5 Q3.2 2.5 0 2.5 Q-3.2 2.5 -5.2 -1.5 Q-7 -8.5 0 -10 Z" fill="${skin}"/>` +
+        `<ellipse cx="-2.5" cy="-3.4" rx="1.5" ry="2.7" fill="#0a0a10" transform="rotate(28 -2.5 -3.4)"/>` +
+        `<ellipse cx="2.5" cy="-3.4" rx="1.5" ry="2.7" fill="#0a0a10" transform="rotate(-28 2.5 -3.4)"/>`;
+    }
     default:
       return '';
   }
@@ -93,4 +146,10 @@ export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; lab
   { key: 'civic', label: 'Civic', desc: 'a shared place — hall, well, or shrine' },
   { key: 'ruin', label: 'Ruin', desc: 'remains of a fallen clan / lost relic — folk discover them' },
   { key: 'wonder', label: 'Wonder', desc: 'a town-scale mega-project (the space elevator)' },
+  { key: 'dragon', label: 'Dragon', desc: 'a rare terror of the wilds — to slay one is legend' },
+  { key: 'vampire', label: 'Vampire', desc: 'a cunning predator that stalks the folk' },
+  { key: 'undead', label: 'Undead', desc: 'the restless dead, risen to walk again' },
+  { key: 'monster', label: 'Monster', desc: 'a dire beast that hunts the unwary' },
+  { key: 'ghost', label: 'Ghost', desc: 'a haunt — it draws no blood, but chills the soul' },
+  { key: 'alien', label: 'Visitor', desc: 'an uncanny wanderer — unsettling, but no killer' },
 ];

@@ -48,10 +48,6 @@ export class Legend {
     const mapRows = LEGEND_ENTRIES.map(({ key, label, desc }) =>
       entryRow(swatch(iconSvgInner(key, CATEGORY_COLOR[key as keyof typeof CATEGORY_COLOR])), label, desc)).join('');
 
-    const hostileCell = `<span style="display:inline-flex;width:24px;height:24px;border-radius:5px;background:#12131c;
-      align-items:center;justify-content:center;border:1px dashed ${CATEGORY_COLOR.hostile};flex:0 0 auto">
-      <svg width="22" height="22" viewBox="-12 -12 24 24">${iconSvgInner('hostile', CATEGORY_COLOR.hostile)}</svg></span>`;
-
     // Folk badges + the day/night phase, each a row like the map symbols (vertical).
     const badgeRows =
       entryRow(swatch(iconSvgInner('folk', folk), 0.6), 'Child', 'too young to work, court, or bear children') +
@@ -68,7 +64,6 @@ export class Legend {
 
     body.innerHTML =
       mapRows +
-      entryRow(hostileCell, 'Hostile', 'a threat — coming soon') +
       sectionLabel('Folk badges') +
       badgeRows +
       `<div style="margin-top:9px;color:#667;font-size:10px">L hide · H happenings · Esc menu</div>`;

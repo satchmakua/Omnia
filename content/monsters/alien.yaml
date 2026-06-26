@@ -1,0 +1,7 @@
+# A wandering alien — uncanny, unsettling, but no killer.
+id: "alien"
+name: "an alien visitor"
+icon: "alien"
+behavior: "haunt"
+spawnChancePerDay: 0.0025
+despawnDays: 5

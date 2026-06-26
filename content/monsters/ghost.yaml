@@ -1,0 +1,7 @@
+# A ghost — it harms no body, but its passing chills the soul.
+id: "ghost"
+name: "a ghost"
+icon: "ghost"
+behavior: "haunt"
+spawnChancePerDay: 0.004
+despawnDays: 6
