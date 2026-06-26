@@ -1,0 +1,6 @@
+# A medieval monument — the town's first great work.
+id: "great_spire"
+name: "the Great Spire"
+minTier: 4
+cost: 2600
+blurb: "A soaring tower of stone and iron, raised to scrape the clouds."

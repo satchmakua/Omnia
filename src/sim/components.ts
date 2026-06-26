@@ -40,6 +40,9 @@ export const C_ACHIEVEMENTS = 'Achievements'; // singleton: civ + agent mileston
 export const C_FIGURES      = 'Figures';      // singleton: historical figures enshrined by their deeds (M20)
 export const C_ARTIFACTS    = 'Artifacts';    // singleton: named legendary items with histories (M20 s2)
 export const C_RUIN         = 'Ruin';         // a discoverable site of the past — a fallen clan / lost relic (M20 s2b)
+export const C_QUEST        = 'Quest';        // a procedural goal an agent has taken up (M20 s3)
+export const C_WONDERS      = 'Wonders';      // singleton: town-scale mega-project progress (M20 s3b)
+export const C_WONDERSITE   = 'WonderSite';   // a completed wonder, a landmark on the map (M20 s3b)
 
 export interface Position {
   x: number;
@@ -288,6 +291,34 @@ export interface Ruin {
   sinceTick: number;     // when the ruin appeared
   discoveredTick?: number;
   relicName?: string;    // the lost relic this cairn holds (rediscovered on discovery)
+}
+
+// A procedural quest (M20 s3): a goal a folk has taken up — to hunt a great beast, avenge a
+// wrong, or seek out the old ruins. The quest is a narrative goal that the agent's own deeds
+// fulfil (a kill, a ruin uncovered); fulfilment is a remembered turning point + a legend. Lazy,
+// attached on assignment and removed on fulfilment / abandonment. See QuestSystem.
+export interface Quest {
+  kind: 'hunt' | 'avenge' | 'explore';
+  text: string;          // the narrative ("hunt the great beasts that stalk the wilds")
+  sinceTick: number;
+  baseKills?: number;    // hunt/avenge: the agent's kill count when they vowed (fulfil when it rises)
+  tx?: number;           // explore: the target ruin's tile
+  ty?: number;
+}
+
+// Town-scale mega-projects (M20 s3b). One wonder is built at a time, gated by tech, raised by
+// the town's collective effort over years; completion places a `WonderSite` landmark + a
+// monumental legend. A singleton store. See WonderSystem.
+export interface WondersData {
+  current?: string;                  // the wonder under construction (its content id)
+  progress: Record<string, number>;  // wonder id → effort accumulated
+  built: Record<string, number>;     // wonder id → tick it was completed
+}
+// A completed wonder standing on the map (a static landmark — no behaviour).
+export interface WonderSite {
+  wonderId: string;
+  name: string;
+  builtTick: number;
 }
 
 // The town's staple-goods market (M15): a single price that floats with supply (what the

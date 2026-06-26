@@ -29,6 +29,8 @@ import { runAchievementSystem } from './systems/AchievementSystem.ts';
 import { runLegendSystem }    from './systems/LegendSystem.ts';
 import { runArtifactSystem }  from './systems/ArtifactSystem.ts';
 import { runArchaeologySystem } from './systems/ArchaeologySystem.ts';
+import { runQuestSystem }     from './systems/QuestSystem.ts';
+import { runWonderSystem }    from './systems/WonderSystem.ts';
 import { runAISystem }       from './systems/AISystem.ts';
 import { runMemorySystem }   from './systems/MemorySystem.ts';
 import { runHistorySystem }  from './systems/HistorySystem.ts';
@@ -75,6 +77,8 @@ export function tick(
   runLegendSystem(world, cfg);           // enshrine notable folk as historical figures (M20)
   runArtifactSystem(world, cfg);         // master-crafted masterworks become named artifacts (M20 s2)
   runArchaeologySystem(world, cfg);      // ruins of fallen clans / lost relics, discoverable (M20 s2b)
+  runQuestSystem(world, cfg);            // folk take up & fulfil procedural goals (hunt/avenge/explore) (M20 s3)
+  runWonderSystem(world, cfg, content);  // the town raises tech-gated mega-projects (M20 s3b)
   runAISystem(world, cfg, provider);     // the "soul": reflection / dialogue / dreams / decisions (rare)
   runMemorySystem(world, cfg);           // multi-resolution rollup: old memories → episodic summaries
   runHistorySystem(world, cfg);          // world history: sample strata + compress the Chronicle

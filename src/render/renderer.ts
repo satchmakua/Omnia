@@ -2,7 +2,7 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
-  C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
+  C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN, C_WONDERSITE,
   C_CLOCK, C_TILEMAP, C_EVENTLOG,
 } from '../sim/components.ts';
 import type {
@@ -248,6 +248,10 @@ export class Renderer {
       const ruin = world.getComponent<Ruin>(e, C_RUIN)!;
       this.iconRuin(p.x, p.y, ruin.discovered);
     }
+    for (const e of world.query(C_WONDERSITE, C_POSITION)) {  // great wonders (M20 s3b)
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      this.iconWonder(p.x, p.y);
+    }
     for (const e of world.query(C_FAUNA, C_POSITION)) {
       const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
@@ -481,6 +485,17 @@ export class Renderer {
     });
   }
 
+  // A wonder: a tall, gleaming spire with a beacon — the town's crowning work.
+  private iconWonder(gx: number, gy: number): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 1, () => {
+      ctx.fillStyle = CATEGORY_COLOR.wonder;
+      ctx.beginPath(); ctx.moveTo(-5, 8); ctx.lineTo(0, -13); ctx.lineTo(5, 8); ctx.closePath(); ctx.fill();   // the spire
+      ctx.fillStyle = '#fff7d8';
+      ctx.beginPath(); ctx.arc(0, -13, 2, 0, Math.PI * 2); ctx.fill();   // the beacon
+    });
+  }
+
   private drawHud(world: World, clockEntity: EntityId, elapsedMs: number): void {
     const { ctx } = this;
     const clock = world.getComponent<Clock>(clockEntity, C_CLOCK)!;
@@ -522,7 +537,7 @@ export class Renderer {
       return null;
     };
 
-    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_CIVIC) ?? at(C_RUIN) ?? at(C_RESOURCE) ?? at(C_FLORA);
+    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_WONDERSITE) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_CIVIC) ?? at(C_RUIN) ?? at(C_RESOURCE) ?? at(C_FLORA);
     if (hit !== null) this.onEntityClick?.(hit);
     return hit;
   }

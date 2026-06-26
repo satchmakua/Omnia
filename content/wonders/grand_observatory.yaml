@@ -1,0 +1,6 @@
+# A modern marvel — the town turns its eyes to the heavens.
+id: "grand_observatory"
+name: "the Grand Observatory"
+minTier: 6
+cost: 4200
+blurb: "A great glass eye on a hill, charting the stars of the fallen sky."

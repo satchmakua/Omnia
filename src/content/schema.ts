@@ -246,6 +246,20 @@ export const RecipeSchema = z.object({
 
 export type Recipe = z.infer<typeof RecipeSchema>;
 
+// ── Wonder (M20 s3b) ────────────────────────────────────────────────────────────
+// A town-scale mega-project — a great monument, the space elevator — unlocked by reaching a
+// tech tier and raised by the town's collective effort over years. Data declares the wonder
+// (its tech gate + the effort to build it); the WonderSystem implements *how* it's raised.
+export const WonderSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  minTier: z.number().int().min(1).max(7),  // tech tier a clan must reach to begin it
+  cost: z.number().positive(),              // build-effort (town workforce-days) to complete
+  blurb: z.string().default(''),
+}).strict();
+
+export type Wonder = z.infer<typeof WonderSchema>;
+
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
 export const FOLDER_SCHEMAS = {
@@ -262,6 +276,7 @@ export const FOLDER_SCHEMAS = {
   events: WorldEventSchema,
   goods: GoodSchema,
   recipes: RecipeSchema,
+  wonders: WonderSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;
