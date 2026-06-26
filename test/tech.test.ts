@@ -3,10 +3,11 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig, ticksPerYear } from '../src/sim/config.ts';
-import { C_AGENT, C_CLOCK, C_ORGSTORE, C_HEALTH, C_WALLET } from '../src/sim/components.ts';
-import type { Agent, Clock, Health, Wallet } from '../src/sim/components.ts';
+import { C_AGENT, C_CLOCK, C_ORGSTORE, C_HEALTH, C_WALLET, C_ACHIEVEMENTS } from '../src/sim/components.ts';
+import type { Agent, Clock, Health, Wallet, AchievementsData } from '../src/sim/components.ts';
 import { hitChance, hitDamage } from '../src/sim/combat.ts';
 import { runHealthSystem } from '../src/sim/systems/HealthSystem.ts';
+import { runAchievementSystem, createAchievements } from '../src/sim/systems/AchievementSystem.ts';
 import { createRNG } from '../src/sim/rng.ts';
 import { createOrgStore, createOrg, forkOrg, getOrg } from '../src/org/orgStore.ts';
 import type { OrgStoreData } from '../src/org/orgStore.ts';
@@ -144,6 +145,49 @@ describe('tech effects (M17 s2)', () => {
     const calm = { ...cfg, illnessChancePerDay: 0, baseMortalityPerDay: 0, ageMortalityScale: 0, sickMortalityPerDay: 0 };
     runHealthSystem(w, calm, createRNG(1));
     expect(w.getComponent<Health>(a, C_HEALTH)!.value).toBeGreaterThan(w.getComponent<Health>(b, C_HEALTH)!.value);
+  });
+});
+
+// ── Lost tech & rediscovery (M17 slice 4) ─────────────────────────────────────────────
+describe('lost tech & rediscovery (M17 s4)', () => {
+  function advance(w: World, days: number) {
+    const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+    for (let d = 1; d <= days; d++) { clock.tick = d * cfg.ticksPerDay; runResearchSystem(w, cfg, content); }
+  }
+  it('an art is lost when its last holders die out, and rediscovered when re-researched', () => {
+    const { w, store } = techWorld();
+    const org = createOrg(store, 'Elders', VALUES, 0.6, 0);
+    const m = member(w, org);
+    getOrg(store, org)!.research = 200;
+    advance(w, 1);                                    // Elders unlock toolmaking + firecraft
+    expect(store.everKnown).toContain('toolmaking');
+    expect(store.lost).not.toContain('toolmaking');
+
+    w.removeComponent(m, C_AGENT);                    // the only tribe with the art dies out
+    advance(w, 1);
+    expect(store.lost).toContain('toolmaking');       // the art is lost
+
+    const heir = createOrg(store, 'Heirs', VALUES, 0.6, 0);
+    member(w, heir);
+    getOrg(store, heir)!.research = 200;
+    advance(w, 1);                                    // a new tribe re-researches it
+    expect(store.lost).not.toContain('toolmaking');   // rediscovered
+  });
+});
+
+// ── Achievements (M17 slice 4) ────────────────────────────────────────────────────────
+describe('achievements (M17 s4)', () => {
+  it('a milestone fires once when its condition first holds', () => {
+    const { w, store } = techWorld();
+    w.addComponent<AchievementsData>(w.createEntity(), C_ACHIEVEMENTS, createAchievements());
+    const org = createOrg(store, 'Bronze', VALUES, 0.6, 0);
+    getOrg(store, org)!.tier = 2;   // reached the Bronze Age
+    runAchievementSystem(w, cfg);
+    const data = w.getComponent<AchievementsData>(w.query(C_ACHIEVEMENTS)[0], C_ACHIEVEMENTS)!;
+    expect(data.unlocked.some(a => a.id === 'age_2')).toBe(true);
+    const count = data.unlocked.length;
+    runAchievementSystem(w, cfg);   // re-run
+    expect(data.unlocked.length).toBe(count);   // does not fire twice
   });
 });
 

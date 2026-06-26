@@ -57,6 +57,8 @@ battleChancePerTick: 0.006
 wanderIdleChance: 0.6
 researchBasePerDay: 2
 researchPerMemberPerDay: 1.0
+religionSchismChancePerEra: 0.4
+minFaithFollowers: 8
 magicManaMax: 100
 manaRegenPerDay: 10
 daysPerYear: 4

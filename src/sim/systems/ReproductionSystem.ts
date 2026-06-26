@@ -91,10 +91,11 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
     const surname = world.getComponent<Agent>(b.father, C_AGENT)!.surname;
     const cultureId = world.getComponent<Agent>(b.mother, C_AGENT)!.cultureId;
     const orgId = world.getComponent<Agent>(b.mother, C_AGENT)!.orgId;   // a child joins the mother's tribe (M14)
+    const religionId = world.getComponent<Agent>(b.mother, C_AGENT)!.religionId;   // …and is raised in her faith (M18)
     const spot = birthTile(b.x, b.y);
     occupied.add(spot.y * W + spot.x);   // so siblings born the same tick don't stack either
     const child = spawnAgent(world, cfg, rng, species, content, {
-      x: spot.x, y: spot.y, ageTicks: 0, parents: [b.mother, b.father], aptitudeChance, surname, cultureId, orgId,
+      x: spot.x, y: spot.y, ageTicks: 0, parents: [b.mother, b.father], aptitudeChance, surname, cultureId, orgId, religionId,
     });
 
     world.getComponent<Lineage>(b.mother, C_LINEAGE)!.children.push(child);

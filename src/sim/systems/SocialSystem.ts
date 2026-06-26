@@ -12,6 +12,7 @@ import type {
   Agent, Needs, Position, Relationships, RelationEdge, Lineage, Clock, Body, Alignment,
 } from '../components.ts';
 import { charismaWarmth, alignmentWarmth } from '../heredity.ts';
+import { getReligionStore, faithFactor } from '../../religion/religionStore.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 import type { RNG } from '../rng.ts';
@@ -127,7 +128,10 @@ function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId, cstore
   // …and the good cooperate (M13): good pairs warm faster, the wicked slower (neutral ⇒ no-op).
   const alA = world.getComponent<Alignment>(a, C_ALIGNMENT), alB = world.getComponent<Alignment>(b, C_ALIGNMENT);
   const align = alignmentWarmth(alA?.good ?? 0, alB?.good ?? 0);
-  const warm = cfg.sentimentGainPerInteract * bond * synergy * mood * charisma * align;
+  // …and a shared faith warms bonds (M18, D26): co-religionists draw closer, scaled by how
+  // devout the faith is; the differently-faithed are a touch cooler (neutral when unbelieving).
+  const faith = faithFactor(getReligionStore(world), agentA.religionId, agentB.religionId);
+  const warm = cfg.sentimentGainPerInteract * bond * synergy * mood * charisma * align * faith;
 
   const ea = edge(world.getComponent<Relationships>(a, C_RELATIONSHIPS)!, b);
   const eb = edge(world.getComponent<Relationships>(b, C_RELATIONSHIPS)!, a);

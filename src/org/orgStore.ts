@@ -34,10 +34,12 @@ export interface OrgStoreData {
   lastEvolveTick: number;  // the org-evolution (schism) clock
   wars: War[];             // active inter-tribe wars (M16)
   warLog?: PastWar[];      // recent concluded wars (bounded) — the town's war history (M16)
+  everKnown?: string[];    // every tech ever discovered by any tribe (M17 s4 — for lost-tech tracking)
+  lost?: string[];         // techs no living tribe holds any more — a fallen art until rediscovered (M17 s4)
 }
 
 export function createOrgStore(): OrgStoreData {
-  return { byId: {}, created: 0, lastEvolveTick: 0, wars: [], warLog: [] };
+  return { byId: {}, created: 0, lastEvolveTick: 0, wars: [], warLog: [], everKnown: [], lost: [] };
 }
 
 export function areAtWar(store: OrgStoreData, a: string, b: string): boolean {

@@ -31,7 +31,9 @@ export const C_WORLDSTATS = 'WorldStats'; // singleton: statistical strata (src/
 export const C_CULTURESTORE = 'CultureStore'; // singleton: live cultures (src/culture/cultureStore.ts)
 export const C_ORGSTORE   = 'OrgStore';   // singleton: live organizations / tribes (src/org/orgStore.ts) (M14)
 export const C_LANGUAGESTORE = 'LanguageStore'; // singleton: live languages (src/lang/languageStore.ts)
+export const C_RELIGIONSTORE = 'ReligionStore'; // singleton: live religions / faiths (src/religion/religionStore.ts) (M18)
 export const C_MARKET     = 'Market';     // singleton: the staple-goods market — price floats with supply/demand (M15)
+export const C_ACHIEVEMENTS = 'Achievements'; // singleton: civ + agent milestones that have fired (M17 s4)
 
 export interface Position {
   x: number;
@@ -72,6 +74,7 @@ export interface Agent {
   rentsFrom?: number;   // EntityId of the landlord a homeless adult rents shelter from (M11 s2);
                         // a rented roof spares the homeless mood penalty. See RentSystem.
   orgId?: string;       // the tribe/faction this agent belongs to (M14); inherited from the mother.
+  religionId?: string;  // the faith this agent follows (M18); inherited from the mother.
 }
 
 // A social structure — a tribe/faction (M14, D33). Like cultures, organizations are a few
@@ -148,6 +151,8 @@ export interface Magic {
   mana: number;
   maxMana: number;
   manaRegenPerTick: number;
+  school?: string;    // the mage's discipline (elementalism / restoration / divination / conjuration) (M17 s3)
+  mastery?: number;   // skill in that school (grows with practice; unlocks stronger spells)
 }
 
 // An agent's occupation. `employer` points at a Business entity; `wagePerTick`
@@ -173,6 +178,34 @@ export interface Business {
   gathers: string | null;     // resource id employees harvest from nodes, or null
   producesFood?: boolean;     // a food producer (farm) — its workforce supplies the staple market (M15)
   lowFundsDays?: number;      // consecutive days struggling — folds past the grace (M15 slice 2b)
+}
+
+// A faith the folk follow (M18) — mirrors the Organization model; agents reference one by
+// `religionId`. Emerges from a culture's values, schisms into sects, and warms bonds among
+// the faithful (D26).
+export interface Religion {
+  id: string;
+  name: string;        // language-coined ("the Faith of …")
+  deity: string;       // the god's coined name
+  color: string;       // an hsl() string (violet-based, distinct from tribe colours)
+  tenets: string[];    // a few practices/virtues (value-derived flavour)
+  fervor: number;      // 0..1 devoutness — drives the bond bonus and drifts over the eras
+  cohesion: number;    // resistance to schism
+  founded: number;
+  parent?: string;     // the faith it split from (schism descent)
+  extinct?: boolean;
+  diedTick?: number;
+}
+
+// A milestone the town has reached (M17 s4) — fires once, kept forever, shown in Legends.
+export interface Achievement {
+  id: string;
+  name: string;
+  tick: number;
+  detail?: string;   // who/what earned it (a tribe or agent name)
+}
+export interface AchievementsData {
+  unlocked: Achievement[];
 }
 
 // The town's staple-goods market (M15): a single price that floats with supply (what the

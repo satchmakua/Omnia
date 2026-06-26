@@ -53,6 +53,8 @@ export function runResearchSystem(world: World, cfg: SimConfig, content: Content
       org.research = (org.research ?? 0) - next.cost;
       org.techs.push(next.id);
       org.tier = Math.max(org.tier ?? 1, next.tier);
+      if (!store.everKnown) store.everKnown = [];
+      if (!store.everKnown.includes(next.id)) store.everKnown.push(next.id);
       // Denormalise the tech's effect tags onto the tribe (combat/health read these without
       // needing the content registry).
       if (next.effects.length > 0) {
@@ -66,6 +68,31 @@ export function runResearchSystem(world: World, cfg: SimConfig, content: Content
           text: `The ${org.name} reached the ${next.era} — they mastered ${next.name}.`,
         }, cfg.chronicleImportanceThreshold);
       }
+    }
+  }
+
+  // ── Lost & rediscovered knowledge (M17 s4) ──────────────────────────────────────
+  // When the last tribe holding a tech dies out, the art is lost (a dark-age legend);
+  // when a tribe re-researches it later, it is rediscovered.
+  if (!store.everKnown) store.everKnown = [];
+  if (!store.lost) store.lost = [];
+  const heldNow = new Set<string>();
+  for (const org of Object.values(store.byId)) {
+    if (org.extinct || (members.get(org.id) ?? 0) === 0) continue;
+    for (const t of org.techs ?? []) heldNow.add(t);
+  }
+  for (const id of store.everKnown) {
+    const held = heldNow.has(id);
+    const lost = store.lost.includes(id);
+    const name = content.tech.get(id)?.name ?? id;
+    if (!held && !lost) {
+      store.lost.push(id);
+      emitEvent(world, 'culture', `The art of ${name} has been lost.`);
+      if (ch) chronicleAdd(ch, { tick, importance: 0.7, kind: 'tech', text: `The art of ${name} was lost — its last keepers are gone.` }, cfg.chronicleImportanceThreshold);
+    } else if (held && lost) {
+      store.lost = store.lost.filter(x => x !== id);
+      emitEvent(world, 'culture', `${name} has been rediscovered.`);
+      if (ch) chronicleAdd(ch, { tick, importance: 0.72, kind: 'tech', text: `${name} was rediscovered, long after it was thought lost.` }, cfg.chronicleImportanceThreshold);
     }
   }
 }

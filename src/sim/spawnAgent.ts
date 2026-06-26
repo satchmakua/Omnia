@@ -24,6 +24,7 @@ import { getLanguageStore, getLanguage } from '../lang/languageStore.ts';
 import { getCultureStore, getCulture, cultureForLanguage, wealthGoalFactor } from '../culture/cultureStore.ts';
 import { nativeFluency } from '../lang/fluency.ts';
 import { MOOD_BASELINE } from './systems/MoodSystem.ts';
+import { SCHOOL_IDS } from '../magic/schools.ts';
 
 export interface SpawnOpts {
   x: number;
@@ -34,6 +35,7 @@ export interface SpawnOpts {
   surname?: string;            // inherited family name (children); founders coin a new one
   cultureId?: string;          // inherited culture (children); founders take their species' culture
   orgId?: string;              // inherited tribe (children); founders are assigned one at world-gen (M14)
+  religionId?: string;         // inherited faith (children); founders are assigned one at world-gen (M18)
 }
 
 export function spawnAgent(
@@ -78,7 +80,7 @@ export function spawnAgent(
     energyMult: species.needs.energy,
   });
   world.addComponent<Agent>(e, C_AGENT, {
-    name, surname, cultureId, orgId: opts.orgId, action: 'wander',
+    name, surname, cultureId, orgId: opts.orgId, religionId: opts.religionId, action: 'wander',
     ticksAlive: opts.ageTicks, wealthGoal, sex, lifespanTicks,
     // Natively fluent in their culture's tongue; they learn others through contact (M10 s4).
     fluency: nativeFluency(culture?.language),
@@ -111,10 +113,16 @@ export function spawnAgent(
   // of a mage get a much higher chance (lineage weighting from the design docs).
   const aptChance = opts.aptitudeChance ?? species.magicAptitudeChance;
   if (rng() < aptChance) {
+    // A mage practises one of the four schools; mastery starts scaled by age (a seasoned
+    // founder is already adept) and grows over a life (MagicSystem).
+    const school = SCHOOL_IDS[Math.floor(rng() * SCHOOL_IDS.length)];
+    const mastery = 1 + Math.floor((opts.ageTicks / ticksPerYear(cfg)) / 10);
     world.addComponent<Magic>(e, C_MAGIC, {
       mana: cfg.magicManaMax,
       maxMana: cfg.magicManaMax,
       manaRegenPerTick: cfg.manaRegenPerDay / cfg.ticksPerDay,
+      school,
+      mastery,
     });
   }
   return e;

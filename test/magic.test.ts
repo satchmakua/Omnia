@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
+import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS, C_POSITION,
+  C_AGENT, C_NEEDS, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS, C_POSITION, C_FAUNA, C_HEALTH, C_CLOCK, C_COMBAT,
 } from '../src/sim/components.ts';
-import type { Needs, Magic, Agent, Wallet, Business, Job } from '../src/sim/components.ts';
+import type { Needs, Magic, Agent, Wallet, Business, Job, Fauna, Health, Clock, Combat } from '../src/sim/components.ts';
 import { runCapabilitySystem } from '../src/sim/systems/CapabilitySystem.ts';
 import { runEconomySystem } from '../src/sim/systems/EconomySystem.ts';
+import { runMagicSystem } from '../src/sim/systems/MagicSystem.ts';
+import { schoolOf, knownSpells, topSpell, SCHOOL_IDS } from '../src/magic/schools.ts';
 import { createSimulation } from '../src/sim/world.ts';
 import { testContent } from './helpers.ts';
 
@@ -126,5 +129,86 @@ describe('magical-profession hiring', () => {
     runEconomySystem(w, cfg);
     const job = w.getComponent<Job>(mageAgent, C_JOB);
     expect(job?.employer).toBe(witchHouse);
+  });
+});
+
+// ── The magic tree + MagicSystem (M17 slice 3) ────────────────────────────────────────
+describe('magic schools (M17 s3)', () => {
+  it('there are four schools and mastery gates spells', () => {
+    expect(SCHOOL_IDS).toContain('elementalism');
+    expect(SCHOOL_IDS.length).toBe(4);
+    expect(knownSpells('elementalism', 1).length).toBe(1);   // only Spark at mastery 1
+    expect(knownSpells('elementalism', 5).length).toBe(3);   // all three by mastery 5
+    expect(topSpell('elementalism', 5)!.name).toBe('Storm Wrath');
+    expect(schoolOf('restoration')!.signature).toBe('heal');
+  });
+});
+
+const noRng = () => 0;
+function mageWorld(tick = 100): World {
+  const w = new World();
+  w.addComponent<Clock>(w.createEntity(), C_CLOCK, { tick, day: 1, hour: 0, isDay: true });
+  return w;
+}
+function castMage(w: World, x: number, y: number, school: string, mastery: number, mana = 80): EntityId {
+  const e = w.createEntity();
+  w.addComponent<Agent>(e, C_AGENT, { name: 'Mage', action: 'wander', ticksAlive: 20000, wealthGoal: 50, sex: 'female', lifespanTicks: 1e9 });
+  w.addComponent<Magic>(e, C_MAGIC, { mana, maxMana: 100, manaRegenPerTick: 0, school, mastery });
+  w.addComponent(e, C_POSITION, { x, y });
+  return e;
+}
+function predator(w: World, x: number, y: number): EntityId {
+  const e = w.createEntity();
+  w.addComponent<Fauna>(e, C_FAUNA, { speciesId: 's', name: 'Stalker', color: '#a00', size: 'medium', diet: 'predator', hunger: 1, hungerDecayPerTick: 0, breedThreshold: 1, breedCooldownTicks: 0, ticksAlive: 0 });
+  w.addComponent(e, C_POSITION, { x, y });
+  return e;
+}
+
+describe('MagicSystem (M17 s3)', () => {
+  it('an elementalist blasts an adjacent beast and earns the kill', () => {
+    const w = mageWorld();
+    const m = castMage(w, 5, 5, 'elementalism', 3);
+    const b = predator(w, 6, 5);
+    runMagicSystem(w, cfg, noRng);
+    expect(w.isAlive(b)).toBe(false);
+    expect(w.getComponent<Combat>(m, C_COMBAT)!.kills).toBe(1);
+    expect(w.getComponent<Magic>(m, C_MAGIC)!.mana).toBeLessThan(80);
+  });
+
+  it('a restorer mends a wounded neighbour', () => {
+    const w = mageWorld();
+    castMage(w, 5, 5, 'restoration', 2);
+    const hurt = w.createEntity();
+    w.addComponent<Agent>(hurt, C_AGENT, { name: 'Hurt', action: 'wander', ticksAlive: 20000, wealthGoal: 50, sex: 'male', lifespanTicks: 1e9 });
+    w.addComponent<Health>(hurt, C_HEALTH, { value: 0.4, ill: false });
+    w.addComponent(hurt, C_POSITION, { x: 6, y: 5 });
+    runMagicSystem(w, cfg, noRng);
+    expect(w.getComponent<Health>(hurt, C_HEALTH)!.value).toBeGreaterThan(0.4);
+  });
+
+  it('a mage with too little mana cannot cast', () => {
+    const w = mageWorld();
+    castMage(w, 5, 5, 'elementalism', 3, 5);
+    const b = predator(w, 6, 5);
+    runMagicSystem(w, cfg, noRng);
+    expect(w.isAlive(b)).toBe(true);
+  });
+
+  it('mastery grows on a day boundary', () => {
+    const w = mageWorld(cfg.ticksPerDay);
+    const m = castMage(w, 5, 5, 'divination', 2);
+    runMagicSystem(w, cfg, noRng);
+    expect(w.getComponent<Magic>(m, C_MAGIC)!.mastery!).toBeGreaterThan(2);
+  });
+
+  it('aptitude-gifted folk are given a school and mastery at world-gen', () => {
+    const { world } = createSimulation({ ...defaultConfig, seed: 8 }, content);
+    const mages = world.query(C_MAGIC, C_AGENT);
+    expect(mages.length).toBeGreaterThan(0);
+    for (const e of mages) {
+      const magic = world.getComponent<Magic>(e, C_MAGIC)!;
+      expect(SCHOOL_IDS).toContain(magic.school);
+      expect(magic.mastery).toBeGreaterThanOrEqual(1);
+    }
   });
 });

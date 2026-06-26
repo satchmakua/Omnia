@@ -4,8 +4,8 @@
 // **statistical strata** — the forgotten in aggregate — as small lo-fi charts.
 // Read-only: it only reads sim state (sim/render separation holds).
 import type { World } from '../sim/ecs.ts';
-import { C_CHRONICLE, C_WORLDSTATS, C_CLOCK } from '../sim/components.ts';
-import type { Clock } from '../sim/components.ts';
+import { C_CHRONICLE, C_WORLDSTATS, C_CLOCK, C_ACHIEVEMENTS } from '../sim/components.ts';
+import type { Clock, AchievementsData } from '../sim/components.ts';
 import { chronicleRecent } from '../history/chronicle.ts';
 import type { ChronicleData } from '../history/chronicle.ts';
 import type { WorldStatsData, StatSample } from '../history/stats.ts';
@@ -64,9 +64,19 @@ export class LegendsPanel {
 
     this.contentEl.innerHTML =
       `<div style="color:#99a;margin-bottom:12px">the town's history, in year ${year}</div>
+       ${this.achievementsHtml(world)}
        ${this.chronicleHtml(chronicle)}
        ${this.strataHtml(stats)}
        ${this.scienceHtml(world)}`;
+  }
+
+  // Achievements (M17 s4): the milestones the town has reached, newest first.
+  private achievementsHtml(world: World): string {
+    const data = this.get<AchievementsData>(world, C_ACHIEVEMENTS);
+    if (!data || data.unlocked.length === 0) return '';
+    const rows = [...data.unlocked].reverse().map(a =>
+      `<div style="margin:2px 0"><span style="color:#ffd66a">🏆 ${a.name}</span>${a.detail ? ` <span style="color:#9ab">— ${a.detail}</span>` : ''} <span style="color:#677;font-size:11px">· yr ${yearOf(a.tick)}</span></div>`).join('');
+    return `<div style="color:#9a9ac0;text-transform:uppercase;font-size:11px;letter-spacing:1px;margin:6px 0 4px">Achievements <span style="color:#789">(${data.unlocked.length})</span></div>${rows}<hr style="border-color:rgba(255,255,255,0.08);margin:12px 0">`;
   }
 
   // Emergent structure (M7.7, D29): the same measurements `npm run soak` prints,

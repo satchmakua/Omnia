@@ -2,7 +2,8 @@ import { World } from './ecs.ts';
 import { createRNG, rngFloat } from './rng.ts';
 import {
   C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_WORLDSTATS, C_CULTURESTORE, C_LANGUAGESTORE,
-  C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_CIVIC, C_ORGSTORE, C_MARKET,
+  C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_CIVIC, C_ORGSTORE, C_MARKET, C_ACHIEVEMENTS,
+  C_RELIGIONSTORE,
 } from './components.ts';
 import type { Clock, Agent, Lineage, Relationships, AIRecord, Position, Civic } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -29,7 +30,9 @@ import type { CultureStoreData } from '../culture/cultureStore.ts';
 import { createLanguageStore, getLanguageStore, getLanguage } from '../lang/languageStore.ts';
 import type { LanguageStoreData } from '../lang/languageStore.ts';
 import { createOrgStore, createOrg, getOrgStore } from '../org/orgStore.ts';
+import { createReligionStore, createReligion, getReligionStore } from '../religion/religionStore.ts';
 import { createMarket } from './market.ts';
+import { createAchievements } from './systems/AchievementSystem.ts';
 import { word } from '../lang/language.ts';
 
 export interface Simulation {
@@ -145,6 +148,34 @@ function seedTribes(world: World, cfg: SimConfig, rng: RNG): void {
   }
 }
 
+// Found a faith for each seed culture (its tenets & devoutness emerge from the culture's
+// values, D18), then assign each founder the faith of their culture (M18).
+function seedReligions(world: World, cfg: SimConfig, rng: RNG): void {
+  const rstore = getReligionStore(world);
+  const cstore = getCultureStore(world);
+  const lstore = getLanguageStore(world);
+  if (!rstore || !cstore) return;
+  const cl = (x: number): number => Math.max(0, Math.min(1, x));
+  const byCulture = new Map<string, string>();
+  for (const culture of Object.values(cstore.byId)) {
+    const lang = lstore ? getLanguage(lstore, culture.language) : undefined;
+    const v = culture.values;
+    const tenets: string[] = [
+      v.communal > 0.55 ? 'communal worship' : 'personal devotion',
+      v.martial > 0.55 ? 'the warrior creed' : 'the peaceful path',
+    ];
+    if (v.traditional > 0.55) tenets.push('ancestor rites');
+    const deity = cap(lang ? word(lang, `god-${rstore.created}`) : `God${rstore.created}`);
+    const fervor = cl(0.4 + v.traditional * 0.4 + (rng() * 2 - 1) * 0.1);   // traditional cultures are more devout
+    byCulture.set(culture.id, createReligion(rstore, `the Faith of ${deity}`, deity, tenets, fervor, 0));
+  }
+  for (const e of world.query(C_AGENT)) {
+    const agent = world.getComponent<Agent>(e, C_AGENT)!;
+    const rid = agent.cultureId ? byCulture.get(agent.cultureId) : undefined;
+    if (rid) agent.religionId = rid;
+  }
+}
+
 export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const world = new World();
   const rng = createRNG(cfg.seed);
@@ -180,7 +211,9 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const languageEntity = world.createEntity();
   world.addComponent<LanguageStoreData>(languageEntity, C_LANGUAGESTORE, createLanguageStore(content));
   world.addComponent(world.createEntity(), C_ORGSTORE, createOrgStore());   // tribes/factions (M14)
+  world.addComponent(world.createEntity(), C_RELIGIONSTORE, createReligionStore()); // faiths (M18)
   world.addComponent(world.createEntity(), C_MARKET, createMarket(cfg));     // staple-goods market (M15)
+  world.addComponent(world.createEntity(), C_ACHIEVEMENTS, createAchievements()); // milestones (M17)
 
   // Recorded LLM responses, for deterministic replay of a live-model run.
   const recordEntity = world.createEntity();
@@ -221,6 +254,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
 
   // Found the initial tribes and assign the founders (M14).
   seedTribes(world, cfg, rng);
+  seedReligions(world, cfg, rng);   // faiths, one per founding culture (M18)
 
   return { world, rng, clockEntity, content };
 }
