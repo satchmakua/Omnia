@@ -45,6 +45,9 @@ const CONTROLS: [string, string][] = [
   ['K', 'Tribes — factions, leaders &amp; governments'],
   ['X', 'Conflict — wars, champions, outlaws &amp; deaths'],
   ['R', 'Faiths — religions, deities, tenets &amp; sects'],
+  ['S', 'Society — alignment, character &amp; the criminal class'],
+  ['M', 'Events — harvests, disasters &amp; the uncanny'],
+  ['J', 'Knowledge — the tech tree &amp; lost arts'],
   ['L', 'toggle the Legend key'],
   ['H', 'toggle Town Happenings'],
 ];

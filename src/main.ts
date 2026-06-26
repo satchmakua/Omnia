@@ -24,6 +24,9 @@ import { LanguageDashboard } from './render/languageDashboard.ts';
 import { OrgDashboard } from './render/orgDashboard.ts';
 import { ConflictDashboard } from './render/conflictDashboard.ts';
 import { FaithsDashboard } from './render/faithsDashboard.ts';
+import { SocietyDashboard } from './render/societyDashboard.ts';
+import { EventsDashboard } from './render/eventsDashboard.ts';
+import { KnowledgeDashboard } from './render/knowledgeDashboard.ts';
 import { SpeedControl } from './render/controls.ts';
 import { EventFeed } from './render/eventFeed.ts';
 import { C_AGENT, C_POSITION } from './sim/components.ts';
@@ -72,6 +75,9 @@ const language     = new LanguageDashboard();
 const tribes       = new OrgDashboard();
 const conflict     = new ConflictDashboard();
 const faiths       = new FaithsDashboard();
+const society      = new SocietyDashboard();
+const events       = new EventsDashboard();
+const knowledge    = new KnowledgeDashboard(content.tech);
 
 // One master tabbed view holds every global view (M10 slice 1). Per-view hotkeys jump
 // straight to a tab; Tab opens it on the current one. The inspector stays the entity
@@ -88,6 +94,9 @@ master.register({ id: 'language',  label: 'Language',  hotkey: 'n', el: language
 master.register({ id: 'tribes',    label: 'Tribes',    hotkey: 'k', el: tribes.content,    update: (w) => tribes.update(w) });
 master.register({ id: 'conflict',  label: 'Conflict',  hotkey: 'x', el: conflict.content,  update: (w) => conflict.update(w) });
 master.register({ id: 'faiths',    label: 'Faiths',    hotkey: 'r', el: faiths.content,    update: (w) => faiths.update(w) });
+master.register({ id: 'society',   label: 'Society',   hotkey: 's', el: society.content,   update: (w) => society.update(w) });
+master.register({ id: 'events',    label: 'Events',    hotkey: 'm', el: events.content,     update: (w) => events.update(w) });
+master.register({ id: 'knowledge', label: 'Knowledge', hotkey: 'j', el: knowledge.content,  update: (w) => knowledge.update(w) });
 
 // The currently running simulation (null while the start menu is up).
 let active: Simulation | null = null;

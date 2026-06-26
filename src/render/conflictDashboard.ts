@@ -3,8 +3,9 @@
 // has slain whom, and how the dead actually died. A pure read of the Combat/Crime records,
 // the OrgStore (active + concluded wars), the tombstones, and the cause-of-death histogram.
 import type { World } from '../sim/ecs.ts';
-import { C_AGENT, C_COMBAT, C_CRIME, C_WORLDSTATS, C_TOMBSTONE } from '../sim/components.ts';
-import type { Agent, Combat, Crime, Tombstone } from '../sim/components.ts';
+import { C_AGENT, C_COMBAT, C_CRIME, C_WORLDSTATS, C_TOMBSTONE, C_ALIGNMENT } from '../sim/components.ts';
+import type { Agent, Combat, Crime, Tombstone, Alignment } from '../sim/components.ts';
+import { alignmentName } from '../sim/heredity.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import type { WorldStatsData } from '../history/stats.ts';
 import { ticksPerYear, defaultConfig } from '../sim/config.ts';
@@ -86,14 +87,16 @@ export class ConflictDashboard extends ModalPanel {
 
     const cscore = (c: Crime) => c.murders * 100 + c.assaults * 10 + c.thefts;
     const outlaws = world.query(C_AGENT, C_CRIME)
-      .map(e => ({ a: world.getComponent<Agent>(e, C_AGENT)!, c: world.getComponent<Crime>(e, C_CRIME)! }))
+      .map(e => ({ e, a: world.getComponent<Agent>(e, C_AGENT)!, c: world.getComponent<Crime>(e, C_CRIME)! }))
       .filter(o => cscore(o.c) > 0).sort((x, y) => cscore(y.c) - cscore(x.c)).slice(0, 6);
+    const align = (e: number) => { const al = world.getComponent<Alignment>(e, C_ALIGNMENT); return al ? alignmentName(al) : ''; };
     const wantedRows = outlaws.map(o => {
       const bits = [o.c.murders ? `${o.c.murders} ${o.c.murders === 1 ? 'murder' : 'murders'}` : '',
         o.c.assaults ? `${o.c.assaults} assault${o.c.assaults === 1 ? '' : 's'}` : '',
         o.c.thefts ? `${o.c.thefts} theft${o.c.thefts === 1 ? '' : 's'}` : ''].filter(Boolean).join(', ');
+      const al = align(o.e);
       return `<div style="display:flex;justify-content:space-between;margin:2px 0">
-        <span><span style="color:${o.c.murders ? '#ff5a5a' : '#ffae6a'}">⚖</span> ${o.a.name}</span>
+        <span><span style="color:${o.c.murders ? '#ff5a5a' : '#ffae6a'}">⚖</span> ${o.a.name}${al ? ` <span style="color:#9a8ab0;font-size:11px">${al}</span>` : ''}</span>
         <span style="color:#caa">${bits}</span></div>`;
     }).join('');
 

@@ -3,10 +3,10 @@ import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig, ticksPerYear } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_WALLET, C_RELATIONSHIPS, C_TOMBSTONE, C_MEMORY, C_LINEAGE, C_JOB,
+  C_AGENT, C_WALLET, C_RELATIONSHIPS, C_TOMBSTONE, C_MEMORY, C_LINEAGE, C_JOB, C_ALIGNMENT, C_CRIME,
 } from '../src/sim/components.ts';
 import type {
-  Agent, Wallet, Relationships, Tombstone, Memory, Lineage, Job,
+  Agent, Wallet, Relationships, Tombstone, Memory, Lineage, Job, Alignment, Crime,
 } from '../src/sim/components.ts';
 import type { LanguageStoreData, RuntimeLanguage } from '../src/lang/languageStore.ts';
 import { createSimulation } from '../src/sim/world.ts';
@@ -16,7 +16,7 @@ import {
   linregress, powerLawTail, socialMetrics, ageDistribution,
   zipfFit, nameFrequencies, languageFamilyShape, measureWorld,
   vowSpread, dynastyConcentration, matingAssortativity, occupationDiversity, linguisticDiversity,
-  adultWealthGini,
+  adultWealthGini, alignmentCensus,
 } from '../src/analysis/metrics.ts';
 
 const cfg = defaultConfig;
@@ -402,4 +402,39 @@ describe('measureWorld through the live loop', () => {
     expect(m.mood).toBeGreaterThan(0);
     expect(m.mood).toBeLessThanOrEqual(1);
   }, 20_000);
+});
+
+describe('alignmentCensus (M13)', () => {
+  function al(w: World, good: number, law: number, outlaw = false): EntityId {
+    const e = w.createEntity();
+    w.addComponent<Agent>(e, C_AGENT, { name: `A${e}`, action: 'wander', ticksAlive: 50000, wealthGoal: 50, sex: 'male', lifespanTicks: 1e9 });
+    w.addComponent<Alignment>(e, C_ALIGNMENT, { good, law });
+    if (outlaw) w.addComponent<Crime>(e, C_CRIME, { thefts: 1, assaults: 0, murders: 0 });
+    return e;
+  }
+  it('counts the 9-grid cells, the axis means, and the outlaws vs the town', () => {
+    const w = new World();
+    al(w, 0.9, 0.9);     // Lawful Good
+    al(w, 0, 0);         // True Neutral
+    al(w, 0.5, 0);       // Neutral Good
+    al(w, -0.9, -0.9, true);   // Chaotic Evil — an outlaw
+    al(w, -0.6, -0.5, true);   // also wicked + chaotic — an outlaw
+    const c = alignmentCensus(w);
+    expect(c.total).toBe(5);
+    expect(c.byCell['Lawful Good']).toBe(1);
+    expect(c.byCell['True Neutral']).toBe(1);
+    expect(c.byCell['Chaotic Evil']).toBe(2);   // both outlaws land here
+    expect(c.goodFrac).toBeCloseTo(2 / 5, 5);   // two clearly good
+    expect(c.evilFrac).toBeCloseTo(2 / 5, 5);   // two clearly evil
+    // The crime↔alignment link: outlaws skew darker AND more chaotic than the whole town.
+    expect(c.outlaws).toBe(2);
+    expect(c.outlawMeanGood).toBeLessThan(c.meanGood);
+    expect(c.outlawMeanLaw).toBeLessThan(c.meanLaw);
+  });
+  it('is empty-safe (no folk → zeroes, no NaN)', () => {
+    const c = alignmentCensus(new World());
+    expect(c.total).toBe(0);
+    expect(c.outlawMeanGood).toBe(0);
+    expect(Number.isNaN(c.meanGood)).toBe(false);
+  });
 });
