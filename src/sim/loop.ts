@@ -22,13 +22,16 @@ import { runHealthSystem }   from './systems/HealthSystem.ts';
 import { runMoodSystem }     from './systems/MoodSystem.ts';
 import { runOrgSystem }      from './systems/OrgSystem.ts';
 import { runResearchSystem } from './systems/ResearchSystem.ts';
+import { runAchievementSystem } from './systems/AchievementSystem.ts';
 import { runAISystem }       from './systems/AISystem.ts';
 import { runMemorySystem }   from './systems/MemorySystem.ts';
 import { runHistorySystem }  from './systems/HistorySystem.ts';
 import { runEvolutionSystem } from './systems/EvolutionSystem.ts';
+import { runReligionSystem } from './systems/ReligionSystem.ts';
 import { runFaunaSystem }    from './systems/FaunaSystem.ts';
 import { runCombatSystem }   from './systems/CombatSystem.ts';
 import { runCrimeSystem }    from './systems/CrimeSystem.ts';
+import { runMagicSystem }    from './systems/MagicSystem.ts';
 import type { AIProvider } from '../ai/provider.ts';
 import { stubProvider } from '../ai/stubProvider.ts';
 
@@ -58,13 +61,16 @@ export function tick(
   runMoodSystem(world, cfg);             // daily well-being: home / family / solvency / health → mood
   runOrgSystem(world, cfg, rng);         // tribes: leadership succession, extinction, schism (M14)
   runResearchSystem(world, cfg, content); // tribes accumulate research & climb the tech ladder (M17)
+  runAchievementSystem(world, cfg);      // civ + agent milestones fire once (M17)
   runAISystem(world, cfg, provider);     // the "soul": reflection / dialogue / dreams / decisions (rare)
   runMemorySystem(world, cfg);           // multi-resolution rollup: old memories → episodic summaries
   runHistorySystem(world, cfg);          // world history: sample strata + compress the Chronicle
   runEvolutionSystem(world, cfg, rng);   // culture & language drift (generational, off the hot path)
+  runReligionSystem(world, cfg, rng);    // faiths: extinction + schism into sects over the eras (M18)
   runFaunaSystem(world, cfg, rng);       // fauna instinct (graze / breed / die)
   runCombatSystem(world, cfg, rng);      // predators threaten folk; folk fight back (M16)
   runCrimeSystem(world, cfg, rng);       // crime & vice: theft / assault / murder + rough justice (M16)
+  runMagicSystem(world, cfg, rng);       // mages cast their school's spells on neighbours (M17)
 }
 
 export function runTicks(

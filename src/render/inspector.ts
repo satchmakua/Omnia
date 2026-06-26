@@ -9,6 +9,8 @@ import type {
   Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
+import { schoolOf } from '../magic/schools.ts';
+import { getReligionStore, getReligion } from '../religion/religionStore.ts';
 import { biomeNameAt, inBounds } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { ageInYears } from '../sim/config.ts';
@@ -162,11 +164,18 @@ export class Inspector {
     const debtLine = wallet.debt > 0
       ? `<div style="color:#f99">Debt ${wallet.debt.toFixed(1)}</div>` : '';
     const magic = world.getComponent<Magic>(e, C_MAGIC);
-    const magicBlock = magic
-      ? `<hr style="${RULE}">
-         <div style="${SECTION}">Magic <span style="color:#d090f0">✦ aptitude</span></div>
-         <div>Mana ${bar(magic.mana / magic.maxMana)}</div>`
-      : '';
+    const magicBlock = magic ? (() => {
+      const school = schoolOf(magic.school);
+      const mastery = magic.mastery ?? 1;
+      const spells = school ? school.spells.map(sp => {
+        const known = sp.mastery <= mastery;
+        return `<span style="color:${known ? '#d8b8ff' : '#5a5a66'}">${known ? '✦' : '○'} ${sp.name}${known ? '' : ` <span style="color:#556;font-size:10px">(m${sp.mastery})</span>`}</span>`;
+      }).join('  ·  ') : '';
+      return `<hr style="${RULE}">
+        <div style="${SECTION}">Magic <span style="color:#d090f0">✦ ${school ? `${school.name} · mastery ${Math.floor(mastery)}` : 'aptitude'}</span></div>
+        <div>Mana ${bar(magic.mana / magic.maxMana)}</div>
+        ${school ? `<div style="color:#9ab;font-size:11px;margin-top:2px">${school.blurb}</div><div style="margin-top:3px">${spells}</div>` : ''}`;
+    })() : '';
 
     const health = world.getComponent<Health>(e, C_HEALTH);
     const lin = world.getComponent<Lineage>(e, C_LINEAGE);
@@ -252,7 +261,7 @@ export class Inspector {
     }
 
     return `
-      ${this.title(agent.name, magic ? 'sapient · folk · mage' : 'sapient · folk')}
+      ${this.title(agent.name, magic ? `sapient · folk · ${schoolOf(magic.school)?.name.toLowerCase() ?? 'mage'}` : 'sapient · folk')}
       ${speciesLine}
       ${tongueLine}
       ${learnedLine}
@@ -271,6 +280,7 @@ export class Inspector {
       ${family}
       ${this._bodyBlock(world, e)}
       ${this._allegianceBlock(world, e, agent)}
+      ${this._faithBlock(world, agent)}
       ${this._cultureBlock(world, agent)}
       ${magicBlock}
       ${mind}`;
@@ -313,6 +323,19 @@ export class Inspector {
       <div style="${SECTION}">Allegiance</div>
       <div><b>Tribe</b> <span style="color:${org.color}">${org.name}</span>${role}</div>
       <div style="color:#9ab">${org.government}</div>`;
+  }
+
+  // Faith (M18): the religion this person follows — its deity, tenets, and their devoutness.
+  private _faithBlock(world: World, agent: Agent): string {
+    const store = getReligionStore(world);
+    const r = agent.religionId && store ? getReligion(store, agent.religionId) : undefined;
+    if (!r) return '';
+    const parent = r.parent && store!.byId[r.parent] ? ` <span style="color:#889">⟵ ${store!.byId[r.parent].name}</span>` : '';
+    const piety = r.fervor > 0.66 ? 'devout' : r.fervor > 0.4 ? 'observant' : 'lax';
+    return `<hr style="${RULE}">
+      <div style="${SECTION}">Faith</div>
+      <div><span style="color:${r.color}">●</span> ${r.name}${parent}</div>
+      <div style="color:#9ab;font-size:11px">venerates ${r.deity} · ${r.tenets.join(', ')} · ${piety}</div>`;
   }
 
   // Culture: the value axes that bias this person's behaviour (M7), shown as bars

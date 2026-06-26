@@ -62,6 +62,9 @@ export interface SimConfig {
   // Knowledge (M17): tribes accumulate research points and climb the tech ladder.
   researchBasePerDay: number;          // a tribe's baseline research per day
   researchPerMemberPerDay: number;     // extra research per living member per day (bigger tribes advance faster)
+  // Religion (M18): faiths schism into sects over the eras, like cultures/tongues/tribes.
+  religionSchismChancePerEra: number;  // per-era chance a large, loose faith fractures into a sect
+  minFaithFollowers: number;           // a faith needs at least this many followers to spawn a sect
   // Capabilities / magic (M3 part 2):
   magicManaMax: number;                // mana pool size for aptitude-gifted agents
   manaRegenPerDay: number;             // mana regenerated per in-sim day
@@ -245,6 +248,8 @@ export const defaultConfig: SimConfig = {
   wanderIdleChance: 0.6,           // a wanderer pauses ~60% of ticks → folk linger rather than pacing endlessly
   researchBasePerDay: 2,           // tuned so tribes reach ~Industrial Age over a soak, sci-fi over deep time
   researchPerMemberPerDay: 1.0,
+  religionSchismChancePerEra: 0.4, // faiths fracture into sects now and then over deep time
+  minFaithFollowers: 8,
   magicManaMax: 100,
   manaRegenPerDay: 10,
   daysPerYear: 4,
