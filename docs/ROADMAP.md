@@ -326,11 +326,11 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD met (S69–S74):** seasons cycle and **causally affect the world** (flora growth + the food market breathe with the year); **disasters** (famine/plague/quake) and **rare paranormal** events (abduction/haunting/wild-magic) occur, leave real but survivable consequences, and enter the Chronicle; **adding an event is data-only** (YAML + a code-side effect tag, fail-loud); **legible** (✷/⚠/✺ feed kinds + the Events timeline tab + Chronicle legends); determinism + soak hold (stress-verified survivable under cranked rates). *(Deferred flavour: weather visuals, on-map event FX.)*
 
-## Milestone 20 — History, Legend & Quest
+## Milestone 20 — History, Legend & Quest  *(in progress)*
 
 **Goal:** the capstone of emergent storytelling — the world remembers.
 
-- [ ] **Historical figures** emerge from the importance/Chronicle machinery (conqueror/inventor/prophet/tyrant/hero); **dynasties** from lineage.
+- [x] **Historical figures** emerge from the importance/Chronicle machinery (conqueror/inventor/prophet/tyrant/hero); **dynasties** from lineage. *(S79 — slice 1: a new singleton **`Figures`** store + **`LegendSystem`** (daily) enshrines any living soul who crosses into legend, once, and keeps them after death (resolve the living by id, the dead by Tombstone). The epithet is a **pure function of durable deeds** (`src/history/figures.ts` `epithetFor`, priority-ordered): **the Cruel** (3+ murders → tyrant), **the Slayer** (8+ kills → hero), **the Archmage** (mastery 4+), **the Wise** (a venerable tribe leader), **the Elder** (lived ~92% of lifespan), **the Progenitor** (5+ children), **the Renowned** (standing ≥ 0.85). Bounded (cap 80, oldest dead prune). Enshrinement is a feed line + a Chronicle legend, so figures are *referenced*. **Dynasties** are a derived read in the Legends view — the great surname-lines by living + buried count, tagged with the legends they've bred ("House Resmu — 4 living of 11 all told · 2 legends"). Legible: a **"Figures of legend"** + **"Dynasties"** section atop the Legends tab. Pure read (no RNG) → soak sim-trajectory unchanged. +5 tests; live (headless): figures accrue with varied epithets (Archmage, Renowned, Slayer…).)*
 - [ ] **World-history generator** / ages-of-civilization narration; **legendary artifacts** with histories; **archaeology** (uncover ruins/dungeons of extinct civs).
 - [ ] **Procedural quests/goals** agents pursue (recover heirloom, hunt monster, avenge kin, explore ruin); **wonders** (mega-projects incl. the space elevator).
 

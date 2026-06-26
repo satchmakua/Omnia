@@ -3,7 +3,7 @@ import { createRNG, rngFloat } from './rng.ts';
 import {
   C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_WORLDSTATS, C_CULTURESTORE, C_LANGUAGESTORE,
   C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_CIVIC, C_ORGSTORE, C_MARKET, C_ACHIEVEMENTS,
-  C_RELIGIONSTORE,
+  C_RELIGIONSTORE, C_FIGURES,
 } from './components.ts';
 import type { Clock, Agent, Lineage, Relationships, AIRecord, Position, Civic } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -33,6 +33,7 @@ import { createOrgStore, createOrg, getOrgStore } from '../org/orgStore.ts';
 import { createReligionStore, createReligion, getReligionStore } from '../religion/religionStore.ts';
 import { createMarket } from './market.ts';
 import { createAchievements } from './systems/AchievementSystem.ts';
+import { createFigures } from '../history/figures.ts';
 import { word } from '../lang/language.ts';
 
 export interface Simulation {
@@ -214,6 +215,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   world.addComponent(world.createEntity(), C_RELIGIONSTORE, createReligionStore()); // faiths (M18)
   world.addComponent(world.createEntity(), C_MARKET, createMarket(cfg));     // staple-goods market (M15)
   world.addComponent(world.createEntity(), C_ACHIEVEMENTS, createAchievements()); // milestones (M17)
+  world.addComponent(world.createEntity(), C_FIGURES, createFigures());     // historical figures (M20)
 
   // Recorded LLM responses, for deterministic replay of a live-model run.
   const recordEntity = world.createEntity();
