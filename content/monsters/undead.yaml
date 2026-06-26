@@ -1,0 +1,11 @@
+# The restless dead, risen to walk again.
+id: "undead"
+name: "a risen corpse"
+icon: "undead"
+behavior: "predator"
+str: 12
+dex: 8
+con: 14
+ferocity: 1.2
+spawnChancePerDay: 0.004
+despawnDays: 9

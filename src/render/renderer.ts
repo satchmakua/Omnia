@@ -3,11 +3,11 @@ import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
   C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN, C_WONDERSITE,
-  C_QUEST, C_CRIME, C_COMBAT,
+  C_QUEST, C_CRIME, C_COMBAT, C_SPECIAL,
   C_CLOCK, C_TILEMAP, C_EVENTLOG,
 } from '../sim/components.ts';
 import type {
-  Position, Agent, Health, Flora, Fauna, Resource, Business, Clock, Ruin, Combat,
+  Position, Agent, Health, Flora, Fauna, Resource, Business, Clock, Ruin, Combat, Special,
 } from '../sim/components.ts';
 import type { EventLogData } from '../history/eventlog.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -257,6 +257,12 @@ export class Renderer {
       const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
       this.iconAnimal(drawX(e, p.x), drawY(e, p.y), fa.color, fa.size);   // species colour + size
+    }
+    for (const e of world.query(C_SPECIAL, C_POSITION)) {   // monsters & uncanny visitors (M21)
+      const sp = world.getComponent<Special>(e, C_SPECIAL)!;
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      const h = world.getComponent<Health>(e, C_HEALTH);
+      this.iconSpecial(drawX(e, p.x), drawY(e, p.y), sp.icon, !!h && h.value < 0.55);
     }
     // "In company": folk standing beside another folk are conversing. The chat badge
     // (M10 s4.5) shows this regardless of the socialize *action* (which only fires on a
@@ -514,6 +520,112 @@ export class Renderer {
     });
   }
 
+  // ── special agents (M21): monsters & uncanny visitors, drawn a touch larger than folk ──
+  private iconSpecial(gx: number, gy: number, kind: string, wounded: boolean): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 1.28, () => {
+      switch (kind) {
+        case 'dragon':  this.drawDragon(); break;
+        case 'vampire': this.drawVampire(); break;
+        case 'undead':  this.drawUndead(); break;
+        case 'ghost':   this.drawGhost(); break;
+        case 'alien':   this.drawAlien(); break;
+        default:        this.drawMonster(); break;   // 'monster' — a dire beast
+      }
+      if (wounded) { ctx.strokeStyle = '#ff5050'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-4, 11.5); ctx.lineTo(4, 11.5); ctx.stroke(); }
+    });
+  }
+
+  // A heraldic wyvern: spread membranous wings, a horned head, glowing eyes, a curling tail.
+  private drawDragon(): void {
+    const ctx = this.ctx, body = '#c87a52';
+    ctx.fillStyle = '#8f4f33';
+    ctx.beginPath(); ctx.moveTo(-1, -2); ctx.lineTo(-11, -7); ctx.lineTo(-8, -2); ctx.lineTo(-11, 2); ctx.lineTo(-8, 3); ctx.lineTo(-1, 4); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(1, -2); ctx.lineTo(11, -7); ctx.lineTo(8, -2); ctx.lineTo(11, 2); ctx.lineTo(8, 3); ctx.lineTo(1, 4); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.moveTo(0, -7); ctx.quadraticCurveTo(3, -1, 1.6, 7); ctx.lineTo(-1.6, 7); ctx.quadraticCurveTo(-3, -1, 0, -7); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = body; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-1.4, 7); ctx.quadraticCurveTo(-3, 10, -0.5, 11.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, -8, 2.7, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#e7c39c'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-2.4, -9.5); ctx.lineTo(-3.6, -12); ctx.moveTo(2.4, -9.5); ctx.lineTo(3.6, -12); ctx.stroke();
+    ctx.fillStyle = '#ffd24a';
+    ctx.beginPath(); ctx.arc(-1, -8, 0.8, 0, Math.PI * 2); ctx.arc(1, -8, 0.8, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // A classic count: a high-collared cape, a pale face, a widow's-peak, red eyes, white fangs.
+  private drawVampire(): void {
+    const ctx = this.ctx, cape = '#3a1830', face = '#ede2d0', hair = '#131019';
+    ctx.fillStyle = cape;
+    ctx.beginPath(); ctx.moveTo(-9, 9); ctx.lineTo(-6, -1); ctx.quadraticCurveTo(0, -4, 6, -1); ctx.lineTo(9, 9); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-6, -1); ctx.lineTo(-2.5, 3); ctx.lineTo(-1, -2); ctx.closePath();
+    ctx.moveTo(6, -1); ctx.lineTo(2.5, 3); ctx.lineTo(1, -2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = face; ctx.beginPath(); ctx.arc(0, -4, 3.9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = hair;
+    ctx.beginPath(); ctx.moveTo(-3.9, -4.6); ctx.quadraticCurveTo(-4.4, -8.4, 0, -8.4); ctx.quadraticCurveTo(4.4, -8.4, 3.9, -4.6);
+    ctx.quadraticCurveTo(2, -6.3, 0, -4); ctx.quadraticCurveTo(-2, -6.3, -3.9, -4.6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#d12a2a';
+    ctx.beginPath(); ctx.arc(-1.6, -4, 0.85, 0, Math.PI * 2); ctx.arc(1.6, -4, 0.85, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.moveTo(-1.3, -1); ctx.lineTo(-0.5, 0.7); ctx.lineTo(0.1, -1); ctx.closePath();
+    ctx.moveTo(0.3, -1); ctx.lineTo(1.1, 0.7); ctx.lineTo(1.7, -1); ctx.closePath(); ctx.fill();
+  }
+
+  // A bare skull: black eye-sockets, a nasal void, a row of teeth.
+  private drawUndead(): void {
+    const ctx = this.ctx, bone = '#d6d8e0';
+    ctx.fillStyle = bone;
+    ctx.beginPath(); ctx.moveTo(-6, -2); ctx.quadraticCurveTo(-6, -9, 0, -9); ctx.quadraticCurveTo(6, -9, 6, -2);
+    ctx.quadraticCurveTo(6, 2, 4, 3.2); ctx.lineTo(4, 6); ctx.lineTo(-4, 6); ctx.lineTo(-4, 3.2); ctx.quadraticCurveTo(-6, 2, -6, -2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#101018';
+    ctx.beginPath(); ctx.arc(-2.7, -3, 1.9, 0, Math.PI * 2); ctx.arc(2.7, -3, 1.9, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, -1.5); ctx.lineTo(-1.1, 1.4); ctx.lineTo(1.1, 1.4); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#101018'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-3, 4); ctx.lineTo(3, 4); ctx.moveTo(-1.6, 4); ctx.lineTo(-1.6, 6.4); ctx.moveTo(0, 4); ctx.lineTo(0, 6.4); ctx.moveTo(1.6, 4); ctx.lineTo(1.6, 6.4); ctx.stroke();
+  }
+
+  // A snarling horned beast: jagged horns, glowing eyes, a fanged maw.
+  private drawMonster(): void {
+    const ctx = this.ctx, hide = '#d06b6b';
+    ctx.fillStyle = '#a84a4a';
+    ctx.beginPath(); ctx.moveTo(-5, -4); ctx.lineTo(-8.5, -11); ctx.lineTo(-2.5, -5.5); ctx.closePath();
+    ctx.moveTo(5, -4); ctx.lineTo(8.5, -11); ctx.lineTo(2.5, -5.5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = hide;
+    ctx.beginPath(); ctx.moveTo(-7, -1); ctx.quadraticCurveTo(-7, -7, 0, -7); ctx.quadraticCurveTo(7, -7, 7, -1); ctx.quadraticCurveTo(7, 6, 0, 8); ctx.quadraticCurveTo(-7, 6, -7, -1); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffe08a';
+    ctx.beginPath(); ctx.moveTo(-4.2, -1.8); ctx.lineTo(-1.4, -0.6); ctx.lineTo(-4, 0.6); ctx.closePath();
+    ctx.moveTo(4.2, -1.8); ctx.lineTo(1.4, -0.6); ctx.lineTo(4, 0.6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.moveTo(-3.4, 3); ctx.lineTo(-2.4, 5.6); ctx.lineTo(-1.4, 3); ctx.lineTo(-0.4, 5.6); ctx.lineTo(0.6, 3); ctx.lineTo(1.6, 5.6); ctx.lineTo(2.6, 3); ctx.closePath(); ctx.fill();
+  }
+
+  // A hovering wraith: a rounded cowl, a wavy hem, dark hollows. Faintly translucent.
+  private drawGhost(): void {
+    const ctx = this.ctx, pale = '#aec4ea';
+    ctx.globalAlpha = 0.9; ctx.fillStyle = pale;
+    ctx.beginPath(); ctx.moveTo(-6, 7); ctx.lineTo(-6, -2); ctx.quadraticCurveTo(-6, -9, 0, -9); ctx.quadraticCurveTo(6, -9, 6, -2); ctx.lineTo(6, 7);
+    ctx.lineTo(4, 5.2); ctx.lineTo(2, 7); ctx.lineTo(0, 5.2); ctx.lineTo(-2, 7); ctx.lineTo(-4, 5.2); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1; ctx.fillStyle = '#2a3550';
+    ctx.beginPath(); ctx.ellipse(-2.3, -3, 1.3, 1.8, 0, 0, Math.PI * 2); ctx.ellipse(2.3, -3, 1.3, 1.8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 1, 1.1, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // A grey in green: a bulbous head, big slanted black eyes, a slender body.
+  private drawAlien(): void {
+    const ctx = this.ctx, skin = '#5cc95c';
+    ctx.fillStyle = skin;
+    ctx.beginPath(); ctx.moveTo(-2, 11); ctx.lineTo(-1.4, 1); ctx.lineTo(1.4, 1); ctx.lineTo(2, 11); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = skin; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-4, 9); ctx.lineTo(-1.6, 5); ctx.moveTo(4, 9); ctx.lineTo(1.6, 5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -10); ctx.quadraticCurveTo(7, -8.5, 5.2, -1.5); ctx.quadraticCurveTo(3.2, 2.5, 0, 2.5); ctx.quadraticCurveTo(-3.2, 2.5, -5.2, -1.5); ctx.quadraticCurveTo(-7, -8.5, 0, -10); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#0a0a10';
+    for (const s of [-1, 1]) {
+      ctx.save(); ctx.translate(s * 2.5, -3.4); ctx.rotate(s * 0.49);
+      ctx.beginPath(); ctx.ellipse(0, 0, 1.5, 2.7, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+  }
+
   private drawHud(world: World, clockEntity: EntityId, elapsedMs: number): void {
     const { ctx } = this;
     const clock = world.getComponent<Clock>(clockEntity, C_CLOCK)!;
@@ -555,7 +667,7 @@ export class Renderer {
       return null;
     };
 
-    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_WONDERSITE) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_CIVIC) ?? at(C_RUIN) ?? at(C_RESOURCE) ?? at(C_FLORA);
+    const hit = at(C_SPECIAL) ?? at(C_AGENT) ?? at(C_FAUNA) ?? at(C_WONDERSITE) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_CIVIC) ?? at(C_RUIN) ?? at(C_RESOURCE) ?? at(C_FLORA);
     if (hit !== null) this.onEntityClick?.(hit);
     return hit;
   }

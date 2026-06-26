@@ -1,0 +1,11 @@
+# A vampire — a cunning predator that stalks the folk.
+id: "vampire"
+name: "a vampire"
+icon: "vampire"
+behavior: "predator"
+str: 13
+dex: 14
+con: 13
+ferocity: 1.4
+spawnChancePerDay: 0.003
+despawnDays: 14

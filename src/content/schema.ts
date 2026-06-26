@@ -260,6 +260,25 @@ export const WonderSchema = z.object({
 
 export type Wonder = z.infer<typeof WonderSchema>;
 
+// ── Monster / special agent (M21) ───────────────────────────────────────────────
+// A rare, special creature — a dragon, a vampire, an alien, the restless dead. Data declares
+// the creature (its icon, its disposition, its fighting stats, how often it appears); the
+// SpecialAgentSystem implements *how* it roams and menaces (or haunts) the folk.
+export const MonsterSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  icon: z.enum(['monster', 'dragon', 'undead', 'vampire', 'ghost', 'alien']),
+  behavior: z.enum(['predator', 'haunt']).default('predator'),  // predator: hunts folk; haunt: eerie, no blood
+  str: z.number().default(13),
+  dex: z.number().default(10),
+  con: z.number().default(13),
+  ferocity: z.number().positive().default(1.3),
+  spawnChancePerDay: z.number().min(0).max(1),
+  despawnDays: z.number().positive().default(12),  // it leaves (or fades) after this long if not slain
+}).strict();
+
+export type Monster = z.infer<typeof MonsterSchema>;
+
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
 export const FOLDER_SCHEMAS = {
@@ -277,6 +296,7 @@ export const FOLDER_SCHEMAS = {
   goods: GoodSchema,
   recipes: RecipeSchema,
   wonders: WonderSchema,
+  monsters: MonsterSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

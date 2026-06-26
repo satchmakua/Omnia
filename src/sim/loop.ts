@@ -31,6 +31,7 @@ import { runArtifactSystem }  from './systems/ArtifactSystem.ts';
 import { runArchaeologySystem } from './systems/ArchaeologySystem.ts';
 import { runQuestSystem }     from './systems/QuestSystem.ts';
 import { runWonderSystem }    from './systems/WonderSystem.ts';
+import { runSpecialAgentSystem } from './systems/SpecialAgentSystem.ts';
 import { runAISystem }       from './systems/AISystem.ts';
 import { runMemorySystem }   from './systems/MemorySystem.ts';
 import { runHistorySystem }  from './systems/HistorySystem.ts';
@@ -89,6 +90,7 @@ export function tick(
   runCombatSystem(world, cfg, rng);      // predators threaten folk; folk fight back (M16)
   runCrimeSystem(world, cfg, rng);       // crime & vice: theft / assault / murder + rough justice (M16)
   runMagicSystem(world, cfg, rng);       // mages cast their school's spells on neighbours (M17)
+  runSpecialAgentSystem(world, cfg, rng, content); // monsters roam, menace, & are slain (M21)
 }
 
 export function runTicks(

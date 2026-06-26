@@ -1,0 +1,11 @@
+# A dragon — the rarest, mightiest terror. To slay one is to become legend.
+id: "dragon"
+name: "a dragon"
+icon: "dragon"
+behavior: "predator"
+str: 17
+dex: 11
+con: 16
+ferocity: 1.5
+spawnChancePerDay: 0.0015
+despawnDays: 16

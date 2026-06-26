@@ -2,11 +2,11 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_CLOCK,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
 import { socialClassOf } from '../sim/society.ts';
@@ -119,6 +119,8 @@ export class Inspector {
       body = this._ruin(world, entity, pos);
     } else if (world.hasComponent(entity, C_CIVIC)) {
       body = this._civic(world, entity, pos);
+    } else if (world.hasComponent(entity, C_SPECIAL)) {
+      body = this._special(world, entity, pos);
     } else if (world.hasComponent(entity, C_FAUNA)) {
       body = this._fauna(world, entity, pos);
     } else if (world.hasComponent(entity, C_RESOURCE)) {
@@ -465,6 +467,32 @@ export class Inspector {
       <hr style="${RULE}">
       <div style="${SECTION}">Civic</div>
       <div style="color:#9ab">A place the town holds in common.</div>`;
+  }
+
+  // A special agent (M21): a monster or uncanny visitor — its menace, condition, and how long
+  // before it fades back into the wilds.
+  private _special(world: World, e: EntityId, pos: Position): string {
+    const s = world.getComponent<Special>(e, C_SPECIAL)!;
+    const health = world.getComponent<Health>(e, C_HEALTH);
+    const clockEnts = world.query(C_CLOCK);
+    const tick = clockEnts.length ? world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick : 0;
+    const daysLeft = Math.max(0, (s.despawnTick - tick) / defaultConfig.ticksPerDay);
+    const menace = s.behavior === 'predator'
+      ? '<div style="color:#ff8a8a">A predator — it hunts the folk, and a brave band must bring it down.</div>'
+      : '<div style="color:#bcd">A haunt — it draws no blood, but its passing unsettles all who feel it near.</div>';
+    const name = s.name.charAt(0).toUpperCase() + s.name.slice(1);
+    return `
+      ${this.title(name, 'a special agent · monster')}
+      ${this.terrainLine(world, pos)}
+      <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
+      <hr style="${RULE}">
+      <div style="${SECTION}">Menace</div>
+      ${menace}
+      ${health ? `<div>Vigour ${bar(health.value)}</div>` : ''}
+      <hr style="${RULE}">
+      <div style="${SECTION}">Nature</div>
+      <div style="line-height:1.9"><span style="display:inline-block;min-width:60px">STR <b style="color:#dde">${s.str}</b></span><span style="display:inline-block;min-width:60px">DEX <b style="color:#dde">${s.dex}</b></span><span style="display:inline-block;min-width:60px">CON <b style="color:#dde">${s.con}</b></span></div>
+      <div style="color:#889">It will haunt the land for about ${daysLeft.toFixed(1)} more days.</div>`;
   }
 
   private _fauna(world: World, e: EntityId, pos: Position): string {
