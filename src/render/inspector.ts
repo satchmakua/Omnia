@@ -2,11 +2,11 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
 import { socialClassOf } from '../sim/society.ts';
@@ -244,12 +244,15 @@ export class Inspector {
     const healthBlock = health
       ? `<div>Health ${bar(health.value)}${health.ill ? ' <span style="color:#f99">(ill)</span>' : ''}</div>` : '';
 
-    // Carried materials & goods (M23): what the gatherer/crafter holds in hand.
+    // Carried materials & goods + craft skill (M23): what the gatherer/crafter holds & can make.
     const inv = world.getComponent<Inventory>(e, C_INVENTORY);
-    const carryingBlock = inv && Object.keys(inv.items).length
-      ? `<hr style="${RULE}"><div style="${SECTION}">Carrying</div>` +
-        Object.entries(inv.items).sort((a, b) => b[1] - a[1]).map(([id, q]) =>
-          `<div><span style="color:#cdb89a">${id.charAt(0).toUpperCase() + id.slice(1)}</span> <span style="color:#9ab">${q.toFixed(1)}</span></div>`).join('')
+    const craft = world.getComponent<Crafting>(e, C_CRAFTING);
+    const hasInv = !!inv && Object.keys(inv.items).length > 0;
+    const carryingBlock = (hasInv || craft)
+      ? `<hr style="${RULE}"><div style="${SECTION}">Carrying${craft ? ' &amp; craft' : ''}</div>` +
+        (craft ? `<div style="color:#cbb6e0">Craft skill ${craft.skill.toFixed(1)}</div>` : '') +
+        (hasInv ? Object.entries(inv!.items).sort((a, b) => b[1] - a[1]).map(([id, q]) =>
+          `<div><span style="color:#cdb89a">${id.charAt(0).toUpperCase() + id.slice(1)}</span> <span style="color:#9ab">${q.toFixed(1)}</span></div>`).join('') : '')
       : '';
 
     // The inner life: beliefs (from reflection), recent dreams/sayings/resolutions,

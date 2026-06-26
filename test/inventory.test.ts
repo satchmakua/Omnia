@@ -67,7 +67,7 @@ describe('gathering fills the bag (M23)', () => {
     runGatherSystem(w, cfg);
     const inv = w.getComponent<Inventory>(e, C_INVENTORY)!;
     expect(inv).toBeDefined();
-    expect(itemCount(inv, 'ore')).toBeCloseTo(cfg.gatherPerDay / cfg.ticksPerDay, 6);
+    expect(itemCount(inv, 'ore')).toBeCloseTo(cfg.gatherPerDay / cfg.ticksPerDay * cfg.materialYield, 6);
   });
 
   it('the bag is bounded by the carrying cap', () => {

@@ -1,0 +1,9 @@
+# Hammer ore into crude tools — the smith's first craft.
+id: "tool"
+name: "Forge tools"
+profession: "miner"
+inputs: { ore: 2 }
+output: "tool"
+outputQty: 1
+minSkill: 0
+skillGain: 0.12

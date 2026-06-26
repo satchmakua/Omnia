@@ -11,6 +11,8 @@ import { runCapabilitySystem } from './systems/CapabilitySystem.ts';
 import { runActionSystem }   from './systems/ActionSystem.ts';
 import { runMovementSystem } from './systems/MovementSystem.ts';
 import { runGatherSystem }   from './systems/GatherSystem.ts';
+import { runCraftSystem }    from './systems/CraftSystem.ts';
+import { runEquipSystem }    from './systems/EquipSystem.ts';
 import { runMarketSystem }   from './systems/MarketSystem.ts';
 import { runEconomySystem }  from './systems/EconomySystem.ts';
 import { runBusinessSystem } from './systems/BusinessSystem.ts';
@@ -51,7 +53,9 @@ export function tick(
   runCapabilitySystem(world, cfg, content); // magic: mana regen + casting (rare)
   runActionSystem(world, cfg);           // sapient utility action choice
   runMovementSystem(world, cfg, rng, content); // sapient movement / forage / commute / socialise / gather
-  runGatherSystem(world, cfg);           // deplete resource nodes being worked
+  runGatherSystem(world, cfg);           // deplete resource nodes being worked → materials into the bag
+  runCraftSystem(world, cfg, content);   // crafters turn carried materials into goods, skill-gated (M23)
+  runEquipSystem(world, cfg, content);   // denormalise best carried weapon/armour for combat (M23 s3)
   runMarketSystem(world, cfg);           // staple market: price floats with supply/demand (sets the cost of living)
   runEconomySystem(world, cfg);          // hiring, wages, cost of living (at the market price)
   runBusinessSystem(world, cfg, rng, content); // farms fold when unprofitable; new ones open when food is dear (M15)

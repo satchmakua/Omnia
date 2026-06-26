@@ -5,8 +5,8 @@
 // the existing health/mortality machinery. Used by hunting, crime (M16 s2), and war (M16 s3).
 import type { RNG } from './rng.ts';
 import type { World, EntityId } from './ecs.ts';
-import { C_BODY, C_COMBAT, C_AGENT } from './components.ts';
-import type { Body, Combat, Agent } from './components.ts';
+import { C_BODY, C_COMBAT, C_AGENT, C_EQUIPMENT } from './components.ts';
+import type { Body, Combat, Agent, Equipment } from './components.ts';
 import { getCultureStore, getCulture } from '../culture/cultureStore.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 
@@ -20,6 +20,8 @@ export interface Combatant {
   ferocity: number;  // personality lean: brave/hot-headed press the attack, timid/gentle hold back
   prowess: number;   // hardened by survived violence (scars + kills)
   arms?: number;     // the tribe's military tech level (bronze/iron/engineering/machining) — better weapons & armour (M17 s2)
+  weapon?: number;   // a carried/crafted weapon's power (M23 s3) — keener blows
+  armour?: number;   // carried/crafted armour's power (M23 s3) — turns blows aside
 }
 
 // Probability the attacker lands a blow: an even chance, nudged by the DEX gap, martial
@@ -33,10 +35,11 @@ export function hitChance(atk: Combatant, def: Combatant): number {
 }
 
 // Damage a landed blow deals (Health units): a base scaled by STR and martiality (and the
-// keenness of the attacker's weapons), softened by the defender's CON, pressed by ferocity.
+// keenness of the attacker's weapons + a crafted blade), softened by the defender's CON and
+// their armour, pressed by ferocity.
 export function hitDamage(atk: Combatant, def: Combatant): number {
-  const power = 1 + (atk.str - 10) * 0.06 + (atk.martial - 0.5) * 0.3 + (atk.arms ?? 0) * 0.1;
-  const soak = clamp(1 - (def.con - 10) * 0.03, 0.5, 1.3);
+  const power = 1 + (atk.str - 10) * 0.06 + (atk.martial - 0.5) * 0.3 + (atk.arms ?? 0) * 0.1 + (atk.weapon ?? 0) * 0.06;
+  const soak = clamp(1 - (def.con - 10) * 0.03 - (def.armour ?? 0) * 0.06, 0.35, 1.3);
   return clamp(0.18 * power * soak * atk.ferocity, 0.03, 0.7);
 }
 
@@ -68,6 +71,7 @@ export function combatantOf(world: World, e: EntityId): Combatant {
   let arms = 0;
   const ostore = getOrgStore(world);
   if (ostore && agent?.orgId) arms = ostore.byId[agent.orgId]?.effects?.arms ?? 0;
+  const eq = world.getComponent<Equipment>(e, C_EQUIPMENT);
   return {
     str: body?.str ?? 10,
     dex: body?.dex ?? 10,
@@ -76,6 +80,8 @@ export function combatantOf(world: World, e: EntityId): Combatant {
     ferocity: ferocityOf(trait),
     prowess: combat ? combat.scars + combat.kills * 2 : 0,
     arms,
+    weapon: eq?.weapon ?? 0,
+    armour: eq?.armour ?? 0,
   };
 }
 

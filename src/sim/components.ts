@@ -22,6 +22,8 @@ export const C_PERSONALITY   = 'Personality';   // an archetype trait, heritable
 export const C_COMBAT        = 'Combat';        // combat record: scars + kills (attached on first fight) (M16)
 export const C_CRIME         = 'Crime';         // rap sheet: thefts + assaults + murders (attached on first crime) (M16)
 export const C_INVENTORY     = 'Inventory';     // carried materials & goods (attached on first gather) (M23)
+export const C_CRAFTING      = 'Crafting';      // a crafter's accumulated skill (attached on first craft) (M23)
+export const C_EQUIPMENT     = 'Equipment';     // denormalised best carried weapon/armour bonus, for combat (M23 s3)
 export const C_AIRECORD      = 'AIRecord';      // singleton: recorded LLM responses for replay (M5)
 export const C_AIRUNNER      = 'AIRunner';      // singleton: async live-model queue + pending jobs (M7.5)
 export const C_CLOCK     = 'Clock';
@@ -57,6 +59,20 @@ export interface Wallet {
 // Bounded per item by `inventoryMaxPerItem`, so it stays tenable. See src/sim/inventory.ts.
 export interface Inventory {
   items: Record<string, number>;
+}
+
+// A crafter's skill (M23 slice 2): grows by practice (learn-by-doing), gating the recipes
+// they can attempt. Lazy — attached the first time an agent crafts. See CraftSystem.
+export interface Crafting {
+  skill: number;
+}
+
+// Denormalised equipment bonus (M23 slice 3): the power of the best weapon & armour an agent
+// carries, recomputed daily (EquipSystem) from their inventory + the goods content, so the
+// hot combat path reads cheap numbers (like a tribe's `arms`). Carrying = wielding.
+export interface Equipment {
+  weapon: number;   // best carried weapon power → attack
+  armour: number;   // best carried armour power → soak
 }
 
 export type AgentAction = 'wander' | 'seek_food' | 'sleep' | 'work' | 'socialize';

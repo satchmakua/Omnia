@@ -91,6 +91,7 @@ reproMinHealth: 0.5
 childMageAptitudeChance: 0.25
 gatherPerDay: 0.3
 inventoryMaxPerItem: 20
+materialYield: 12
 workingMemorySize: 30
 reflectionIntervalDays: 30
 maxReflectionsPerTick: 2

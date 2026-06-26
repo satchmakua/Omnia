@@ -6,7 +6,7 @@ import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { FOLDER_SCHEMAS } from './schema.ts';
 import type {
-  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, ContentFolder,
+  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, Good, Recipe, ContentFolder,
 } from './schema.ts';
 import { Registry } from './registry.ts';
 import { isKnownEffectTag } from '../capability/effects.ts';
@@ -24,6 +24,8 @@ export interface Content {
   cultures: Registry<Culture>;
   tech: Registry<Tech>;
   events: Registry<WorldEvent>;
+  goods: Registry<Good>;
+  recipes: Registry<Recipe>;
 }
 
 // Relative path like "species/human.yaml" -> "species".
@@ -47,7 +49,7 @@ function formatZodError(relPath: string, err: z.ZodError): string {
  */
 export function loadContent(files: Map<string, string>): Content {
   const buckets: Record<ContentFolder, unknown[]> = {
-    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [],
+    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [], goods: [], recipes: [],
   };
   const errors: string[] = [];
 
@@ -118,6 +120,8 @@ export function loadContent(files: Map<string, string>): Content {
   let cultures: Registry<Culture>;
   let tech: Registry<Tech>;
   let events: Registry<WorldEvent>;
+  let goods: Registry<Good>;
+  let recipes: Registry<Recipe>;
   try {
     species = new Registry(buckets.species as Species[]);
     capabilities = new Registry(buckets.capabilities as Capability[]);
@@ -130,6 +134,8 @@ export function loadContent(files: Map<string, string>): Content {
     cultures = new Registry(buckets.cultures as Culture[]);
     tech = new Registry(buckets.tech as Tech[]);
     events = new Registry(buckets.events as WorldEvent[]);
+    goods = new Registry(buckets.goods as Good[]);
+    recipes = new Registry(buckets.recipes as Recipe[]);
   } catch (e) {
     throw new Error(`Content failed to load: ${(e as Error).message}`);
   }
@@ -172,6 +178,15 @@ export function loadContent(files: Map<string, string>): Content {
       else if (pre.tier > t.tier) refErrors.push(`tech/${t.id}: prerequisite '${p}' is a later tier (${pre.tier} > ${t.tier})`);
     }
   }
+  // A recipe must be crafted by a real profession, consume real materials (a resource or a
+  // good), and output a real good (M23).
+  for (const r of recipes.all()) {
+    if (!professions.has(r.profession)) refErrors.push(`recipes/${r.id}: unknown profession '${r.profession}'`);
+    if (!goods.has(r.output)) refErrors.push(`recipes/${r.id}: output '${r.output}' is not a known good`);
+    for (const id of Object.keys(r.inputs)) {
+      if (!resources.has(id) && !goods.has(id)) refErrors.push(`recipes/${r.id}: input '${id}' is neither a resource nor a good`);
+    }
+  }
   if (refErrors.length > 0) {
     throw new Error(
       `Content failed to load (${refErrors.length} problem${refErrors.length > 1 ? 's' : ''}):\n` +
@@ -179,5 +194,5 @@ export function loadContent(files: Map<string, string>): Content {
     );
   }
 
-  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events };
+  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events, goods, recipes };
 }

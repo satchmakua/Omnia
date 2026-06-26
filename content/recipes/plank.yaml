@@ -1,0 +1,9 @@
+# Saw felled timber into rough planks — basic work any labourer learns.
+id: "plank"
+name: "Saw planks"
+profession: "laborer"
+inputs: { timber: 2 }
+output: "plank"
+outputQty: 1
+minSkill: 0
+skillGain: 0.12
