@@ -12,6 +12,7 @@ import type { WorldStatsData, StatSample } from '../history/stats.ts';
 import { defaultConfig, ticksPerYear } from '../sim/config.ts';
 import { measureWorld } from '../analysis/metrics.ts';
 import type { WorldMetrics } from '../analysis/metrics.ts';
+import { worldHistory } from '../history/saga.ts';
 
 const TPY = ticksPerYear(defaultConfig);
 const yearOf = (tick: number) => Math.floor(tick / TPY);
@@ -64,12 +65,25 @@ export class LegendsPanel {
 
     this.contentEl.innerHTML =
       `<div style="color:#99a;margin-bottom:12px">the town's history, in year ${year}</div>
+       ${this.sagaHtml(world)}
        ${this.figuresHtml(world)}
        ${this.artifactsHtml(world)}
        ${this.achievementsHtml(world)}
        ${this.chronicleHtml(chronicle)}
        ${this.strataHtml(stats)}
        ${this.scienceHtml(world)}`;
+  }
+
+  // The saga (M20 s2c): the world-history generator's ages-of-civilization narration, read as
+  // prose — the readable story above the lists & charts below.
+  private sagaHtml(world: World): string {
+    const sections = worldHistory(world, defaultConfig);
+    if (sections.length === 0) return '';
+    const body = sections.map(s =>
+      `<div style="margin:6px 0"><span style="color:#e8c98a">${s.heading}.</span>
+        <span style="color:#c8cad8;line-height:1.55"> ${s.text}</span></div>`).join('');
+    return `<div style="color:#ffcf9a;text-transform:uppercase;font-size:11px;letter-spacing:1px;margin:6px 0 4px">The Saga</div>
+      <div style="font-style:italic">${body}</div><hr style="border-color:rgba(255,255,255,0.08);margin:12px 0">`;
   }
 
   // Historical figures (M20): the souls the world remembers, newest legend first. The living
