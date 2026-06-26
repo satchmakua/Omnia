@@ -1,0 +1,10 @@
+# A failed season: the crops wither and foraging grows lean until the land recovers.
+# Hardship pulls the folk together — cultures drift thriftier (the famine→thrift hook).
+id: "famine"
+name: "Famine"
+category: "disaster"
+chancePerDay: 0.005
+importance: 0.85         # a hard year remembered — a Chronicle legend
+effect: "famine"
+message: "A famine gripped the land — the crops failed and the larders ran thin."
+minPopulation: 8
