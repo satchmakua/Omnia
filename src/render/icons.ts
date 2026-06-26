@@ -14,6 +14,7 @@ export const CATEGORY_COLOR = {
   home:     '#caa46a',
   civic:    '#b58fd0',
   grave:    '#9a9a9a',
+  ruin:     '#8c8270',
   hostile:  '#d06b6b',
 } as const;
 
