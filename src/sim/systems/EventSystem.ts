@@ -46,10 +46,11 @@ export function runEventSystem(world: World, cfg: SimConfig, rng: RNG, content: 
     if (rng() >= ev.chancePerDay) continue;
 
     const effect = EVENT_EFFECTS[ev.effect];
-    if (effect) effect({ world, cfg, rng });
+    if (effect) effect({ world, cfg, rng, tick: clock.tick });
 
-    // Disasters get their own (alarming) feed kind; fortune/seasonal read as ✷ events.
-    const kind: EventKind = ev.category === 'disaster' ? 'disaster' : 'event';
+    // Disasters and the paranormal get their own feed kinds; fortune/seasonal read as ✷ events.
+    const kind: EventKind = ev.category === 'disaster' ? 'disaster'
+      : ev.category === 'paranormal' ? 'paranormal' : 'event';
     emitEvent(world, kind, ev.message);
     if (chronicle) {
       chronicleAdd(chronicle, { tick: clock.tick, importance: ev.importance, text: ev.message, kind: 'event' },

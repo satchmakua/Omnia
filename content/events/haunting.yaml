@@ -1,0 +1,9 @@
+# The restless dead are seen abroad — a dread settles over the whole town.
+id: "haunting"
+name: "A Haunting"
+category: "paranormal"
+chancePerDay: 0.003
+importance: 0.75
+effect: "haunting"
+message: "The restless dead were seen abroad — a dread settled over the town."
+minPopulation: 4

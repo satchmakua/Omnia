@@ -1,0 +1,10 @@
+# Lights in the sky take one of the folk — and return them, changed. A mark on the soul,
+# not a death: the abductee carries an impossible memory ever after.
+id: "abduction"
+name: "Lights in the Sky"
+category: "paranormal"
+chancePerDay: 0.0025
+importance: 0.8          # an impossible thing — a Chronicle legend
+effect: "abduction"
+message: "Lights descended in the night and took one of the folk — who returned, changed."
+minPopulation: 6

@@ -1,0 +1,9 @@
+# Raw magic floods the land — every mage is overcharged and marked by the surge.
+id: "wild_magic"
+name: "Wild Magic Surge"
+category: "paranormal"
+chancePerDay: 0.0025
+importance: 0.8
+effect: "wild_magic"
+message: "A wild surge of magic flooded the land — the mages felt it course through them."
+minPopulation: 1
