@@ -1,9 +1,7 @@
-# Dress heavy beams — a practised hand (skill 2).
 id: "beam"
 name: "Dress beams"
 profession: "laborer"
-inputs: { timber: 4 }
+inputs: { timber: 3 }
 output: "beam"
-outputQty: 1
-minSkill: 2
-skillGain: 0.1
+minSkill: 1
+skillGain: 0.15

@@ -43,12 +43,15 @@ export function runCraftSystem(world: World, cfg: SimConfig, content: Content): 
     let craft = world.getComponent<Crafting>(e, C_CRAFTING);
     const skill = craft?.skill ?? 0;
 
-    // The most advanced recipe they can both afford (skill) and supply (materials).
+    // Their BEST recipe — the most advanced their skill has earned. A crafter SAVES materials
+    // for it rather than squandering them on lesser work (so a master smith banks ore for a
+    // blade instead of endlessly tapping out basic tools). If they can't yet afford it, they
+    // gather more and wait (and so never craft the cheap good once they've outgrown it).
     let pick: Recipe | undefined;
     for (const r of profRecipes) {
-      if (r.minSkill <= skill && hasInputs(inv, r) && (!pick || r.minSkill > pick.minSkill)) pick = r;
+      if (r.minSkill <= skill && (!pick || r.minSkill > pick.minSkill)) pick = r;
     }
-    if (!pick) continue;
+    if (!pick || !hasInputs(inv, pick)) continue;
 
     for (const id in pick.inputs) takeItem(inv, id, pick.inputs[id]);
     addItem(inv, pick.output, pick.outputQty, cfg.inventoryMaxPerItem);

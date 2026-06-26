@@ -1,9 +1,8 @@
-# Build a shield — the timberwright's masterwork (skill 4).
+# The timberwright's masterwork — a shield (skill 2).
 id: "shield"
 name: "Build a shield"
 profession: "laborer"
-inputs: { timber: 5 }
+inputs: { timber: 3 }
 output: "shield"
-outputQty: 1
-minSkill: 4
+minSkill: 2
 skillGain: 0.08

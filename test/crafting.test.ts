@@ -73,22 +73,33 @@ describe('CraftSystem (M23)', () => {
     const inv = w.getComponent<Inventory>(e, C_INVENTORY)!;
     expect(itemCount(inv, 'timber')).toBe(3);                 // 2 consumed
     expect(itemCount(inv, 'plank')).toBe(1);                  // 1 produced
-    expect(w.getComponent<Crafting>(e, C_CRAFTING)!.skill).toBeCloseTo(0.12, 5);   // learn-by-doing
+    expect(w.getComponent<Crafting>(e, C_CRAFTING)!.skill).toBeCloseTo(0.15, 5);   // learn-by-doing
   });
 
-  it('skill gates the advanced recipe: a novice cannot dress beams, a master can', () => {
+  it('skill gates each rung of the ladder: novice→plank, journeyman→beam, master→shield', () => {
+    // A novice (skill 0) makes the basic good and nothing finer.
     const novice = craftWorld();
-    const n = crafter(novice, 'laborer', { timber: 10 });     // skill 0
+    const n = crafter(novice, 'laborer', { timber: 10 });
     runCraftSystem(novice, cfg, content);
-    expect(itemCount(novice.getComponent<Inventory>(n, C_INVENTORY)!, 'beam')).toBe(0);   // beam needs skill 3
-    expect(itemCount(novice.getComponent<Inventory>(n, C_INVENTORY)!, 'plank')).toBe(1);  // makes a plank instead
+    expect(itemCount(novice.getComponent<Inventory>(n, C_INVENTORY)!, 'plank')).toBe(1);
+    expect(itemCount(novice.getComponent<Inventory>(n, C_INVENTORY)!, 'beam')).toBe(0);
 
+    // A journeyman (skill 1) dresses a beam — their best earned recipe.
+    const jw = craftWorld();
+    const j = crafter(jw, 'laborer', { timber: 10 }, 1);
+    runCraftSystem(jw, cfg, content);
+    expect(itemCount(jw.getComponent<Inventory>(j, C_INVENTORY)!, 'beam')).toBe(1);   // 3 timber
+    expect(itemCount(jw.getComponent<Inventory>(j, C_INVENTORY)!, 'timber')).toBe(7);
+
+    // A master (skill 2) builds a shield — the equipment, the pinnacle (saving for it, not
+    // squandering timber on lesser work).
     const master = craftWorld();
-    const m = crafter(master, 'laborer', { timber: 10 }, 3);  // skilled
+    const m = crafter(master, 'laborer', { timber: 10 }, 2);
     runCraftSystem(master, cfg, content);
     const inv = master.getComponent<Inventory>(m, C_INVENTORY)!;
-    expect(itemCount(inv, 'beam')).toBe(1);                   // the master dresses a beam (the most advanced)
-    expect(itemCount(inv, 'timber')).toBe(6);                 // 4 consumed
+    expect(itemCount(inv, 'shield')).toBe(1);                 // the master's armour
+    expect(itemCount(inv, 'timber')).toBe(7);                 // 3 consumed
+    expect(itemCount(inv, 'beam')).toBe(0);                   // no lesser work
   });
 
   it('no materials → no craft; an off-day-boundary tick → nothing', () => {
