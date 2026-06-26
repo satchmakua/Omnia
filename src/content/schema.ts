@@ -214,6 +214,38 @@ export const WorldEventSchema = z.object({
 
 export type WorldEvent = z.infer<typeof WorldEventSchema>;
 
+// ── Good (M23) ──────────────────────────────────────────────────────────────────
+// A crafted item — the OUTPUT of a recipe (planks, tools, blades, …). Materials (the raw
+// resource ids) are the inputs; goods are what crafting makes of them. `value` is gold worth
+// (for trade, slice 3); `category` lets later slices give a class of good a mechanical effect
+// (weapon/armour → combat). Carried in the same `Inventory` bag as materials.
+export const GoodSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  category: z.enum(['ware', 'tool', 'weapon', 'armour']).default('ware'),
+  value: z.number().min(0).default(1),
+  power: z.number().min(0).default(0),   // combat bonus when equipped (weapon → damage, armour → soak) (M23 s3)
+}).strict();
+
+export type Good = z.infer<typeof GoodSchema>;
+
+// ── Recipe (M23) ────────────────────────────────────────────────────────────────
+// A crafting recipe: a profession turns carried materials/goods (`inputs`) into a `output`
+// good, gated by the crafter's skill. Data declares the recipe; the CraftSystem implements
+// *how* it is crafted (consume inputs → produce output → grow skill, learn-by-doing).
+export const RecipeSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  profession: z.string().min(1),                              // the profession that crafts this
+  inputs: z.record(z.string().min(1), z.number().positive()), // material/good id → quantity consumed
+  output: z.string().min(1),                                  // good id produced
+  outputQty: z.number().positive().default(1),
+  minSkill: z.number().min(0).default(0),                     // craft skill required to attempt it
+  skillGain: z.number().min(0).default(0.1),                  // skill gained per craft (learn-by-doing)
+}).strict();
+
+export type Recipe = z.infer<typeof RecipeSchema>;
+
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
 export const FOLDER_SCHEMAS = {
@@ -228,6 +260,8 @@ export const FOLDER_SCHEMAS = {
   cultures: CultureSchema,
   tech: TechSchema,
   events: WorldEventSchema,
+  goods: GoodSchema,
+  recipes: RecipeSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

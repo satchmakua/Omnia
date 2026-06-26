@@ -1,0 +1,6 @@
+# A forged blade — a master smith's weapon. Keen enough to matter in a fight.
+id: "blade"
+name: "Blade"
+category: "weapon"
+value: 20
+power: 3

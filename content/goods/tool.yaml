@@ -1,0 +1,5 @@
+# Crude iron tools, hammered from ore.
+id: "tool"
+name: "Tools"
+category: "tool"
+value: 5

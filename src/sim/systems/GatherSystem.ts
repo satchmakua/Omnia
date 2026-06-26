@@ -35,8 +35,9 @@ export function runGatherSystem(world: World, cfg: SimConfig): void {
     const before = res.amount;
     res.amount = Math.max(0, res.amount - gatherPerTick);
     // The worker keeps what they extracted (M23): the raw material goes into their bag,
-    // bounded by the carrying cap. Crafting consumes it into goods (slice 2).
-    addItem(ensureInventory(world, e), res.typeId, before - res.amount, cfg.inventoryMaxPerItem);
+    // scaled to usable units (`materialYield`) and bounded by the carrying cap. Crafting
+    // consumes it into goods (slice 2); node depletion above is unchanged.
+    addItem(ensureInventory(world, e), res.typeId, (before - res.amount) * cfg.materialYield, cfg.inventoryMaxPerItem);
     if (res.amount <= 0 && !res.renewable) exhausted.push({ e: nodeE, res, x: pos.x, y: pos.y });
   }
 

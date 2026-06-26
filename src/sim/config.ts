@@ -106,6 +106,8 @@ export interface SimConfig {
   gatherPerDay: number;                // how fast one worker depletes a resource node
   // Inventory & crafting (M23):
   inventoryMaxPerItem: number;         // carrying cap per material/good — keeps inventories bounded
+  materialYield: number;               // material units banked per unit of node depleted (so a day of
+                                       //   gathering yields enough to craft; node depletion is unchanged)
   // The soul / memory (M5):
   workingMemorySize: number;           // raw-memory high-water mark; rollup triggers above this
   reflectionIntervalDays: number;      // min sim-days between an agent's reflections
@@ -305,6 +307,7 @@ export const defaultConfig: SimConfig = {
   childMageAptitudeChance: 0.25,  // heritable but diluting — magic stays uncommon
   gatherPerDay: 0.3,
   inventoryMaxPerItem: 20,         // a worker carries up to ~20 units of any one material
+  materialYield: 12,               // a day on a node banks ~enough to keep a crafter working
   workingMemorySize: 30,
   reflectionIntervalDays: 30,
   maxReflectionsPerTick: 2,

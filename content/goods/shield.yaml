@@ -1,0 +1,6 @@
+# A stout timber shield — a master's armour. Turns a blow aside.
+id: "shield"
+name: "Shield"
+category: "armour"
+value: 16
+power: 3
