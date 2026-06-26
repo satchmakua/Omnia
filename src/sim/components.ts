@@ -37,6 +37,7 @@ export const C_LANGUAGESTORE = 'LanguageStore'; // singleton: live languages (sr
 export const C_RELIGIONSTORE = 'ReligionStore'; // singleton: live religions / faiths (src/religion/religionStore.ts) (M18)
 export const C_MARKET     = 'Market';     // singleton: the staple-goods market — price floats with supply/demand (M15)
 export const C_ACHIEVEMENTS = 'Achievements'; // singleton: civ + agent milestones that have fired (M17 s4)
+export const C_FIGURES      = 'Figures';      // singleton: historical figures enshrined by their deeds (M20)
 
 export interface Position {
   x: number;
@@ -234,6 +235,21 @@ export interface Achievement {
 }
 export interface AchievementsData {
   unlocked: Achievement[];
+}
+
+// A historical figure (M20): a soul enshrined in memory for a notable deed — a slayer, a
+// tyrant, an archmage, a venerable elder. Enshrined once while living and kept after death
+// (resolve the living via the entity id; the dead via their Tombstone). Bounded.
+export interface HistoricalFigure {
+  id: number;            // the agent's entity id (alive ⇒ Agent; dead ⇒ Tombstone)
+  name: string;
+  epithet: string;       // "the Slayer", "the Cruel", "the Archmage", "the Elder", …
+  basis: string;         // a short why ("slew 11 foes")
+  bornTick: number;
+  enshrinedTick: number;
+}
+export interface FiguresData {
+  figures: HistoricalFigure[];
 }
 
 // The town's staple-goods market (M15): a single price that floats with supply (what the
