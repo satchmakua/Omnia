@@ -1,0 +1,13 @@
+# Bergmund Hearths — the halfling hill-folk of the hearty tongue: close-knit,
+# peaceable, and custom-loving. Share readily, slow to war, fond of the old feasts
+# and songs; welcoming to a fault.
+id: "bergmund_hearths"
+name: "Bergmund Hearths"
+language: "bergmund"
+values:
+  communal: 0.72       # close-knit; share readily
+  martial: 0.22        # peaceable to a fault
+  traditional: 0.68    # custom-bound, festival-loving
+  open: 0.60           # welcoming of outsiders
+practices: ["hearth-feast", "harvest-song"]
+cohesion: 0.58

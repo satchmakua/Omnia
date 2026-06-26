@@ -1,0 +1,13 @@
+# Sylvaen — a melodic romance tongue of the elves (open syllables, liquids, soft
+# fricatives and bright double-vowels). Inspired by Spanish/Italian with an elven
+# lilt: vowel-rich, flowing, easy on the ear. Spoken by the elven courts.
+id: "sylvaen"
+name: "Sylvaen"
+phonemes:
+  consonants: ["l", "n", "r", "v", "s", "m", "th"]
+  vowels: ["a", "e", "i", "o", "ae"]         # the "ae" dipthong lends the elven lilt
+syllableShapes: ["CV", "CVC", "V"]           # open & vowel-bright — flows like Italian
+namePatterns:
+  personal: ["{syl}{syl}", "{syl}{syl}{syl}"]
+  family: ["{syl}{syl}", "{syl}-{syl}"]
+soundChangeRate: 0.08   # elves are long-lived → their tongue drifts slowly

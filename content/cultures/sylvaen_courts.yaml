@@ -1,0 +1,13 @@
+# Sylvaen Courts — the elven folk of the melodic tongue: refined, ancient, and set
+# in their ways, yet not closed to the world. Individual artistry over the commune;
+# slow to war; deeply traditional; their long memory makes them slow to change.
+id: "sylvaen_courts"
+name: "Sylvaen Courts"
+language: "sylvaen"
+values:
+  communal: 0.40       # personal artistry & standing prized
+  martial: 0.30        # slow to war
+  traditional: 0.80    # ancient, custom-bound
+  open: 0.45           # aloof, but curious of the world
+practices: ["star-lore", "grove-rite"]
+cohesion: 0.80         # long memory → strongly resists drift
