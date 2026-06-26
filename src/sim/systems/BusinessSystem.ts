@@ -10,8 +10,10 @@ import type { Clock, Business, Job, Market } from '../components.ts';
 import { findPassableTile } from '../../world/tilemap.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
 import type { SimConfig } from '../config.ts';
+import { seasonGrowthFactor } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
+import { farmSupplyOf } from '../market.ts';
 import { spawnBusiness } from '../../world/spawn.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 
@@ -50,7 +52,7 @@ export function runBusinessSystem(world: World, cfg: SimConfig, rng: RNG, conten
   const mEnts = world.query(C_MARKET);
   if (!mEnts.length) return;
   const market = world.getComponent<Market>(mEnts[0], C_MARKET)!;
-  const farmSupply = market.supply - cfg.baseForagedProvisions;
+  const farmSupply = farmSupplyOf(market.supply, cfg, seasonGrowthFactor(clock.tick, cfg));
   if (farmSupply >= market.demand || !allFull || foodCount >= cfg.maxFarms) return;
 
   const def = content.professions.all().find(p => p.producesFood);

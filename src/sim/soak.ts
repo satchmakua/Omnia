@@ -13,7 +13,7 @@ import {
 } from './components.ts';
 import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock, Market, Combat, Crime } from './components.ts';
 import type { SimConfig } from './config.ts';
-import { ageInYears } from './config.ts';
+import { ageInYears, calendarOf } from './config.ts';
 import { isPassable } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { wealthStats } from './wealth.ts';
@@ -144,12 +144,13 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       const c = world.getComponent<Crime>(e, C_CRIME)!; outlaws++; thefts += c.thefts; assaults += c.assaults; murders += c.murders;
     }
     const marker = inv > 0 ? ' *** VIOLATION ***' : '';
+    const season = calendarOf(clock.tick, cfg).season;
     const mix = Object.entries(bySpecies).map(([k, v]) => `${k}=${v}`).join(' ');
     console.log(
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) tribes=${tribes}(wars=${wars}) tech=T${maxTier}/${maxTechs} faiths=${faiths} drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt} food=${mkt ? mkt.price.toFixed(1) : '—'}g(s/d ${mkt ? mkt.supply.toFixed(0) : '?'}/${mkt ? mkt.demand.toFixed(0) : '?'}) biz=${bizEnts.length}(farm=${foodBiz}) vets=${vets}(scars=${scars} kills=${kills}) crime=${outlaws}out(t=${thefts} a=${assaults} m=${murders})  invalid=${inv}${marker}`,
+      `${season.padEnd(6)} fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) tribes=${tribes}(wars=${wars}) tech=T${maxTier}/${maxTechs} faiths=${faiths} drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt} food=${mkt ? mkt.price.toFixed(1) : '—'}g(s/d ${mkt ? mkt.supply.toFixed(0) : '?'}/${mkt ? mkt.demand.toFixed(0) : '?'}) biz=${bizEnts.length}(farm=${foodBiz}) vets=${vets}(scars=${scars} kills=${kills}) crime=${outlaws}out(t=${thefts} a=${assaults} m=${murders})  invalid=${inv}${marker}`,
     );
   }
 }

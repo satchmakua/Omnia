@@ -66,6 +66,14 @@ export interface SimConfig {
   religionSchismChancePerEra: number;  // per-era chance a large, loose faith fractures into a sect
   minFaithFollowers: number;           // a faith needs at least this many followers to spawn a sect
   conversionChancePerDay: number;      // daily chance a folk beside a more-devout faith adopts it (faith spreads)
+  // Seasons (M19): a per-season abundance multiplier on plant growth and the foraged
+  // commons — spring/summer quicken the land, autumn cools, winter is lean. Tuned to
+  // average ~1.0 over the year so the annual food balance is unchanged; within a year
+  // the food supply (and so the market price) breathes with the seasons.
+  seasonGrowthSpring: number;
+  seasonGrowthSummer: number;
+  seasonGrowthAutumn: number;
+  seasonGrowthWinter: number;
   // Capabilities / magic (M3 part 2):
   magicManaMax: number;                // mana pool size for aptitude-gifted agents
   manaRegenPerDay: number;             // mana regenerated per in-sim day
@@ -191,6 +199,18 @@ export function calendarOf(tick: number, cfg: SimConfig): { year: number; season
   };
 }
 
+// The seasonal abundance multiplier at a given tick (M19): how lush the land is this
+// season, applied to plant growth (FloraSystem) and the foraged commons (the market).
+// One source of truth so ecology and the food economy breathe together.
+export function seasonGrowthFactor(tick: number, cfg: SimConfig): number {
+  switch (calendarOf(tick, cfg).season) {
+    case 'Spring': return cfg.seasonGrowthSpring;
+    case 'Summer': return cfg.seasonGrowthSummer;
+    case 'Autumn': return cfg.seasonGrowthAutumn;
+    default:       return cfg.seasonGrowthWinter;   // Winter
+  }
+}
+
 // Typed default tunables — the schema + fallback for the YAML loader (M9). The live
 // authoritative config is `config/simulation.yaml` (loaded at startup, merged over
 // these); these values are what it ships mirroring, and the fallback for any key it omits.
@@ -252,6 +272,10 @@ export const defaultConfig: SimConfig = {
   religionSchismChancePerEra: 0.4, // faiths fracture into sects now and then over deep time
   minFaithFollowers: 8,
   conversionChancePerDay: 0.05,    // faith spreads by contact — a devout neighbour wins the odd convert
+  seasonGrowthSpring: 1.3,         // the lush season — plants surge, foraging is easy
+  seasonGrowthSummer: 1.2,
+  seasonGrowthAutumn: 0.9,
+  seasonGrowthWinter: 0.6,         // the lean season — growth stalls, food gets dear (avg of the four ≈ 1.0)
   magicManaMax: 100,
   manaRegenPerDay: 10,
   daysPerYear: 4,

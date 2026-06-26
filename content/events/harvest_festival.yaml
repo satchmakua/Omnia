@@ -1,0 +1,10 @@
+# The autumn harvest home — the granaries are filled before the lean winter.
+id: "harvest_festival"
+name: "Harvest Home"
+category: "seasonal"
+season: "Autumn"
+chancePerDay: 0.5
+importance: 0.5
+effect: "bountiful_harvest"
+message: "Harvest Home — the autumn fields were gathered in before the winter."
+minPopulation: 4

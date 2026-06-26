@@ -25,7 +25,10 @@ export function getMarket(world: World): Market | undefined {
 // Today's supply and demand. Demand: each adult eats one ration (children are fed as
 // dependents — they don't transact, per the Kids Pass). Supply: the rations the town
 // produces — its food-workers' output plus the foraged baseline.
-export function measureSupplyDemand(world: World, cfg: SimConfig): { supply: number; demand: number } {
+// `forageFactor` (M19) scales the wild-foraged commons with the season — lean in winter,
+// plentiful in summer — so the food supply (and price) breathes with the year. Defaults to
+// 1 (season-neutral) so callers that don't care are unaffected. Farm output is unscaled.
+export function measureSupplyDemand(world: World, cfg: SimConfig, forageFactor = 1): { supply: number; demand: number } {
   let demand = 0;
   for (const e of world.query(C_AGENT)) {
     const a = world.getComponent<Agent>(e, C_AGENT)!;
@@ -37,7 +40,7 @@ export function measureSupplyDemand(world: World, cfg: SimConfig): { supply: num
     const biz = world.getComponent<Business>(j.employer, C_BUSINESS);
     if (biz?.producesFood) foodWorkers++;
   }
-  const supply = cfg.baseForagedProvisions + foodWorkers * cfg.provisionPerFarmer;
+  const supply = cfg.baseForagedProvisions * forageFactor + foodWorkers * cfg.provisionPerFarmer;
   return { supply, demand };
 }
 
@@ -56,9 +59,15 @@ export function clearingPrice(price: number, supply: number, demand: number, cfg
 // farms' output at the market price, but never more rations than are actually eaten — so an
 // over-supplied glut leaves farms with unsold output (and thin revenue). The foraged commons
 // is self-gathered, so no business earns from it.
-export function foodSalesGold(supply: number, demand: number, price: number, cfg: SimConfig): number {
-  const farmSupply = Math.max(0, supply - cfg.baseForagedProvisions);
+export function foodSalesGold(supply: number, demand: number, price: number, cfg: SimConfig, forageFactor = 1): number {
+  const farmSupply = Math.max(0, supply - cfg.baseForagedProvisions * forageFactor);
   return Math.min(farmSupply, demand) * price;
+}
+
+// The farm-produced share of today's supply (supply minus the seasonal foraged commons).
+// One helper so the market and BusinessSystem agree on what "farm supply" means (M19).
+export function farmSupplyOf(supply: number, cfg: SimConfig, forageFactor = 1): number {
+  return Math.max(0, supply - cfg.baseForagedProvisions * forageFactor);
 }
 
 // Workers employed at each food-producing business, and the total across them all.
