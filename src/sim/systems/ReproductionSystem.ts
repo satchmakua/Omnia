@@ -14,6 +14,7 @@ import type { TileMapData } from '../../world/tilemap.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
 import { spawnAgent } from '../spawnAgent.ts';
+import { getOrgStore } from '../../org/orgStore.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
 import { emitEvent } from '../../history/eventlog.ts';
@@ -27,6 +28,7 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
   const chronEnts = world.query(C_CHRONICLE);
   const chronicle = chronEnts.length ? world.getComponent<ChronicleData>(chronEnts[0], C_CHRONICLE) : undefined;
 
+  const orgStore = getOrgStore(world);   // a child takes the mother's clan word as a surname (M20)
   let population = world.query(C_AGENT).length;
   const maxPopulation = scaledMaxPopulation(cfg);   // land-area carrying capacity (M8)
   const births: { mother: EntityId; father: EntityId; x: number; y: number; speciesId: string }[] = [];
@@ -87,10 +89,12 @@ export function runReproductionSystem(world: World, cfg: SimConfig, rng: RNG, co
     const parentMage = world.hasComponent(b.mother, C_MAGIC) || world.hasComponent(b.father, C_MAGIC);
     const aptitudeChance = parentMage ? cfg.childMageAptitudeChance : species.magicAptitudeChance;
 
-    // Patrilineal surname from the father; culture (upbringing) from the mother.
-    const surname = world.getComponent<Agent>(b.father, C_AGENT)!.surname;
+    // A child joins the mother's clan and carries its name (M20: clan = the kin-line, so the
+    // surname follows the clan); culture & faith (upbringing) likewise come from the mother.
     const cultureId = world.getComponent<Agent>(b.mother, C_AGENT)!.cultureId;
-    const orgId = world.getComponent<Agent>(b.mother, C_AGENT)!.orgId;   // a child joins the mother's tribe (M14)
+    const orgId = world.getComponent<Agent>(b.mother, C_AGENT)!.orgId;
+    const clan = orgId ? orgStore?.byId[orgId] : undefined;
+    const surname = clan?.surname ?? world.getComponent<Agent>(b.mother, C_AGENT)!.surname;
     const religionId = world.getComponent<Agent>(b.mother, C_AGENT)!.religionId;   // …and is raised in her faith (M18)
     const spot = birthTile(b.x, b.y);
     occupied.add(spot.y * W + spot.x);   // so siblings born the same tick don't stack either

@@ -111,7 +111,9 @@ export interface Agent {
 // values (→ a government), a hue-spaced colour (never red), and descend/schism over the eras.
 export interface Organization {
   id: string;
-  name: string;          // language-derived (a coined word from the founders' tongue)
+  name: string;          // language-derived (a coined word from the founders' tongue), e.g. "Rkkharur clan"
+  surname: string;       // the bare clan word — members carry it as their SURNAME (M20: clan = kin-line). So
+                         //   "House Rkkharur" and "Rkkharur clan" are one thing; a clan is both bloodline and faction.
   color: string;         // an hsl() string — hue-spaced around the wheel, never red
   government: string;    // derived from the values (chiefdom / council / theocracy / gerontocracy)
   values: { communal: number; martial: number; traditional: number; open: number };

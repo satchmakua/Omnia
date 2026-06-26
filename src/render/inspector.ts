@@ -339,16 +339,17 @@ export class Inspector {
       ${charLine}${combatLine}${eqLine}${crimeLine}`;
   }
 
-  // Allegiance (M14): the tribe this person belongs to, its government, and whether they lead it.
+  // Clan (M14/M20): the clan this person belongs to — both their kin-line (its name is their
+  // surname) and their faction (with a government). Whether they lead it.
   private _allegianceBlock(world: World, e: EntityId, agent: Agent): string {
     const store = getOrgStore(world);
     const org = agent.orgId && store ? getOrg(store, agent.orgId) : undefined;
     if (!org) return '';
     const role = org.leader === e ? ' <span style="color:#ffd27a">· leads it</span>' : '';
     return `<hr style="${RULE}">
-      <div style="${SECTION}">Allegiance</div>
-      <div><b>Tribe</b> <span style="color:${org.color}">${org.name}</span>${role}</div>
-      <div style="color:#9ab">${org.government}</div>`;
+      <div style="${SECTION}">Clan</div>
+      <div><span style="color:${org.color}">${org.name}</span>${role}</div>
+      <div style="color:#9ab">${org.government} · kin &amp; faction</div>`;
   }
 
   // Faith (M18): the religion this person follows — its deity, tenets, and their devoutness.

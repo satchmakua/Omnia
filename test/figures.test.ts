@@ -54,7 +54,7 @@ function hero(w: World, kills: number): EntityId {
   const e = w.createEntity();
   w.addComponent<Agent>(e, C_AGENT, { name: `Hero${e}`, action: 'wander', ticksAlive: 30 * ticksPerYear(cfg), wealthGoal: 50, sex: 'male', lifespanTicks: 80 * ticksPerYear(cfg) });
   w.addComponent<Combat>(e, C_COMBAT, { scars: 0, kills });
-  w.addComponent<Lineage>(e, C_LINEAGE, { partner: null, parents: [], children: [] });
+  w.addComponent<Lineage>(e, C_LINEAGE, { partner: null, parents: [], children: [], reproCooldownTicks: 0 });
   return e;
 }
 

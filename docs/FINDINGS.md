@@ -15,7 +15,13 @@ metrics are surfaced live in the in-app **Legends view (C) → "Emergent structu
 
 ## Finding 1 — Surnames are Zipfian; given names are flat *(emergent regularity)*
 
-Measured from `npm run soak` (seed 8, 40k ticks), final state:
+> **Superseded by the M20 clan merge (S80):** surnames are no longer per-lineage patrilineal
+> names — a clan's word *is* its members' surname (matrilineal), so surname vocabulary collapses
+> to the few living clans (seed 8 now: s ≈ 0.38, vocab 9). The Zipf *mechanism* below held for the
+> original patrilineal-surname model; the finding stands as a record of that model. The given-name
+> control (flat, s ≈ 0) is unchanged. (A clan-size power-law is the natural successor metric.)
+
+Measured from `npm run soak` (seed 8, 40k ticks), final state *(pre-M20 patrilineal model)*:
 
 | name kind | Zipf exponent s | r² | vocab | top share |
 |-----------|-----------------|-----|-------|-----------|

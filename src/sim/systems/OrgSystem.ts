@@ -8,6 +8,7 @@ import type { Agent, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { getOrgStore, forkOrg, pruneOrgs, areAtWar, declareWar, endWar } from '../../org/orgStore.ts';
+import { renameToClan } from '../spawnAgent.ts';
 import type { OrgStoreData } from '../../org/orgStore.ts';
 import { getCultureStore, getCulture } from '../../culture/cultureStore.ts';
 import { getLanguageStore, getLanguage } from '../../lang/languageStore.ts';
@@ -103,7 +104,11 @@ export function runOrgSystem(world: World, cfg: SimConfig, rng: RNG): void {
       const daughter = forkOrg(store, id, name, tick, cfg.schismValueNudge, rng);
       const sorted = [...mem].sort((a, b) => a - b);
       const half = Math.ceil(sorted.length / 2);
-      for (const e of sorted.slice(half)) world.getComponent<Agent>(e, C_AGENT)!.orgId = daughter;
+      for (const e of sorted.slice(half)) {
+        const a = world.getComponent<Agent>(e, C_AGENT)!;
+        a.orgId = daughter;
+        renameToClan(a, store.byId[daughter].surname);   // the breakaway takes the new clan's name (M20)
+      }
       store.byId[daughter].leader = eldest(world, sorted.slice(half));
       store.byId[id].leader = eldest(world, sorted.slice(0, half));
       emitEvent(world, 'culture', `The ${name} broke away from the ${org.name}.`);

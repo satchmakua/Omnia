@@ -79,10 +79,16 @@ export function governmentOf(v: Values): string {
   return 'gerontocracy';                          // rule of the eldest
 }
 
+// The bare clan word members carry as a surname — the name without its " clan" suffix
+// (so "Rkkharur clan" → "Rkkharur"). M20: a clan IS the family line.
+export function clanWordOf(name: string): string {
+  return name.replace(/\s+clan$/i, '').trim() || name;
+}
+
 export function createOrg(store: OrgStoreData, name: string, values: Values, cohesion: number, tick: number): string {
   const id = `org.${store.created}`;
   store.byId[id] = {
-    id, name, color: orgColor(store.created), government: governmentOf(values),
+    id, name, surname: clanWordOf(name), color: orgColor(store.created), government: governmentOf(values),
     values: { ...values }, leader: null, cohesion: clamp01(cohesion), founded: tick,
     research: 0, techs: [],
   };
@@ -98,7 +104,7 @@ export function forkOrg(store: OrgStoreData, parentId: string, name: string, tic
   for (const k of AXES) v[k] = clamp01(v[k] + (rng() * 2 - 1) * nudge);
   const id = `${parentId}.d${tick}`;
   store.byId[id] = {
-    id, name, color: orgColor(store.created), government: governmentOf(v),
+    id, name, surname: clanWordOf(name), color: orgColor(store.created), government: governmentOf(v),
     values: v, leader: null, cohesion: clamp01(parent.cohesion + 0.1), founded: tick, parent: parentId,
     research: 0, techs: [...(parent.techs ?? [])], tier: parent.tier ?? 1,   // the faction keeps what the tribe knew (M17)
     effects: { ...(parent.effects ?? {}) },
