@@ -1,12 +1,12 @@
 import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC,
+  C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
   C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
 import { socialClassOf } from '../sim/society.ts';
@@ -113,6 +113,8 @@ export class Inspector {
       body = this._business(world, entity, pos);
     } else if (world.hasComponent(entity, C_HOME)) {
       body = this._home(world, entity, pos);
+    } else if (world.hasComponent(entity, C_RUIN)) {
+      body = this._ruin(world, entity, pos);
     } else if (world.hasComponent(entity, C_CIVIC)) {
       body = this._civic(world, entity, pos);
     } else if (world.hasComponent(entity, C_FAUNA)) {
@@ -418,6 +420,20 @@ export class Inspector {
       <div style="${SECTION}">Home</div>
       <div><b>Owner</b> ${ownerName}</div>
       <div style="color:#889">Built in year ${builtYear}</div>`;
+  }
+
+  private _ruin(world: World, e: EntityId, pos: Position): string {
+    const r = world.getComponent<Ruin>(e, C_RUIN)!;
+    const builtYear = Math.floor(r.sinceTick / (defaultConfig.ticksPerDay * defaultConfig.daysPerYear));
+    return `
+      ${this.title('Ruins', 'a site of the past · archaeology')}
+      ${this.terrainLine(world, pos)}
+      <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
+      <hr style="${RULE}">
+      <div style="${SECTION}">Ruin</div>
+      <div style="color:#cbb89a">${r.what}</div>
+      <div style="color:${r.discovered ? '#8fe0a0' : '#998'}">${r.discovered ? 'uncovered' : 'unexplored — a folk may yet stumble on it'}</div>
+      <div style="color:#889;font-size:11px">appeared in year ${builtYear}</div>`;
   }
 
   private _civic(world: World, e: EntityId, pos: Position): string {

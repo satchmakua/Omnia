@@ -2,11 +2,11 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
-  C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME, C_CIVIC,
+  C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
   C_CLOCK, C_TILEMAP, C_EVENTLOG,
 } from '../sim/components.ts';
 import type {
-  Position, Agent, Health, Flora, Fauna, Resource, Business, Clock,
+  Position, Agent, Health, Flora, Fauna, Resource, Business, Clock, Ruin,
 } from '../sim/components.ts';
 import type { EventLogData } from '../history/eventlog.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -243,6 +243,11 @@ export class Renderer {
       const p = world.getComponent<Position>(e, C_POSITION)!;
       this.iconCivic(p.x, p.y, CATEGORY_COLOR.civic);
     }
+    for (const e of world.query(C_RUIN, C_POSITION)) {       // ruins of the past (M20 s2b)
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      const ruin = world.getComponent<Ruin>(e, C_RUIN)!;
+      this.iconRuin(p.x, p.y, ruin.discovered);
+    }
     for (const e of world.query(C_FAUNA, C_POSITION)) {
       const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
@@ -464,6 +469,18 @@ export class Renderer {
     });
   }
 
+  // A ruin: broken stubs of fallen columns. Brighter once discovered, faint while still buried.
+  private iconRuin(gx: number, gy: number, discovered: boolean): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 1, () => {
+      ctx.fillStyle = discovered ? CATEGORY_COLOR.ruin : 'rgba(140,130,112,0.45)';
+      ctx.fillRect(-7, -1, 3, 7);    // a stub
+      ctx.fillRect(-1, -5, 3, 11);   // a taller broken column
+      ctx.fillRect(5, 0, 3, 6);      // a low remnant
+      ctx.fillRect(-8, 6, 16, 2);    // the fallen base
+    });
+  }
+
   private drawHud(world: World, clockEntity: EntityId, elapsedMs: number): void {
     const { ctx } = this;
     const clock = world.getComponent<Clock>(clockEntity, C_CLOCK)!;
@@ -505,7 +522,7 @@ export class Renderer {
       return null;
     };
 
-    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_CIVIC) ?? at(C_RESOURCE) ?? at(C_FLORA);
+    const hit = at(C_AGENT) ?? at(C_FAUNA) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_CIVIC) ?? at(C_RUIN) ?? at(C_RESOURCE) ?? at(C_FLORA);
     if (hit !== null) this.onEntityClick?.(hit);
     return hit;
   }

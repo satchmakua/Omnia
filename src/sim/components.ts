@@ -39,6 +39,7 @@ export const C_MARKET     = 'Market';     // singleton: the staple-goods market 
 export const C_ACHIEVEMENTS = 'Achievements'; // singleton: civ + agent milestones that have fired (M17 s4)
 export const C_FIGURES      = 'Figures';      // singleton: historical figures enshrined by their deeds (M20)
 export const C_ARTIFACTS    = 'Artifacts';    // singleton: named legendary items with histories (M20 s2)
+export const C_RUIN         = 'Ruin';         // a discoverable site of the past — a fallen clan / lost relic (M20 s2b)
 
 export interface Position {
   x: number;
@@ -124,6 +125,7 @@ export interface Organization {
   parent?: string;       // the tribe it split from (schism descent)
   extinct?: boolean;     // no living members — a fallen tribe, kept for the family tree
   diedTick?: number;
+  ruined?: boolean;      // a ruin has been placed for this fallen clan (M20 s2b) — so it's placed once
   research?: number;     // accumulated research points toward the next tech (M17)
   techs?: string[];      // tech ids this tribe has unlocked, in discovery order (M17)
   tier?: number;         // highest tech tier reached (1 tribal … 7 sci-fi) — denormalized for display (M17)
@@ -269,9 +271,23 @@ export interface Artifact {
   deeds: string;         // a one-line history ("a master smith's blade · 9 foes slain")
   lost?: boolean;
   lostTick?: number;
+  ruined?: boolean;        // a cairn has been placed for this lost relic (M20 s2b) — placed once
+  rediscoveredTick?: number; // a folk unearthed it again (archaeology)
 }
 export interface ArtifactsData {
   artifacts: Artifact[];
+}
+
+// A ruin (M20 s2b): a static map site marking a vanished thing — the seat of a fallen clan, or
+// a cairn where a relic was lost. Undiscovered until a wandering folk stumbles on it; then it
+// enters the histories (and a relic-cairn yields its relic, rediscovered). Bounded; placed on a
+// free tile. A pure marker — no behaviour, so it never perturbs the sim.
+export interface Ruin {
+  what: string;          // "the ruins of the Drass clan" / "a cairn where Robtu was lost"
+  discovered: boolean;
+  sinceTick: number;     // when the ruin appeared
+  discoveredTick?: number;
+  relicName?: string;    // the lost relic this cairn holds (rediscovered on discovery)
 }
 
 // The town's staple-goods market (M15): a single price that floats with supply (what the
