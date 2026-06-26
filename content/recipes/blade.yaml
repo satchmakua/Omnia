@@ -1,9 +1,8 @@
-# Forge a blade — the smith's masterwork (skill 4).
+# The smith's masterwork — a forged blade (skill 2).
 id: "blade"
 name: "Forge a blade"
 profession: "miner"
-inputs: { ore: 4 }
+inputs: { ore: 3 }
 output: "blade"
-outputQty: 1
-minSkill: 4
+minSkill: 2
 skillGain: 0.08

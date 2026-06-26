@@ -1,9 +1,7 @@
-# Wrought fine tools — a skilled smith's work (skill 2).
 id: "fine_tool"
 name: "Wright fine tools"
 profession: "miner"
 inputs: { ore: 3 }
 output: "fine_tool"
-outputQty: 1
-minSkill: 2
-skillGain: 0.1
+minSkill: 1
+skillGain: 0.15

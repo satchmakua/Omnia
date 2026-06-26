@@ -2,11 +2,11 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
 import { socialClassOf } from '../sim/society.ts';
@@ -329,11 +329,14 @@ export class Inspector {
       crm.thefts ? `${crm.thefts} ${crm.thefts === 1 ? 'theft' : 'thefts'}` : '',
     ].filter(Boolean).join(', ') : '';
     const crimeLine = crimeBits ? `<div style="color:#ff8a8a;margin-top:3px">⚖ an outlaw — ${crimeBits}</div>` : '';
+    const eq = world.getComponent<Equipment>(e, C_EQUIPMENT);
+    const eqBits = eq ? [eq.weapon > 0 ? `a weapon (+${eq.weapon})` : '', eq.armour > 0 ? `armour (+${eq.armour})` : ''].filter(Boolean).join(', ') : '';
+    const eqLine = eqBits ? `<div style="color:#9ec6e0;margin-top:3px">⚔ equipped — ${eqBits}</div>` : '';
     return `<hr style="${RULE}">
       <div style="${SECTION}">Body &amp; character</div>
       <div style="line-height:1.9">${score('STR', b.str)}${score('DEX', b.dex)}${score('CON', b.con)}<br>${score('INT', b.int)}${score('WIS', b.wis)}${score('CHA', b.cha)}</div>
       <div style="color:#9ab;margin-top:3px">${b.heightCm}cm · ${buildWord(b)} build · ${eyeColour(b)} eyes · ${hairColour(b)} hair</div>
-      ${charLine}${combatLine}${crimeLine}`;
+      ${charLine}${combatLine}${eqLine}${crimeLine}`;
   }
 
   // Allegiance (M14): the tribe this person belongs to, its government, and whether they lead it.
