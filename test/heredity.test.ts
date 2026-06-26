@@ -5,7 +5,7 @@ import { World } from '../src/sim/ecs.ts';
 import { createRNG } from '../src/sim/rng.ts';
 import {
   rollBody, inheritBody, charismaWarmth, rollAlignment, inheritAlignment, alignmentName, alignmentWarmth,
-  rollPersonality, inheritPersonality, traitGoalFactor,
+  lawCrimeFactor, rollPersonality, inheritPersonality, traitGoalFactor,
 } from '../src/sim/heredity.ts';
 import {
   C_AGENT, C_MEMORY, C_CLOCK, C_AIRECORD, C_ALIGNMENT, C_PERSONALITY, C_NEEDS, C_JOB, C_WALLET,
@@ -100,6 +100,24 @@ describe('alignment (M13)', () => {
     expect(goodSum / N).toBeGreaterThan(0);   // leans good on average
   });
 
+  it('the roll populates the whole 9-grid — not just True Neutral', () => {
+    const rng = createRNG(7);
+    const seen = new Map<string, number>();
+    const N = 600;
+    for (let i = 0; i < N; i++) {
+      const name = alignmentName(rollAlignment(rng));
+      seen.set(name, (seen.get(name) ?? 0) + 1);
+    }
+    // A real spread: most of the nine cells appear, including the extremes on each axis.
+    expect(seen.size).toBeGreaterThanOrEqual(7);
+    const has = (re: RegExp) => [...seen.keys()].some(k => re.test(k));
+    expect(has(/Evil/)).toBe(true);       // villains exist now
+    expect(has(/Lawful/)).toBe(true);     // the law axis is no longer stuck at Neutral
+    expect(has(/Chaotic/)).toBe(true);
+    // True Neutral is common but not the whole town (was ~100% before the fix).
+    expect((seen.get('True Neutral') ?? 0) / N).toBeLessThan(0.5);
+  });
+
   it('children inherit the parental lean (good parents → good-leaning children)', () => {
     const rng = createRNG(3);
     const a: Alignment = { good: 0.8, law: 0.5 }, b: Alignment = { good: 0.7, law: 0.4 };
@@ -120,6 +138,14 @@ describe('alignment (M13)', () => {
     expect(alignmentWarmth(1, 1)).toBeGreaterThan(1);
     expect(alignmentWarmth(-1, -1)).toBeLessThan(1);
     expect(alignmentWarmth(1, 1)).toBeLessThanOrEqual(1.3);
+  });
+
+  it('lawCrimeFactor: the chaotic offend more readily, the lawful less, bounded', () => {
+    expect(lawCrimeFactor(0)).toBeCloseTo(1, 6);      // neutral → no change
+    expect(lawCrimeFactor(-1)).toBeGreaterThan(1);    // chaotic → more crime
+    expect(lawCrimeFactor(1)).toBeLessThan(1);        // lawful → less crime
+    expect(lawCrimeFactor(-1)).toBeLessThanOrEqual(1.6);
+    expect(lawCrimeFactor(1)).toBeGreaterThanOrEqual(0.4);
   });
 
   it('alignment shifts with the life lived (the DoD test): bonds → good, loss → harder', () => {

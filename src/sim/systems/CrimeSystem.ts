@@ -14,6 +14,7 @@ import type { SimConfig } from '../config.ts';
 import { ageInYears, ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { earn } from '../economy.ts';
+import { lawCrimeFactor } from '../heredity.ts';
 import { combatantOf, rollAttack, markCombat } from '../combat.ts';
 import { killAgent } from '../death.ts';
 import { emitEvent } from '../../history/eventlog.ts';
@@ -28,7 +29,12 @@ function markCrime(world: World, e: EntityId, kind: 'theft' | 'assault' | 'murde
   if (!c) { c = { thefts: 0, assaults: 0, murders: 0 }; world.addComponent<Crime>(e, C_CRIME, c); }
   if (kind === 'theft') c.thefts++; else if (kind === 'assault') c.assaults++; else c.murders++;
 }
-function harden(al: Alignment, d: number): void { al.good = Math.max(-1, al.good - d); }
+// Crime darkens the soul AND loosens it from order — repeat offenders drift toward Chaotic
+// Evil over a criminal life (an emergent villain's arc, D26), not just darker on one axis.
+function harden(al: Alignment, d: number): void {
+  al.good = Math.max(-1, al.good - d);
+  al.law = Math.max(-1, al.law - d * 0.5);
+}
 
 export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const clockEnts = world.query(C_CLOCK);
@@ -76,7 +82,8 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const wicked = al.good < cfg.crimeAlignmentThreshold;
     const desperate = wallet.debt > 0 && al.good < 0.4;
     if (!wicked && !desperate) continue;
-    if (rng() >= cfg.crimeChancePerDay * (wicked ? 2 : 1)) continue;
+    // The lawful resist, the chaotic indulge (D26): law scales the offend chance.
+    if (rng() >= cfg.crimeChancePerDay * (wicked ? 2 : 1) * lawCrimeFactor(al.law)) continue;
 
     const victim = nearby(e, 3, () => true);   // a mark somewhere in the vicinity
     if (victim === null) continue;

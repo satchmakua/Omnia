@@ -59,16 +59,21 @@ export function charismaWarmth(chaA: number, chaB: number): number {
 // ── Alignment (M13) ───────────────────────────────────────────────────────────────
 const clampPN = (x: number): number => Math.max(-1, Math.min(1, x));
 
-// A founder's alignment: baseline neutral-leaning-good with a small innate lean on each axis.
+// A founder's alignment. The spread must be wide enough to actually populate the 9-grid:
+// the old ±0.3 roll never crossed the ±0.33 naming threshold on `law` (so everyone read
+// "True Neutral") and almost never reached Evil. This gives a benevolent lean on good —
+// more saints than villains, but real villains exist — and a FULL lawful↔chaotic spread,
+// so towns show the whole alignment chart (~1/3 True Neutral, the rest a real mix).
 export function rollAlignment(rng: RNG): Alignment {
-  return { good: clampPN(0.1 + (rng() * 2 - 1) * 0.3), law: clampPN((rng() * 2 - 1) * 0.3) };
+  return { good: clampPN(0.08 + (rng() * 2 - 1) * 0.55), law: clampPN((rng() * 2 - 1) * 0.6) };
 }
 
-// A child inherits the parental lean (+ variation) on both axes.
+// A child inherits the parental lean (+ variation) on both axes — enough variation that a
+// lineage still spreads across the grid rather than collapsing to one cell.
 export function inheritAlignment(rng: RNG, a: Alignment, b: Alignment): Alignment {
   return {
-    good: clampPN((a.good + b.good) / 2 + (rng() * 2 - 1) * 0.2),
-    law: clampPN((a.law + b.law) / 2 + (rng() * 2 - 1) * 0.2),
+    good: clampPN((a.good + b.good) / 2 + (rng() * 2 - 1) * 0.25),
+    law: clampPN((a.law + b.law) / 2 + (rng() * 2 - 1) * 0.3),
   };
 }
 
@@ -80,9 +85,17 @@ export function alignmentName(al: Alignment): string {
 }
 
 // Good folk cooperate — they warm to others faster; the wicked, slower (D26). Centred on
-// neutral (0) so it's a no-op for the average soul; bounded. (Crime/violence come with M16.)
+// neutral (0) so it's a no-op for the average soul; bounded.
 export function alignmentWarmth(goodA: number, goodB: number): number {
   return Math.max(0.7, Math.min(1.3, 1 + 0.2 * ((goodA + goodB) / 2)));
+}
+
+// The law axis finally earns a behavioural home (D26): the chaotic offend on impulse more
+// readily, the lawful restrain themselves — so a Chaotic Evil and a Lawful Evil behave
+// differently, not just read differently. Centred on neutral (×1), bounded. (Lawful Evil
+// still offends — just less impulsively.) Used by CrimeSystem to scale offend chance.
+export function lawCrimeFactor(law: number): number {
+  return Math.max(0.4, Math.min(1.6, 1 - law * 0.6));
 }
 
 // ── Personality (M13) ──────────────────────────────────────────────────────────────
