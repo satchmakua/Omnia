@@ -24,10 +24,11 @@ const KIND_COLOR: Record<EventKind, string> = {
   crime:    '#ff6a6a',
   event:    '#ffe08a',
   disaster: '#ff5a3c',
+  paranormal: '#c77dff',
 };
 const KIND_GLYPH: Record<EventKind, string> = {
   birth: '✚', death: '†', marriage: '❤', friendship: '⊕', work: '⚒', magic: '✦', illness: '☣', resource: '⛏',
-  reflect: '☼', dialogue: '❝', dream: '☾', decide: '➜', culture: '◈', crime: '⚖', event: '✷', disaster: '⚠',
+  reflect: '☼', dialogue: '❝', dream: '☾', decide: '➜', culture: '◈', crime: '⚖', event: '✷', disaster: '⚠', paranormal: '✺',
 };
 
 export class EventFeed {

@@ -24,7 +24,7 @@ import type { ChronicleData } from '../src/history/chronicle.ts';
 import type { CultureStoreData, RuntimeCulture } from '../src/culture/cultureStore.ts';
 
 const cfg = defaultConfig;
-const ctx = (world: World) => ({ world, cfg, rng: createRNG(1) });
+const ctx = (world: World) => ({ world, cfg, rng: createRNG(1), tick: cfg.ticksPerDay });
 
 function openMap(w: number, h: number): TileMapData {
   return {

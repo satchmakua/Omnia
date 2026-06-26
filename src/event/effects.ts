@@ -11,17 +11,20 @@
 // effects; slice 2 (disasters) adds real negative — but survivable — consequences.
 import type { World, EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
-import { C_AGENT, C_FLORA, C_HEALTH, C_POSITION, C_TILEMAP, C_HOME } from '../sim/components.ts';
-import type { Agent, Flora, Health, Position } from '../sim/components.ts';
+import { C_AGENT, C_FLORA, C_HEALTH, C_POSITION, C_TILEMAP, C_HOME, C_MEMORY, C_MAGIC } from '../sim/components.ts';
+import type { Agent, Flora, Health, Position, Magic } from '../sim/components.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import type { RNG } from '../sim/rng.ts';
+import { ageInYears } from '../sim/config.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import { getCultureStore } from '../culture/cultureStore.ts';
+import { remember } from '../ai/memory.ts';
 
 export interface EventEffectContext {
   world: World;
   cfg: SimConfig;
   rng: RNG;
+  tick: number;
 }
 
 export type EventEffectFn = (ctx: EventEffectContext) => void;
@@ -112,6 +115,41 @@ export const EVENT_EFFECTS: Record<string, EventEffectFn> = {
       if (d < best) { best = d; victim = e; }
     }
     if (victim !== undefined) world.destroyEntity(victim);
+  },
+
+  // ── Paranormal (slice 4): uncommon, eerie, with real (mostly inner-life) consequences ──
+  // Abduction: a single adult is taken by lights in the sky and returned *changed* — a vivid,
+  // impossible memory (a turning point that the M10 distill may forge into a vow) and a jolt
+  // of unease. No one is lost; the mark is on the soul. rng picks who.
+  abduction: ({ world, cfg, rng, tick }) => {
+    const adults = world.query(C_AGENT, C_MEMORY).filter(
+      e => ageInYears(world.getComponent<Agent>(e, C_AGENT)!.ticksAlive, cfg) >= cfg.adultAgeYears,
+    );
+    if (adults.length === 0) return;
+    const victim = adults[Math.floor(rng() * adults.length)];
+    remember(world, victim, tick, 'was taken by lights in the sky, and returned changed', 0.8);
+    const a = world.getComponent<Agent>(victim, C_AGENT)!;
+    if (a.mood !== undefined) a.mood = clamp01(a.mood - 0.25);
+  },
+
+  // Haunting: the restless dead are seen abroad — a town-wide dread settles, every soul's
+  // mood dips (the festival's dark mirror, dampened by the mood→social coupling). Bounded.
+  haunting: ({ world }) => {
+    for (const e of world.query(C_AGENT)) {
+      const a = world.getComponent<Agent>(e, C_AGENT)!;
+      if (a.mood !== undefined) a.mood = clamp01(a.mood - 0.12);
+    }
+  },
+
+  // Wild magic surge: raw magic floods the land — every mage is overcharged to full mana and
+  // marked by the surge (a remembered wonder). With no mages it's a portent the Chronicle still
+  // keeps. Bounded (mana sits at maxMana).
+  wild_magic: ({ world, tick }) => {
+    for (const e of world.query(C_AGENT, C_MAGIC)) {
+      const m = world.getComponent<Magic>(e, C_MAGIC)!;
+      m.mana = m.maxMana;
+      remember(world, e, tick, 'felt a wild surge of magic course through them', 0.65);
+    }
   },
 };
 
