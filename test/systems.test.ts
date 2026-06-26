@@ -3,7 +3,7 @@ import { World } from '../src/sim/ecs.ts';
 import { createRNG } from '../src/sim/rng.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_CLOCK,
+  C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_CLOCK, C_TOMBSTONE,
 } from '../src/sim/components.ts';
 import type { Agent, Needs, Position, Flora, Clock } from '../src/sim/components.ts';
 import { runClockSystem }    from '../src/sim/systems/ClockSystem.ts';
@@ -64,10 +64,12 @@ describe('HungerSystem', () => {
     expect(needs.energy).toBeLessThan(1.0);
   });
 
-  it('kills agent when hunger reaches 0', () => {
+  it('kills agent when hunger reaches 0, leaving a tombstone (cause: starvation)', () => {
     const { w, e } = makeAgent(0.0, 1.0);
     runHungerSystem(w, cfg);
-    expect(w.isAlive(e)).toBe(false);
+    expect(w.hasComponent(e, C_AGENT)).toBe(false);      // no longer a living agent
+    expect(w.hasComponent(e, C_TOMBSTONE)).toBe(true);   // but remains as a record (lineage resolves)
+    expect(w.getComponent<{ cause: string }>(e, C_TOMBSTONE)!.cause).toBe('starvation');
   });
 
   it('does not kill agent with positive hunger', () => {

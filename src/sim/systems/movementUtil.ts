@@ -60,9 +60,15 @@ function steppable(x: number, y: number, enterable: Enterable, occ: Occupancy | 
   return enterable(x, y) && (!occ || !occ.occupied(x, y));
 }
 
-// Random one-cell step onto a free enterable neighbour; stays put if hemmed in.
-export function wanderStep(pos: Position, rng: RNG, enterable: Enterable, occ?: Occupancy): void {
-  const dir = DIRS[Math.floor(rng() * DIRS.length)];
+// Random one-cell step onto a free enterable neighbour; stays put if hemmed in. With an
+// `idleChance`, the wanderer simply lingers in place this tick (calmer, less restless motion).
+// The single rng() draw is reused for both the idle roll and the direction (remapped), so
+// `idleChance == 0` is byte-identical to the original behaviour (fauna / blocked-fallback).
+export function wanderStep(pos: Position, rng: RNG, enterable: Enterable, occ?: Occupancy, idleChance = 0): void {
+  const r = rng();
+  if (r < idleChance) return;                               // linger this tick
+  const u = idleChance > 0 ? (r - idleChance) / (1 - idleChance) : r;   // remap remaining range → [0,1)
+  const dir = DIRS[Math.min(DIRS.length - 1, Math.floor(u * DIRS.length))];
   const nx = pos.x + dir.dx, ny = pos.y + dir.dy;
   if (steppable(nx, ny, enterable, occ)) {
     if (occ) occ.move(pos.x, pos.y, nx, ny);

@@ -7,6 +7,9 @@ import type { Agent } from '../sim/components.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import { ModalPanel, SECTION } from './modalPanel.ts';
 
+// Tech-tier → era label (M17), so the Tribes view reads a tribe's level of advancement.
+const ERA_NAMES = ['Tribal Age', 'Tribal Age', 'Bronze Age', 'Iron Age', 'Medieval Age', 'Industrial Age', 'Modern Age', 'Sci-Fi Age'];
+
 export class OrgDashboard extends ModalPanel {
   constructor() { super('Tribes', '560px'); }
 
@@ -39,11 +42,17 @@ export class OrgDashboard extends ModalPanel {
         .filter(w => w.a === o.id || w.b === o.id)
         .map(w => store.byId[w.a === o.id ? w.b : w.a]?.name).filter(Boolean);
       const war = foes.length ? `<div style="color:#ff7a6a;font-size:11px">⚔ at war with ${foes.join(', ')}</div>` : '';
+      const nTech = o.techs?.length ?? 0;
+      const arms = o.effects?.arms ?? 0, medicine = o.effects?.medicine ?? 0;
+      const fx = [arms ? `<span title="military tech — better arms in war">⚔ arms ${arms}</span>` : '',
+        medicine ? `<span title="medicine — members heal faster">⚕ med ${medicine}</span>` : ''].filter(Boolean).join(' · ');
+      const tech = nTech > 0
+        ? `<div style="color:#8fc0e0;font-size:11px">⚙ ${ERA_NAMES[o.tier ?? 1] ?? 'Tribal Age'} · ${nTech} tech${nTech === 1 ? '' : 's'}${fx ? ` · ${fx}` : ''}</div>` : '';
       return `<div style="display:flex;align-items:center;gap:8px;margin:5px 0;border-top:1px solid rgba(255,255,255,0.07);padding-top:6px">
         <span style="width:13px;height:13px;border-radius:3px;background:${o.color};display:inline-block;flex:0 0 auto"></span>
         <div style="flex:1;min-width:0">
           <div style="color:#e6e6f0">${o.name}${parent}</div>
-          <div style="color:#889;font-size:11px">${o.government} · ${n} folk · led by ${leader}</div>${war}
+          <div style="color:#889;font-size:11px">${o.government} · ${n} folk · led by ${leader}</div>${tech}${war}
         </div></div>`;
     }).join('');
 

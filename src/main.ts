@@ -224,6 +224,10 @@ function loop(now: number) {
   const dtSeconds = Math.min(now - last, 250) / 1000;
   last = now;
 
+  // Smooth motion is only worthwhile at watchable speeds (when tiles snap visibly); at fast-
+  // forward, many ticks per frame make interpolation pointless, so we skip it.
+  const smoothMotion = state === 'running' && speed > 0 && speed <= 50;
+
   if (state === 'running' && active && speed > 0) {
     realElapsedMs += dtSeconds * 1000;
     tickAccumulator += dtSeconds * speed;
@@ -231,11 +235,15 @@ function loop(now: number) {
     // stall can't trigger a catch-up spiral.
     const steps = Math.min(Math.floor(tickAccumulator), 500);
     tickAccumulator -= Math.floor(tickAccumulator);
-    for (let i = 0; i < steps; i++) tick(active.world, active.rng, activeCfg, active.clockEntity, content, activeProvider);
+    for (let i = 0; i < steps; i++) {
+      tick(active.world, active.rng, activeCfg, active.clockEntity, content, activeProvider);
+      if (smoothMotion) renderer.syncPositions(active.world);   // snapshot tiles for gliding
+    }
   }
 
   if (active) {
-    renderer.render(active.world, active.clockEntity, realElapsedMs);
+    if (!smoothMotion) renderer.clearInterp();
+    renderer.render(active.world, active.clockEntity, realElapsedMs, smoothMotion ? tickAccumulator : 1);
     renderer.consumeClick(active.world);
     inspector.update(active.world);
     eventFeed.render(active.world);

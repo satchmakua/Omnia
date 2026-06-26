@@ -1,0 +1,8 @@
+# Tier 1 — Tribal Age. Tending and making fire.
+id: "firecraft"
+name: "Firecraft"
+tier: 1
+era: "Tribal Age"
+cost: 50
+prerequisites: []
+blurb: "Tending and making fire — warmth, cooking, defence."

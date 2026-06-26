@@ -17,7 +17,9 @@ const TPY = ticksPerYear(defaultConfig);
 const yearOf = (tick: number) => Math.floor(tick / TPY);
 
 const CAUSE_COLOR: Record<string, string> = {
-  'old age': '#8fe0a0', illness: '#ff9a6a', misfortune: '#c9a0ff',
+  'old age': '#8fe0a0', illness: '#ff9a6a', 'an accident': '#c9a0ff', starvation: '#caa86a',
+  murdered: '#ff5a5a', 'fell in battle': '#ff6a6a', 'struck down for their crimes': '#ff8a4a',
+  'killed while attacking': '#ff8a4a',
 };
 
 // A tiny lo-fi sparkline over a series of numbers.

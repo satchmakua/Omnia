@@ -1,7 +1,10 @@
 import type { World } from '../ecs.ts';
-import { C_NEEDS, C_AGENT, C_SPECIES } from '../components.ts';
-import type { Needs, SpeciesComp } from '../components.ts';
+import { C_NEEDS, C_AGENT, C_SPECIES, C_CLOCK } from '../components.ts';
+import type { Needs, SpeciesComp, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
+import { ticksPerYear } from '../config.ts';
+import { killAgent } from '../death.ts';
+import { emitEvent } from '../../history/eventlog.ts';
 
 // Sapient needs decay; agents whose hunger bottoms out die. (Flora growth is the
 // FloraSystem's job now — food is no longer an abstract regenerating amount.)
@@ -25,6 +28,15 @@ export function runHungerSystem(world: World, cfg: SimConfig): void {
     if (needs.hunger <= 0) toKill.push(entity);
   }
 
-  // Destroy after iterating to avoid mutating the query result mid-loop.
-  for (const entity of toKill) world.destroyEntity(entity);
+  // Starvation is a proper death — a tombstone (so lineage still resolves) with an honest
+  // cause, not a silent removal. Done after iterating to avoid mutating the query mid-loop.
+  if (toKill.length > 0) {
+    const clockEnts = world.query(C_CLOCK);
+    const tick = clockEnts.length ? world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick : 0;
+    const tpy = ticksPerYear(cfg);
+    for (const entity of toKill) {
+      const tomb = killAgent(world, entity, tick, 'starvation', tpy);
+      emitEvent(world, 'death', `${tomb.name} starved to death.`);
+    }
+  }
 }

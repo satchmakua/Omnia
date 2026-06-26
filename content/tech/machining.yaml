@@ -1,0 +1,9 @@
+# Tier 5 — Industrial Age. Precise, interchangeable parts.
+id: "machining"
+name: "Machining"
+tier: 5
+era: "Industrial Age"
+cost: 580
+prerequisites: ["engineering", "scholarship"]
+effects: ["arms"]
+blurb: "Precise, interchangeable parts — the machine age."

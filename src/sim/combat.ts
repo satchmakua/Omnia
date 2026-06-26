@@ -8,6 +8,7 @@ import type { World, EntityId } from './ecs.ts';
 import { C_BODY, C_COMBAT, C_AGENT } from './components.ts';
 import type { Body, Combat, Agent } from './components.ts';
 import { getCultureStore, getCulture } from '../culture/cultureStore.ts';
+import { getOrgStore } from '../org/orgStore.ts';
 
 const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
 
@@ -18,20 +19,25 @@ export interface Combatant {
   martial: number;   // 0..1 cultural martiality (a warlike people fight better)
   ferocity: number;  // personality lean: brave/hot-headed press the attack, timid/gentle hold back
   prowess: number;   // hardened by survived violence (scars + kills)
+  arms?: number;     // the tribe's military tech level (bronze/iron/engineering/machining) — better weapons & armour (M17 s2)
 }
 
 // Probability the attacker lands a blow: an even chance, nudged by the DEX gap, martial
-// skill, and battle-hardened prowess. Bounded so nothing is a sure thing either way.
+// skill, battle-hardened prowess, and the edge of better arms.
 export function hitChance(atk: Combatant, def: Combatant): number {
-  return clamp(0.55 + (atk.dex - def.dex) * 0.05 + (atk.martial - 0.5) * 0.2 + atk.prowess * 0.02, 0.1, 0.95);
+  return clamp(
+    0.55 + (atk.dex - def.dex) * 0.05 + (atk.martial - 0.5) * 0.2 + atk.prowess * 0.02
+      + ((atk.arms ?? 0) - (def.arms ?? 0)) * 0.03,   // armed advantage (and the defender's armour resists)
+    0.1, 0.95,
+  );
 }
 
-// Damage a landed blow deals (Health units): a base scaled by STR and martiality, softened
-// by the defender's CON (toughness), and pressed harder by a ferocious attacker.
+// Damage a landed blow deals (Health units): a base scaled by STR and martiality (and the
+// keenness of the attacker's weapons), softened by the defender's CON, pressed by ferocity.
 export function hitDamage(atk: Combatant, def: Combatant): number {
-  const power = 1 + (atk.str - 10) * 0.06 + (atk.martial - 0.5) * 0.3;
+  const power = 1 + (atk.str - 10) * 0.06 + (atk.martial - 0.5) * 0.3 + (atk.arms ?? 0) * 0.1;
   const soak = clamp(1 - (def.con - 10) * 0.03, 0.5, 1.3);
-  return clamp(0.18 * power * soak * atk.ferocity, 0.03, 0.6);
+  return clamp(0.18 * power * soak * atk.ferocity, 0.03, 0.7);
 }
 
 // One exchange: the damage dealt to the defender, or 0 on a miss.
@@ -59,6 +65,9 @@ export function combatantOf(world: World, e: EntityId): Combatant {
     if (c) martial = c.values.martial;
   }
   const trait = world.getComponent<{ trait: string }>(e, 'Personality')?.trait;
+  let arms = 0;
+  const ostore = getOrgStore(world);
+  if (ostore && agent?.orgId) arms = ostore.byId[agent.orgId]?.effects?.arms ?? 0;
   return {
     str: body?.str ?? 10,
     dex: body?.dex ?? 10,
@@ -66,6 +75,7 @@ export function combatantOf(world: World, e: EntityId): Combatant {
     martial,
     ferocity: ferocityOf(trait),
     prowess: combat ? combat.scars + combat.kills * 2 : 0,
+    arms,
   };
 }
 

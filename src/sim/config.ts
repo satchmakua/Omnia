@@ -58,6 +58,10 @@ export interface SimConfig {
   minWarMembers: number;               // a tribe needs at least this many to wage / be worth warring
   warDurationEras: number;             // a war lasts at most this many eras before peace
   battleChancePerTick: number;         // per-tick chance two adjacent enemies actually come to blows
+  wanderIdleChance: number;            // chance an aimlessly-wandering agent simply stays put a tick (calmer motion)
+  // Knowledge (M17): tribes accumulate research points and climb the tech ladder.
+  researchBasePerDay: number;          // a tribe's baseline research per day
+  researchPerMemberPerDay: number;     // extra research per living member per day (bigger tribes advance faster)
   // Capabilities / magic (M3 part 2):
   magicManaMax: number;                // mana pool size for aptitude-gifted agents
   manaRegenPerDay: number;             // mana regenerated per in-sim day
@@ -238,6 +242,9 @@ export const defaultConfig: SimConfig = {
   minWarMembers: 5,
   warDurationEras: 2,              // wars are short, bloody feuds, then peace
   battleChancePerTick: 0.006,      // adjacent enemies seldom actually clash on a given tick (keeps casualties bounded)
+  wanderIdleChance: 0.6,           // a wanderer pauses ~60% of ticks → folk linger rather than pacing endlessly
+  researchBasePerDay: 2,           // tuned so tribes reach ~Industrial Age over a soak, sci-fi over deep time
+  researchPerMemberPerDay: 1.0,
   magicManaMax: 100,
   manaRegenPerDay: 10,
   daysPerYear: 4,

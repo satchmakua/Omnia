@@ -1,0 +1,9 @@
+# Tier 4 — Medieval Age. Mills, cranes, and machines of war.
+id: "engineering"
+name: "Engineering"
+tier: 4
+era: "Medieval Age"
+cost: 360
+prerequisites: ["masonry", "iron_working"]
+effects: ["arms"]
+blurb: "Mills, cranes, aqueducts, and machines of war."

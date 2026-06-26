@@ -106,7 +106,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
       if (outcome === 'murder') {
         // The cause is a *fixed* category (the killer's name lives in the feed/legend) so the
         // cumulative cause-of-death histogram (WorldStats) keeps its small, bounded key-set.
-        const tomb = killAgent(world, victim, tick, 'murdered', tpy);
+        const tomb = killAgent(world, victim, tick, 'murdered', tpy, agent.name);
         markCrime(world, e, 'murder');
         harden(al, 0.08);
         emitEvent(world, 'crime', `${agent.name} murdered ${tomb.name}.`, vpos);
@@ -118,7 +118,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
         emitEvent(world, 'crime', `${agent.name} assaulted ${vName}.`, vpos);
         if (outcome === 'felled') {
           markCombat(world, victim, 0, 1);
-          const tomb = killAgent(world, e, tick, 'killed while attacking', tpy);   // fixed cause key
+          const tomb = killAgent(world, e, tick, 'killed while attacking', tpy, vName);   // fixed cause key
           emitEvent(world, 'crime', `${tomb.name} died attacking ${vName}.`, cpos);
         }
       }
@@ -145,7 +145,8 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
           ah.value = Math.max(0, ah.value - blow);
           if (ah.value <= 0) {
             markCombat(world, avenger, 0, 1);
-            const tomb = killAgent(world, e, tick, 'struck down for their crimes', tpy);
+            const avengerName = world.getComponent<Agent>(avenger, C_AGENT)?.name;
+            const tomb = killAgent(world, e, tick, 'struck down for their crimes', tpy, avengerName);
             emitEvent(world, 'crime', `${tomb.name} was struck down for their crimes.`, cpos);
           }
         }
