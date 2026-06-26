@@ -89,6 +89,10 @@ export interface Organization {
   parent?: string;       // the tribe it split from (schism descent)
   extinct?: boolean;     // no living members — a fallen tribe, kept for the family tree
   diedTick?: number;
+  research?: number;     // accumulated research points toward the next tech (M17)
+  techs?: string[];      // tech ids this tribe has unlocked, in discovery order (M17)
+  tier?: number;         // highest tech tier reached (1 tribal … 7 sci-fi) — denormalized for display (M17)
+  effects?: Record<string, number>;  // tech effect tags → how many unlocked (e.g. arms 3, medicine 1) — confers tribe-wide bonuses (M17 s2)
 }
 
 // Body & heredity (M13): six D&D-style ability scores (3..18) plus heritable physical
@@ -287,7 +291,8 @@ export interface Tombstone {
   diedTick: number;
   ageYears: number;
   role: string | null;     // last profession, if any
-  cause: string;           // 'old age' | 'illness' | 'misfortune'
+  cause: string;           // a bounded category: 'old age' | 'illness' | 'an accident' | 'starvation' | 'murdered' | 'fell in battle' | 'slain by a <beast>' | …
+  slayer?: string;         // who/what killed them, when violent (for "killed by X" displays)
   legacy: string;          // one-line summary
   partner: number | null;
   parents: number[];

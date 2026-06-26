@@ -290,16 +290,17 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD met (S57–S59):** agents fight (combat engine), hunt (M8), and **commit alignment-consistent crimes** (theft/assault/murder); **wounds persist and show** (scars, veterans, outlaws); **organized conflict emerges and is recorded as legends** (tribes declare war, battle, and make peace/conquer — all in the Chronicle); legible (veteran/outlaw inspector lines, ⚖ feed, Tribes war indicator); determinism + soak hold (pop stable 60, fauna 130, 0 violations). *Gangs, institutional justice, weapons/armour items, and war-over-territory (tribes are spatially intermixed, so war is a blood-feud) are deferred.*
 
-## Milestone 17 — Knowledge: Tech Tree, Magic & Research
+## ▶ Milestone 17 — Knowledge: Tech Tree, Magic & Research  *(in progress)*
 
 **Goal:** civilizations climb the full ladder — and magic finally earns its place.
 
-- [ ] **Tech tree (D34), full ladder:** tribal → bronze → iron → medieval → industrial → **modern → sci-fi** (machines, vehicles, robots, **power plants**), framed as *re-ascending the fallen world's lost tech* (D8); **power sources** (fire/steam/coal/solar/magic/…).
-- [ ] **Research by Organizations** unlocks capabilities/recipes (armour/tools/weapons/materials/machines) for the tribe/faction.
+- [x] **Tech tree (D34), full ladder + research by Organizations.** *(S63 — slice 1: a content-driven `tech` type (`content/tech/`, 14 nodes across 7 tiers, tribal → bronze → iron → medieval → industrial → modern → **sci-fi**, with prerequisites + a referential-integrity check). Each **tribe** (M14 org) accumulates **research** (`researchBasePerDay` + per-member) and a daily **`ResearchSystem`** unlocks the cheapest prerequisite-met tech, climbing the ladder — recorded as feed lines + Chronicle "reached the {Age}" legends. A breakaway faction **inherits the tribe's knowledge** on schism. Pure accumulation (no RNG → soak byte-identical). Legible: the Tribes tab shows each tribe's **era + tech count** (emergent variation — one tribe at Industrial, another at Iron). Verified: soak reaches **Modern Age** by yr 38, and **Sci-Fi by yr ~93** (deep time). +6 tests.)*
+  - [x] **Slice 2 — research unlocks effects (tech now matters mechanically).** *(S64: techs carry `effects` tags (data, D9); the `ResearchSystem` denormalises them onto the tribe as effect levels (`org.effects`), read cheaply by the hot systems. **`arms`** (bronze/iron/engineering/machining) raises a tribe's members' **hit chance & damage** in the combat engine — an iron-age war-band beats a tribal one, and armed folk are far better hunters (soak kills 27→75); **`medicine`** (scholarship/chemistry) speeds **recovery** in HealthSystem (advanced tribes heal faster). Inherited on schism; legible in the Tribes tab (⚔ arms N · ⚕ med N). +4 tests; soak 0 violations, pop stable. D51.)*
+  - [ ] *Remaining:* **skill/knowledge gating** + resource→craft→goods (M15's deferred thread); a dedicated **Knowledge tab** showing the full tree; more effect tags (economy/farming/power).
 - [ ] **Magic tree + schools** (necromancy/illusion/elementalism/divination); **spells, magic items, golems** (advanced mages only); **mages made legible** — a clear, inspectable role + effects (an explicit ask).
 - [ ] **Lost tech / dark ages / rediscovery** (reuses the compression machinery); **achievements** (civ + agent: Iron Age, Steam Power, …) with a view.
 
-**DoD:** an org researches up a visible tech *and* magic tree across the ages incl. the sci-fi tier; mages do something inspectable and useful; knowledge can be lost and rediscovered; achievements fire and are viewable; determinism + soak hold.
+**DoD:** an org researches up a visible tech *and* magic tree across the ages incl. the sci-fi tier; mages do something inspectable and useful; knowledge can be lost and rediscovered; achievements fire and are viewable; determinism + soak hold. *(Tech ladder + research ✓ S63; effects, magic tree, lost-tech/achievements remain.)*
 
 ## Milestone 18 — Religion & Belief
 
@@ -367,7 +368,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 - **God-sim fork (future direction, D30):** give the player in-sim agency — nudges, triggered events, set goals. Designed-*for* now (a player intervention is just another recordable event in the deterministic log) but **not built**; this may be forked here once the observed world is compelling enough — date: 2026-06-15.
 - More traditions for the capability system (alchemy, bio-engineering, ritual) — date: founding.
 - Domestication of fauna; agriculture depth — date: founding.
-- Renderer: interpolate entity positions between ticks for smooth gliding motion (currently entities snap a cell per tick) — date: 2026-06-13.
+- ~~Renderer: interpolate entity positions between ticks for smooth gliding motion~~ — **done S62 (D50):** the renderer glides mobile creatures between their previous/current tiles at an interpolation alpha (watchable speeds only), + a wander idle so folk linger. Pure render, sim untouched.
 - Economy: a real supply/demand **market** (prices, goods, business revenue from actual sales rather than abstract productivity); businesses that can go bankrupt and close — date: 2026-06-13 (deferred from M3 part 1). *(Requested next after resource gathering.)*
 - Agents **building** structures (homes/businesses) from gathered resources over time, instead of pre-placed — date: 2026-06-14 (requested).
 - **Conflict / vice**: rivalries, crime, theft, fights (M8 theme) — date: 2026-06-14 (requested).

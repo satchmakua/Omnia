@@ -88,8 +88,9 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
   const fellInBattle = (victim: EntityId, slayer: EntityId): void => {
     const vpos = world.getComponent<Position>(victim, C_POSITION);   // capture before killAgent strips it
+    const slayerName = world.getComponent<Agent>(slayer, C_AGENT)?.name;
     markCombat(world, slayer, 0, 1);
-    const tomb = killAgent(world, victim, tick, 'fell in battle', tpy);
+    const tomb = killAgent(world, victim, tick, 'fell in battle', tpy, slayerName);
     emitEvent(world, 'death', `${tomb.name} fell in battle.`, vpos ?? undefined);
     if (ch) chronicleAdd(ch, { tick, importance: 0.66, kind: 'war', text: `${tomb.name} fell in battle.` }, cfg.chronicleImportanceThreshold);
   };

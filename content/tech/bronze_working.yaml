@@ -1,0 +1,9 @@
+# Tier 2 — Bronze Age. The first metallurgy.
+id: "bronze_working"
+name: "Bronze-working"
+tier: 2
+era: "Bronze Age"
+cost: 130
+prerequisites: ["firecraft"]
+effects: ["arms"]
+blurb: "Smelting copper and tin into hard, useful bronze."

@@ -1,0 +1,8 @@
+# Tier 6 — Modern Age. Tamed lightning.
+id: "electricity"
+name: "Electricity"
+tier: 6
+era: "Modern Age"
+cost: 820
+prerequisites: ["steam_power"]
+blurb: "Tamed lightning — light, motors, and signals."

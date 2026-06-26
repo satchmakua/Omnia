@@ -177,6 +177,22 @@ export const CultureSchema = z.object({
 export type Culture = z.infer<typeof CultureSchema>;
 export type CultureValues = Culture['values'];
 
+// A technology node (M17) — one rung on the ladder organizations climb by research. Data
+// declares the node (tier/era/cost/prerequisites + optional effect tags); the ResearchSystem
+// implements *how* it is climbed, and code implements what each effect tag does.
+export const TechSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  tier: z.number().int().min(1).max(7),    // 1 tribal … 7 sci-fi
+  era: z.string().min(1),                  // display label for the tier (e.g. "Iron Age")
+  cost: z.number().positive(),             // research points to unlock
+  prerequisites: z.array(z.string()).default([]),   // tech ids that must be known first
+  effects: z.array(z.string()).default([]),// code-side effect tags (wired in a later slice)
+  blurb: z.string().default(''),
+}).strict();
+
+export type Tech = z.infer<typeof TechSchema>;
+
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
 export const FOLDER_SCHEMAS = {
@@ -189,6 +205,7 @@ export const FOLDER_SCHEMAS = {
   professions: ProfessionSchema,
   languages: LanguageSchema,
   cultures: CultureSchema,
+  tech: TechSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

@@ -96,9 +96,12 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     const tongues = ls ? Object.keys(ls.byId).length : 0;
     const lostTongues = ls ? Object.values(ls.byId).filter(l => l.extinct).length : 0;
     const os = world.getComponent(world.query(C_ORGSTORE)[0], C_ORGSTORE) as
-      { byId: Record<string, { extinct?: boolean }>; wars?: unknown[] } | undefined;
-    const tribes = os ? Object.values(os.byId).filter(o => !o.extinct).length : 0;
+      { byId: Record<string, { extinct?: boolean; tier?: number; techs?: string[] }>; wars?: unknown[] } | undefined;
+    const livingOrgs = os ? Object.values(os.byId).filter(o => !o.extinct) : [];
+    const tribes = livingOrgs.length;
     const wars = os?.wars?.length ?? 0;
+    const maxTier = livingOrgs.reduce((m, o) => Math.max(m, o.tier ?? 1), 1);
+    const maxTechs = livingOrgs.reduce((m, o) => Math.max(m, o.techs?.length ?? 0), 0);
 
     violations += inv;
     const fauna = world.query(C_FAUNA).length;
@@ -143,7 +146,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) tribes=${tribes}(wars=${wars}) drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt} food=${mkt ? mkt.price.toFixed(1) : '—'}g(s/d ${mkt ? mkt.supply.toFixed(0) : '?'}/${mkt ? mkt.demand.toFixed(0) : '?'}) biz=${bizEnts.length}(farm=${foodBiz}) vets=${vets}(scars=${scars} kills=${kills}) crime=${outlaws}out(t=${thefts} a=${assaults} m=${murders})  invalid=${inv}${marker}`,
+      `fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) tribes=${tribes}(wars=${wars}) tech=T${maxTier}/${maxTechs} drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt} food=${mkt ? mkt.price.toFixed(1) : '—'}g(s/d ${mkt ? mkt.supply.toFixed(0) : '?'}/${mkt ? mkt.demand.toFixed(0) : '?'}) biz=${bizEnts.length}(farm=${foodBiz}) vets=${vets}(scars=${scars} kills=${kills}) crime=${outlaws}out(t=${thefts} a=${assaults} m=${murders})  invalid=${inv}${marker}`,
     );
   }
 }

@@ -1,0 +1,8 @@
+# Tier 3 — Iron Age. Cut stone and raised walls.
+id: "masonry"
+name: "Masonry"
+tier: 3
+era: "Iron Age"
+cost: 200
+prerequisites: ["agriculture"]
+blurb: "Cut stone, raised walls, lasting halls."

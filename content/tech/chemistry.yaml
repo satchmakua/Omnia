@@ -1,0 +1,9 @@
+# Tier 6 — Modern Age. Materials and medicines from first principles.
+id: "chemistry"
+name: "Chemistry"
+tier: 6
+era: "Modern Age"
+cost: 860
+prerequisites: ["machining", "scholarship"]
+effects: ["medicine"]
+blurb: "Materials and medicines drawn from first principles."

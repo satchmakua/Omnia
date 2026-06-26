@@ -1,0 +1,8 @@
+# Tier 5 — Industrial Age. Tireless work from fire and water.
+id: "steam_power"
+name: "Steam Power"
+tier: 5
+era: "Industrial Age"
+cost: 540
+prerequisites: ["engineering"]
+blurb: "Fire and water yield tireless mechanical work."

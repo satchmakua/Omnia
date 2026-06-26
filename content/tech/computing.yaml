@@ -1,0 +1,8 @@
+# Tier 7 — Sci-Fi Age. Thinking engines.
+id: "computing"
+name: "Computing"
+tier: 7
+era: "Sci-Fi Age"
+cost: 1200
+prerequisites: ["electricity", "scholarship"]
+blurb: "Thinking engines that reckon, remember, and reason."

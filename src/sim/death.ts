@@ -18,7 +18,7 @@ const LIVING_COMPONENTS = [
 ];
 
 export function tombstoneFor(
-  world: World, e: EntityId, diedTick: number, cause: string, ticksPerYearVal: number,
+  world: World, e: EntityId, diedTick: number, cause: string, ticksPerYearVal: number, slayer?: string,
 ): Tombstone {
   const agent = world.getComponent<Agent>(e, C_AGENT)!;
   const sp = world.getComponent<SpeciesComp>(e, C_SPECIES);
@@ -27,6 +27,7 @@ export function tombstoneFor(
   const ageYears = Math.floor(agent.ticksAlive / ticksPerYearVal);
   const role = job?.professionName ?? null;
   const speciesName = sp?.name ?? 'folk';
+  const end = slayer ? `${cause} — ${slayer}` : cause;
   return {
     name: agent.name,
     speciesName,
@@ -36,7 +37,8 @@ export function tombstoneFor(
     ageYears,
     role,
     cause,
-    legacy: `${agent.name}, ${speciesName.toLowerCase()} ${role ? role.toLowerCase() : 'townsfolk'}, lived ${ageYears} years (${cause}).`,
+    slayer,
+    legacy: `${agent.name}, ${speciesName.toLowerCase()} ${role ? role.toLowerCase() : 'townsfolk'}, lived ${ageYears} years (${end}).`,
     partner: lin?.partner ?? null,
     parents: lin?.parents ?? [],
     children: lin?.children ?? [],
@@ -46,9 +48,9 @@ export function tombstoneFor(
 // Kill an agent: free a widowed partner, strip living components, attach the
 // tombstone. The entity stays in the world as a record.
 export function killAgent(
-  world: World, e: EntityId, diedTick: number, cause: string, ticksPerYearVal: number,
+  world: World, e: EntityId, diedTick: number, cause: string, ticksPerYearVal: number, slayer?: string,
 ): Tombstone {
-  const tomb = tombstoneFor(world, e, diedTick, cause, ticksPerYearVal);
+  const tomb = tombstoneFor(world, e, diedTick, cause, ticksPerYearVal, slayer);
 
   // Widow the partner so they may re-partner.
   const lin = world.getComponent<Lineage>(e, C_LINEAGE);

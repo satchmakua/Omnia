@@ -9,6 +9,7 @@ import type { SimConfig } from '../config.ts';
 import { ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { killAgent } from '../death.ts';
+import { getOrgStore } from '../../org/orgStore.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
 import { emitEvent } from '../../history/eventlog.ts';
@@ -25,6 +26,7 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
   const tick = clockEnts.length ? world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick : 0;
   const chronEnts = world.query(C_CHRONICLE);
   const chronicle = chronEnts.length ? world.getComponent<ChronicleData>(chronEnts[0], C_CHRONICLE) : undefined;
+  const orgStore = getOrgStore(world);   // a tribe's medicine tech speeds its members' recovery (M17 s2)
 
   const deaths: { e: EntityId; cause: string }[] = [];
 
@@ -47,7 +49,9 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
       // The indebted recover more slowly — poverty means worse food and no care, so debt
       // finally has a cost (Economy Rebalance). A pure read of the wallet; no RNG.
       const wallet = world.getComponent<Wallet>(e, C_WALLET);
-      const recover = wallet && wallet.debt > 0 ? recovery * (1 - cfg.debtRecoveryPenalty) : recovery;
+      let recover = wallet && wallet.debt > 0 ? recovery * (1 - cfg.debtRecoveryPenalty) : recovery;
+      const medicine = orgStore && agent.orgId ? (orgStore.byId[agent.orgId]?.effects?.medicine ?? 0) : 0;
+      if (medicine > 0) recover *= 1 + medicine * 0.25;   // a tribe's healing knowledge (+25% per medicine tech)
       health.value = Math.min(1, health.value + recover);
       if (health.ill && health.value >= 0.5) {
         health.ill = false;
@@ -62,10 +66,19 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
     // Mortality: flat base + steep age ramp + poor-health penalty.
     const ageRatio = agent.lifespanTicks > 0 ? agent.ticksAlive / agent.lifespanTicks : 0;
     const ageMort = Math.pow(ageRatio, 10) * (cfg.ageMortalityScale / cfg.ticksPerDay);
-    const pTick = baseMort + ageMort + (health.value < 0.3 ? sickMort : 0);
+    const sick = health.value < 0.3 ? sickMort : 0;
+    const pTick = baseMort + ageMort + sick;
 
     if (rng() < pTick) {
-      const cause = ageRatio >= 0.9 ? 'old age' : (health.value < 0.3 ? 'illness' : 'misfortune');
+      // Attribute the death to whichever hazard most likely caused it, so the cause is
+      // honest: a sick agent died of illness; one whose age-ramp risk has overtaken the
+      // background risk (i.e. they're in their declining years) died of old age; anyone
+      // else simply had an accident. (The old code only said "old age" past 90% of
+      // lifespan, so the many age-ramp deaths at 70–90% were mislabelled "misfortune".)
+      let cause: string;
+      if (health.ill || sick > 0) cause = 'illness';
+      else if (ageMort > baseMort && ageRatio >= 0.6) cause = 'old age';
+      else cause = 'an accident';
       deaths.push({ e, cause });
     }
   }

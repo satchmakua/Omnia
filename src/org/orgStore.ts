@@ -19,15 +19,25 @@ export interface War {
   since: number;
 }
 
+// A concluded war, kept (bounded) so the Conflict view can show who has fought whom.
+export interface PastWar {
+  a: string;
+  b: string;
+  since: number;
+  ended: number;
+  winner: string | null;   // null = peace; otherwise the tribe that prevailed
+}
+
 export interface OrgStoreData {
   byId: Record<string, Organization>;
   created: number;         // total tribes ever formed — spaces the colour hues
   lastEvolveTick: number;  // the org-evolution (schism) clock
   wars: War[];             // active inter-tribe wars (M16)
+  warLog?: PastWar[];      // recent concluded wars (bounded) — the town's war history (M16)
 }
 
 export function createOrgStore(): OrgStoreData {
-  return { byId: {}, created: 0, lastEvolveTick: 0, wars: [] };
+  return { byId: {}, created: 0, lastEvolveTick: 0, wars: [], warLog: [] };
 }
 
 export function areAtWar(store: OrgStoreData, a: string, b: string): boolean {
@@ -72,6 +82,7 @@ export function createOrg(store: OrgStoreData, name: string, values: Values, coh
   store.byId[id] = {
     id, name, color: orgColor(store.created), government: governmentOf(values),
     values: { ...values }, leader: null, cohesion: clamp01(cohesion), founded: tick,
+    research: 0, techs: [],
   };
   store.created++;
   return id;
@@ -87,6 +98,8 @@ export function forkOrg(store: OrgStoreData, parentId: string, name: string, tic
   store.byId[id] = {
     id, name, color: orgColor(store.created), government: governmentOf(v),
     values: v, leader: null, cohesion: clamp01(parent.cohesion + 0.1), founded: tick, parent: parentId,
+    research: 0, techs: [...(parent.techs ?? [])], tier: parent.tier ?? 1,   // the faction keeps what the tribe knew (M17)
+    effects: { ...(parent.effects ?? {}) },
   };
   store.created++;
   return id;

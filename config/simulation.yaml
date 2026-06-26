@@ -54,6 +54,9 @@ warMartialThreshold: 0.55
 minWarMembers: 5
 warDurationEras: 2
 battleChancePerTick: 0.006
+wanderIdleChance: 0.6
+researchBasePerDay: 2
+researchPerMemberPerDay: 1.0
 magicManaMax: 100
 manaRegenPerDay: 10
 daysPerYear: 4

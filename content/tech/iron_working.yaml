@@ -1,0 +1,9 @@
+# Tier 3 — Iron Age. Stronger tools and blades.
+id: "iron_working"
+name: "Iron-working"
+tier: 3
+era: "Iron Age"
+cost: 230
+prerequisites: ["bronze_working"]
+effects: ["arms"]
+blurb: "Forging iron — stronger tools and keener blades."

@@ -153,6 +153,6 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       if (flora) { pathToward(pos, flora.x, flora.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight); continue; }
     }
 
-    wanderStep(pos, rng, enterable, occ);
+    wanderStep(pos, rng, enterable, occ, cfg.wanderIdleChance);   // aimless wandering: linger more, pace less
   }
 }

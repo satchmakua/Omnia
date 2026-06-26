@@ -67,6 +67,11 @@ export class Renderer {
   private flashes: { x: number; y: number; kind: string; age: number }[] = [];
   private lastFxTick = -1;
 
+  // Smooth movement: mobile creatures snap one tile per tick; the renderer glides them between
+  // their previous and current tiles so motion reads fluidly. Updated on tick boundaries
+  // (`syncPositions`) and drawn at an interpolation `alpha`. Pure render — the sim is untouched.
+  private interp = new Map<EntityId, { px: number; py: number; cx: number; cy: number }>();
+
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private cfg: SimConfig,
@@ -92,8 +97,29 @@ export class Renderer {
     this.offsetY = 0;
     this.flashes = [];
     this.lastFxTick = -1;
+    this.interp.clear();
     this.clampOffset();
   }
+
+  // Snapshot mobile-creature tiles at a tick boundary so the renderer can glide between the
+  // previous and current tile. A >1-tile jump (a spawn, or a resync after fast-forward) snaps
+  // rather than gliding. Called by the main loop once per tick while interpolating.
+  syncPositions(world: World): void {
+    const seen = new Set<EntityId>();
+    for (const marker of [C_AGENT, C_FAUNA]) {
+      for (const e of world.query(marker, C_POSITION)) {
+        if (seen.has(e)) continue;
+        seen.add(e);
+        const p = world.getComponent<Position>(e, C_POSITION)!;
+        const ip = this.interp.get(e);
+        if (!ip) { this.interp.set(e, { px: p.x, py: p.y, cx: p.x, cy: p.y }); continue; }
+        if (Math.abs(p.x - ip.cx) > 1 || Math.abs(p.y - ip.cy) > 1) { ip.px = ip.cx = p.x; ip.py = ip.cy = p.y; }
+        else { ip.px = ip.cx; ip.py = ip.cy; ip.cx = p.x; ip.cy = p.y; }
+      }
+    }
+    for (const e of this.interp.keys()) if (!seen.has(e)) this.interp.delete(e);
+  }
+  clearInterp(): void { this.interp.clear(); }
 
   setClickHandler(cb: (entity: EntityId) => void): void { this.onEntityClick = cb; }
 
@@ -172,8 +198,11 @@ export class Renderer {
   }
 
   // ── render ───────────────────────────────────────────────────────────────────
-  render(world: World, clockEntity: EntityId, elapsedMs = 0): void {
+  render(world: World, clockEntity: EntityId, elapsedMs = 0, alpha = 1): void {
     const { ctx, cellSize, cfg } = this;
+    const smooth = alpha < 1 && this.interp.size > 0;
+    const drawX = (e: EntityId, raw: number) => { const ip = smooth ? this.interp.get(e) : undefined; return ip ? ip.px + (ip.cx - ip.px) * alpha : raw; };
+    const drawY = (e: EntityId, raw: number) => { const ip = smooth ? this.interp.get(e) : undefined; return ip ? ip.py + (ip.cy - ip.py) * alpha : raw; };
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#0b0b14';                   // void beyond the map edge
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -217,7 +246,7 @@ export class Renderer {
     for (const e of world.query(C_FAUNA, C_POSITION)) {
       const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      this.iconAnimal(p.x, p.y, fa.color, fa.size);   // species colour + size
+      this.iconAnimal(drawX(e, p.x), drawY(e, p.y), fa.color, fa.size);   // species colour + size
     }
     // "In company": folk standing beside another folk are conversing. The chat badge
     // (M10 s4.5) shows this regardless of the socialize *action* (which only fires on a
@@ -238,7 +267,7 @@ export class Renderer {
       const p = world.getComponent<Position>(e, C_POSITION)!;
       const child = ageInYears(agent.ticksAlive, cfg) < cfg.adultAgeYears;
       const health = world.getComponent<Health>(e, C_HEALTH);
-      this.iconFolk(p.x, p.y, child, {
+      this.iconFolk(drawX(e, p.x), drawY(e, p.y), child, {
         mage: world.hasComponent(e, C_MAGIC),
         ill: !!health?.ill,
         wounded: !!health && health.value < 0.55,   // visibly hurt (combat or illness)

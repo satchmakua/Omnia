@@ -1,0 +1,8 @@
+# Tier 1 — Tribal Age. The first rung: shaped stone and bone.
+id: "toolmaking"
+name: "Toolmaking"
+tier: 1
+era: "Tribal Age"
+cost: 50
+prerequisites: []
+blurb: "Knapped stone and bone — the first real tools."

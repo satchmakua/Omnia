@@ -1,0 +1,8 @@
+# Tier 7 — Sci-Fi Age. A star in a bottle.
+id: "fusion_power"
+name: "Fusion Power"
+tier: 7
+era: "Sci-Fi Age"
+cost: 1300
+prerequisites: ["electricity", "chemistry"]
+blurb: "A star in a bottle — power without end. Re-ascended at last."

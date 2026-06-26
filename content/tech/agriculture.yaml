@@ -1,0 +1,8 @@
+# Tier 2 — Bronze Age. Food you can count on.
+id: "agriculture"
+name: "Agriculture"
+tier: 2
+era: "Bronze Age"
+cost: 110
+prerequisites: ["toolmaking"]
+blurb: "Sowing and reaping — a settled, reliable harvest."

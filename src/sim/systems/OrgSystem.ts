@@ -100,6 +100,10 @@ export function runOrgSystem(world: World, cfg: SimConfig, rng: RNG): void {
       const exhausted = tick - war.since >= cfg.warDurationEras * eraTicks;
       if (!a || !b || a.extinct || b.extinct || routed || exhausted) {
         endWar(store, war.a, war.b);
+        const winnerId = routed ? (aN >= bN ? war.a : war.b) : null;
+        if (!store.warLog) store.warLog = [];
+        store.warLog.push({ a: war.a, b: war.b, since: war.since, ended: tick, winner: winnerId });
+        if (store.warLog.length > 30) store.warLog.shift();
         if (a && b && !a.extinct && !b.extinct) {
           const winner = aN >= bN ? a : b, loser = aN >= bN ? b : a;
           emitEvent(world, 'culture', routed

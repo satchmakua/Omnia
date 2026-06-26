@@ -1,0 +1,9 @@
+# Tier 4 — Medieval Age. Writing and the keeping of knowledge.
+id: "scholarship"
+name: "Scholarship"
+tier: 4
+era: "Medieval Age"
+cost: 340
+prerequisites: ["masonry"]
+effects: ["medicine"]
+blurb: "Writing, schools, and the keeping of knowledge."
