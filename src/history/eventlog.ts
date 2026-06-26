@@ -8,7 +8,7 @@ import type { Clock } from '../sim/components.ts';
 
 export type EventKind =
   | 'birth' | 'death' | 'marriage' | 'friendship' | 'work' | 'magic' | 'illness' | 'resource'
-  | 'reflect' | 'dialogue' | 'dream' | 'decide' | 'culture' | 'crime';
+  | 'reflect' | 'dialogue' | 'dream' | 'decide' | 'culture' | 'crime' | 'event';
 
 export interface EventEntry {
   tick: number;
