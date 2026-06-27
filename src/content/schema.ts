@@ -290,8 +290,8 @@ export const BuildingSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   kind: z.string().min(1),                        // a stable category tag (hall/well/infirmary/…)
-  icon: z.enum(['civic', 'infirmary', 'tavern', 'watch']).default('civic'),
-  effect: z.enum(['none', 'heal', 'cheer', 'ward']).default('none'),  // what it radiates to nearby folk
+  icon: z.enum(['civic', 'infirmary', 'tavern', 'watch', 'market', 'workshop']).default('civic'),
+  effect: z.enum(['none', 'heal', 'cheer', 'ward', 'trade', 'hone']).default('none'),  // what it radiates to nearby folk
   radius: z.number().int().positive().default(5), // how many tiles its presence reaches
   magnitude: z.number().min(0).max(1).default(0.15),  // strength of the effect (per day, or as a factor for 'ward')
 }).strict();

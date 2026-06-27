@@ -10,6 +10,9 @@ import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 import { earn, spend } from '../economy.ts';
 import { getMarket } from '../market.ts';
+import { marketFactor } from './CivicSystem.ts';
+import { C_POSITION } from '../components.ts';
+import type { Position } from '../components.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { remember } from '../../ai/memory.ts';
 
@@ -113,7 +116,10 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
         // the cost of living) so unemployment is *poverty*, not a bottomless debt spiral
         // (Economy Rebalance). The employed live off their wage/savings, so no handout.
         if (!world.hasComponent(e, C_JOB)) earn(wallet, cfg.subsistencePerDay);
-        spend(wallet, upkeep);
+        // Folk near a market buy their provisions cheaper (M21): the upkeep is discounted.
+        const pos = world.getComponent<Position>(e, C_POSITION);
+        const cost = pos ? upkeep * marketFactor(world, pos.x, pos.y) : upkeep;
+        spend(wallet, cost);
         if (wallet.debt > cfg.maxDebt) wallet.debt = cfg.maxDebt;   // debt is bounded — poverty, not a hole
       }
     }

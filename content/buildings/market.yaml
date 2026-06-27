@@ -1,0 +1,9 @@
+# The market — stalls of traders and hawkers. Folk who live within reach buy their
+# provisions cheaper, so the cost of living is lighter near the square.
+id: "market"
+name: "The Market"
+kind: "market"
+icon: "market"
+effect: "trade"     # cost of living is scaled by (1 - magnitude) for folk within radius
+radius: 6
+magnitude: 0.25

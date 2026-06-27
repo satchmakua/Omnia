@@ -505,6 +505,8 @@ export class Renderer {
       case 'infirmary': this.iconInfirmary(gx, gy); break;
       case 'tavern':    this.iconTavern(gx, gy); break;
       case 'watch':     this.iconWatch(gx, gy); break;
+      case 'market':    this.iconMarket(gx, gy); break;
+      case 'workshop':  this.iconWorkshop(gx, gy); break;
       default:          this.iconCivic(gx, gy, CATEGORY_COLOR.civic); break;
     }
   }
@@ -549,6 +551,35 @@ export class Renderer {
       ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(3, -2); ctx.lineTo(3, 1.5); ctx.quadraticCurveTo(3, 4, 0, 5); ctx.quadraticCurveTo(-3, 4, -3, 1.5); ctx.lineTo(-3, -2); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = '#5b6b86'; ctx.lineWidth = 0.9;
       ctx.beginPath(); ctx.moveTo(0, -1); ctx.lineTo(0, 3); ctx.moveTo(-2, 0.5); ctx.lineTo(2, 0.5); ctx.stroke();   // shield mark
+    });
+  }
+
+  // A market: a striped awning over a wooden counter with a little produce.
+  private iconMarket(gx: number, gy: number): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 1, () => {
+      ctx.fillStyle = '#9a6c43';
+      ctx.fillRect(-7, 0, 1.4, 8); ctx.fillRect(5.6, 0, 1.4, 8);   // stall posts
+      ctx.fillStyle = '#c0613f';
+      ctx.beginPath(); ctx.moveTo(-9, -3); ctx.lineTo(9, -3); ctx.lineTo(7, 1); ctx.lineTo(-7, 1); ctx.closePath(); ctx.fill();   // awning
+      ctx.strokeStyle = '#ecd6b0'; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(-4, -3); ctx.lineTo(-2.5, 1); ctx.moveTo(0, -3); ctx.lineTo(0, 1); ctx.moveTo(4, -3); ctx.lineTo(2.5, 1); ctx.stroke();   // stripes
+      ctx.fillStyle = '#a9794e'; ctx.fillRect(-8, 4, 16, 2.6);   // counter
+      ctx.fillStyle = '#cf8a4a'; ctx.beginPath(); ctx.arc(-3.5, 2.6, 1.1, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8fae6a'; ctx.beginPath(); ctx.arc(0.5, 2.6, 1.1, 0, Math.PI * 2); ctx.fill();   // produce
+    });
+  }
+
+  // A workshop: a blacksmith's anvil with a hammer-head resting on it.
+  private iconWorkshop(gx: number, gy: number): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 1, () => {
+      ctx.fillStyle = '#8a8f99';
+      ctx.beginPath(); ctx.moveTo(-7, -3); ctx.lineTo(6, -3); ctx.lineTo(9, -1.4); ctx.lineTo(6, 0); ctx.lineTo(-7, 0); ctx.closePath(); ctx.fill();   // face + horn
+      ctx.fillRect(-2, 0, 4, 4);     // stem
+      ctx.fillRect(-6, 4, 12, 3);    // base
+      ctx.fillStyle = '#5d6470';
+      ctx.fillRect(-5.5, -5.5, 3.5, 2.4); ctx.fillRect(-4.2, -3.2, 1, 0.9);   // hammer head + neck
     });
   }
 

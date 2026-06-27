@@ -29,6 +29,8 @@ export const CATEGORY_COLOR = {
   infirmary: '#d98b8b',
   tavern:    '#c89a5a',
   watch:     '#8696b3',
+  market:    '#cf8a4a',
+  workshop:  '#8a8f99',
 } as const;
 
 export type Category = keyof typeof CATEGORY_COLOR;
@@ -131,6 +133,16 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
         `<rect x="-3.2" y="1.8" width="5" height="6.2" rx="1" fill="#ecdcb8"/>` +
         `<path d="M1.8 2.6 Q4.6 3 1.8 6.6" stroke="#ecdcb8" stroke-width="1.3" fill="none"/>` +
         `<ellipse cx="-0.7" cy="1.8" rx="3" ry="1.3" fill="#ffffff"/>`;
+    case 'market':      // a trader's stall — a striped awning over a wooden counter
+      return `<rect x="-7" y="0" width="1.4" height="8" fill="#9a6c43"/><rect x="5.6" y="0" width="1.4" height="8" fill="#9a6c43"/>` +
+        `<path d="M-9 -3 L9 -3 L7 1 L-7 1 Z" fill="#c0613f"/>` +
+        `<path d="M-4 -3 L-2.5 1 M0 -3 L0 1 M4 -3 L2.5 1" stroke="#ecd6b0" stroke-width="0.9" fill="none"/>` +
+        `<rect x="-8" y="4" width="16" height="2.6" fill="#a9794e"/>` +
+        `<circle cx="-3.5" cy="2.6" r="1.1" fill="#cf8a4a"/><circle cx="0.5" cy="2.6" r="1.1" fill="#8fae6a"/>`;
+    case 'workshop':    // a blacksmith's anvil (with a hammer-head resting on it)
+      return `<path d="M-7 -3 L6 -3 L9 -1.4 L6 0 L-7 0 Z" fill="#8a8f99"/>` +
+        `<rect x="-2" y="0" width="4" height="4" fill="#8a8f99"/><rect x="-6" y="4" width="12" height="3" fill="#8a8f99"/>` +
+        `<rect x="-5.5" y="-5.5" width="3.5" height="2.4" fill="#5d6470"/><rect x="-4.2" y="-3.2" width="1" height="0.9" fill="#5d6470"/>`;
     case 'watch':       // a watch-tower — crenellated, bearing a shield
       return `<rect x="-5" y="-6" width="10" height="15" fill="#8696b3"/>` +
         `<rect x="-5" y="-8.5" width="2.6" height="2.6" fill="#8696b3"/><rect x="-1.3" y="-8.5" width="2.6" height="2.6" fill="#8696b3"/><rect x="2.4" y="-8.5" width="2.6" height="2.6" fill="#8696b3"/>` +
@@ -164,6 +176,8 @@ export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; lab
   { key: 'infirmary', label: 'Infirmary', desc: 'a healer’s house — the sick nearby mend faster' },
   { key: 'tavern', label: 'Tavern', desc: 'ale & company — lifts the spirits of folk nearby' },
   { key: 'watch', label: 'Watch-house', desc: 'the constabulary — crime is rarer under its eye' },
+  { key: 'market', label: 'Market', desc: 'a trading square — cheaper living for folk nearby' },
+  { key: 'workshop', label: 'Workshop', desc: 'an artisans’ guild — crafters nearby gain skill faster' },
   { key: 'ruin', label: 'Ruin', desc: 'remains of a fallen clan / lost relic — folk discover them' },
   { key: 'wonder', label: 'Wonder', desc: 'a town-scale mega-project (the space elevator)' },
   { key: 'dragon', label: 'Dragon', desc: 'a rare terror of the wilds — to slay one is legend' },

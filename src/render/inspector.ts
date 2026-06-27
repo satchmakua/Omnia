@@ -466,7 +466,11 @@ export class Inspector {
         ? `<div style="color:#ffd27a">🍺 Lifts the spirits of folk within ${c.radius} tiles.</div>`
         : c.effect === 'ward'
           ? `<div style="color:#9ec6e0">⚖ Keeps the peace — crime is rarer within ${c.radius} tiles.</div>`
-          : `<div style="color:#9ab">A place the town holds in common.</div>`;
+          : c.effect === 'trade'
+            ? `<div style="color:#e0b97a">⚖ A cheaper living — provisions cost less within ${c.radius} tiles.</div>`
+            : c.effect === 'hone'
+              ? `<div style="color:#b9c0cc">⚒ Crafters within ${c.radius} tiles hone their skill faster.</div>`
+              : `<div style="color:#9ab">A place the town holds in common.</div>`;
     return `
       ${this.title(c.name, c.effect ? 'a civic place · serves the town' : 'a civic place · shared by all')}
       ${this.terrainLine(world, pos)}
