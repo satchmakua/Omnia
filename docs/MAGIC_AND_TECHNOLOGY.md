@@ -64,6 +64,10 @@ Both files feed the same `CapabilityRegistry` and the same invoke engine; only t
 
 Professions reference capabilities. Craft/tech professions (smith, builder, scavenger) are common. **Magical professions** (healer-mage, pyromancer, warden) are rare by construction, because they require agents with aptitude — so a town might have one hedge-witch and no formal mage at all, which is as it should be.
 
+## Magic schools (M26)
+
+A mage practises a **school** — a discipline that is itself **content** (`content/magic/*.yaml`), not code. Each school declares a `signature` (the active effect it casts on neighbours) and a ladder of named `spells` unlocked by growing `mastery` (the four shipped: Elementalism→`bolt`, Restoration→`heal`, Divination→`inspire`, Conjuration→`sustain`). Every `signature`/`effect` is a **spell-effect tag** whose behaviour lives once in tested code (`src/magic/effects.ts` lists the known tags; the `MagicSystem` implements each), and the loader **fail-loud cross-checks** every tag has an implementation — the same data/behaviour boundary used for capability and world-event effects. So adding a school, retuning a spell ladder, or (with a new effect tag + a `MagicSystem` branch) inventing a ward/curse/summons is a content edit, not an engine change.
+
 ## History & the post-apocalyptic hook
 
 Capabilities tie into the Chronicle and the compression model:

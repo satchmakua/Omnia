@@ -1,0 +1,9 @@
+# A magic school (M26) — see elementalism.yaml for the shape.
+id: restoration
+name: Restoration
+blurb: mending flesh and spirit
+signature: heal
+spells:
+  - { name: Soothe, mastery: 1, effect: heal }
+  - { name: Mend Wounds, mastery: 3, effect: heal }
+  - { name: Renewal, mastery: 5, effect: heal }

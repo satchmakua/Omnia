@@ -6,11 +6,13 @@ import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { FOLDER_SCHEMAS } from './schema.ts';
 import type {
-  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, Good, Recipe, Wonder, Monster, Building, ContentFolder,
+  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, Good, Recipe, Wonder, Monster, Building, MagicSchool, ContentFolder,
 } from './schema.ts';
 import { Registry } from './registry.ts';
 import { isKnownEffectTag } from '../capability/effects.ts';
 import { isKnownEventEffect } from '../event/effects.ts';
+import { isKnownSpellEffect } from '../magic/effects.ts';
+import { setMagicSchools } from '../magic/schools.ts';
 
 export interface Content {
   species: Registry<Species>;
@@ -29,6 +31,7 @@ export interface Content {
   wonders: Registry<Wonder>;
   monsters: Registry<Monster>;
   buildings: Registry<Building>;
+  magic: Registry<MagicSchool>;
 }
 
 // Relative path like "species/human.yaml" -> "species".
@@ -52,7 +55,7 @@ function formatZodError(relPath: string, err: z.ZodError): string {
  */
 export function loadContent(files: Map<string, string>): Content {
   const buckets: Record<ContentFolder, unknown[]> = {
-    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [], goods: [], recipes: [], wonders: [], monsters: [], buildings: [],
+    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [], goods: [], recipes: [], wonders: [], monsters: [], buildings: [], magic: [],
   };
   const errors: string[] = [];
 
@@ -104,6 +107,18 @@ export function loadContent(files: Map<string, string>): Content {
       );
     }
   }
+  // Same boundary for magic schools (M26): a school's signature + every spell effect must have a
+  // code implementation in the MagicSystem (src/magic/effects.ts lists the known tags).
+  for (const sch of buckets.magic as MagicSchool[]) {
+    if (!isKnownSpellEffect(sch.signature)) {
+      errors.push(`magic/${sch.id}: signature effect '${sch.signature}' has no implementation in src/magic/effects.ts`);
+    }
+    for (const sp of sch.spells) {
+      if (!isKnownSpellEffect(sp.effect)) {
+        errors.push(`magic/${sch.id}: spell '${sp.name}' effect '${sp.effect}' has no implementation in src/magic/effects.ts`);
+      }
+    }
+  }
 
   if (errors.length > 0) {
     throw new Error(
@@ -128,6 +143,7 @@ export function loadContent(files: Map<string, string>): Content {
   let wonders: Registry<Wonder>;
   let monsters: Registry<Monster>;
   let buildings: Registry<Building>;
+  let magic: Registry<MagicSchool>;
   try {
     species = new Registry(buckets.species as Species[]);
     capabilities = new Registry(buckets.capabilities as Capability[]);
@@ -145,6 +161,7 @@ export function loadContent(files: Map<string, string>): Content {
     wonders = new Registry(buckets.wonders as Wonder[]);
     monsters = new Registry(buckets.monsters as Monster[]);
     buildings = new Registry(buckets.buildings as Building[]);
+    magic = new Registry(buckets.magic as MagicSchool[]);
   } catch (e) {
     throw new Error(`Content failed to load: ${(e as Error).message}`);
   }
@@ -203,5 +220,12 @@ export function loadContent(files: Map<string, string>): Content {
     );
   }
 
-  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events, goods, recipes, wonders, monsters, buildings };
+  // Make the magic schools available to the helper module (schoolOf/topSpell/…) that the
+  // MagicSystem, spawnAgent and the inspector read. Schools are immutable, load-once content,
+  // so a module-level registry — set here, the single content-load chokepoint every entry point
+  // (browser, node, tests) passes through — is cleaner than threading `content` through the
+  // inspector + four systems (D9 boundary; see DECISIONS).
+  setMagicSchools(magic);
+
+  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events, goods, recipes, wonders, monsters, buildings, magic };
 }

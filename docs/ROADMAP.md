@@ -400,7 +400,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **Goal:** turn magic from 4 hardcoded effects into a real, content-driven school of practice.
 
-- [ ] **Content-ify the magic schools** (move `schools.ts` → `content/magic/*.yaml`, fail-loud like other content). Resolves the M17 deferral.
+- [x] **Content-ify the magic schools** (move `schools.ts` → `content/magic/*.yaml`, fail-loud like other content). Resolves the M17 deferral. *(S104: new `magic` content type — `MagicSchoolSchema`/`SpellSchema` (strict, fail-loud); the four schools moved to `content/magic/{elementalism,restoration,divination,conjuration}.yaml`; a **spell-effect boundary** (`src/magic/effects.ts` `isKnownSpellEffect` — bolt/heal/inspire/sustain) cross-checked at load like the capability/event effect boundaries (D9). `schools.ts` is now a registry-backed read-helper (singleton set by `loadContent`); `schoolOf`/`topSpell`/`knownSpells`/`schoolIds()` unchanged for callers. Sets up the next two slices (a new spell effect = a tag in effects.ts + a MagicSystem branch + content).)*
 - [ ] **More spell effects** beyond bolt/heal/inspire/sustain — e.g. **wards** (protect/buff), **curses** (debuff/blight), **weather/elemental** (tie to seasons/disasters), **summoning** (a conjured creature via the monster system). 
 - [ ] **Magic items** — enchanted artifacts (ties to the M20 artifact system + M23 crafting/equipment): a mage imbues a crafted good with a spell effect.
 

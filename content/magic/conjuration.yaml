@@ -1,0 +1,9 @@
+# A magic school (M26) — see elementalism.yaml for the shape. The conjurer's own needs are met
+# in the CapabilitySystem (conjure_meal / mend_vigor); its signature feeds a hungry neighbour.
+id: conjuration
+name: Conjuration
+blurb: summoning meal, vigour and matter from the aether
+signature: sustain
+spells:
+  - { name: Conjure Meal, mastery: 1, effect: sustain }
+  - { name: Mend Vigour, mastery: 1, effect: sustain }

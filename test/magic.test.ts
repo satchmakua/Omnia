@@ -9,7 +9,7 @@ import type { Needs, Magic, Agent, Wallet, Business, Job, Fauna, Health, Clock, 
 import { runCapabilitySystem } from '../src/sim/systems/CapabilitySystem.ts';
 import { runEconomySystem } from '../src/sim/systems/EconomySystem.ts';
 import { runMagicSystem } from '../src/sim/systems/MagicSystem.ts';
-import { schoolOf, knownSpells, topSpell, SCHOOL_IDS } from '../src/magic/schools.ts';
+import { schoolOf, knownSpells, topSpell, schoolIds } from '../src/magic/schools.ts';
 import { createSimulation } from '../src/sim/world.ts';
 import { testContent } from './helpers.ts';
 
@@ -135,8 +135,8 @@ describe('magical-profession hiring', () => {
 // ── The magic tree + MagicSystem (M17 slice 3) ────────────────────────────────────────
 describe('magic schools (M17 s3)', () => {
   it('there are four schools and mastery gates spells', () => {
-    expect(SCHOOL_IDS).toContain('elementalism');
-    expect(SCHOOL_IDS.length).toBe(4);
+    expect(schoolIds()).toContain('elementalism');
+    expect(schoolIds().length).toBe(4);
     expect(knownSpells('elementalism', 1).length).toBe(1);   // only Spark at mastery 1
     expect(knownSpells('elementalism', 5).length).toBe(3);   // all three by mastery 5
     expect(topSpell('elementalism', 5)!.name).toBe('Storm Wrath');
@@ -210,7 +210,7 @@ describe('MagicSystem (M17 s3)', () => {
     expect(mages.length).toBeGreaterThan(0);
     for (const e of mages) {
       const magic = world.getComponent<Magic>(e, C_MAGIC)!;
-      expect(SCHOOL_IDS).toContain(magic.school);
+      expect(schoolIds()).toContain(magic.school);
       expect(magic.mastery).toBeGreaterThanOrEqual(1);
     }
   });

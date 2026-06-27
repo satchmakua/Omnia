@@ -1,0 +1,12 @@
+# A magic school (M26): a discipline a mage practises, a ladder of named spells unlocked by
+# growing mastery. `signature` is the active effect the MagicSystem casts on neighbours; each
+# spell's `effect` must be a known spell-effect tag (src/magic/effects.ts) — boundary-checked
+# at load. Mastery grows over a life (MagicSystem), unlocking the stronger spells.
+id: elementalism
+name: Elementalism
+blurb: fire, frost & storm — the magic of war and the hunt
+signature: bolt
+spells:
+  - { name: Spark, mastery: 1, effect: bolt }
+  - { name: Flame Lash, mastery: 3, effect: bolt }
+  - { name: Storm Wrath, mastery: 5, effect: bolt }

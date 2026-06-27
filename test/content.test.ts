@@ -23,6 +23,15 @@ effects: ["restore_hunger"]
 power: 0.2
 `;
 
+// A minimal valid magic school (M26), mutated in the boundary failure case.
+const VALID_SCHOOL = `
+id: "pyromancy"
+name: "Pyromancy"
+signature: "bolt"
+spells:
+  - { name: "Cinder", mastery: 1, effect: "bolt" }
+`;
+
 function files(map: Record<string, string>): Map<string, string> {
   return new Map(Object.entries(map));
 }
@@ -144,6 +153,21 @@ describe('effect-tag boundary', () => {
       'capabilities/bad.yaml': badCap,
     }))).toThrowError(/levitate_unimplemented.*no implementation|no implementation.*levitate_unimplemented/);
   });
+
+  it('loads a magic school and rejects one whose spell effect is unimplemented (M26)', () => {
+    // happy path: a valid school loads.
+    const ok = loadContent(files({
+      'species/elf.yaml': VALID_SPECIES,
+      'magic/pyromancy.yaml': VALID_SCHOOL,
+    }));
+    expect(ok.magic.require('pyromancy').signature).toBe('bolt');
+    // boundary: an unknown spell effect tag fails loud.
+    const badSchool = VALID_SCHOOL.replace('effect: "bolt"', 'effect: "polymorph_unimplemented"');
+    expect(() => loadContent(files({
+      'species/elf.yaml': VALID_SPECIES,
+      'magic/bad.yaml': badSchool,
+    }))).toThrowError(/polymorph_unimplemented.*no implementation|no implementation.*polymorph_unimplemented/);
+  });
 });
 
 // ── Registry semantics ────────────────────────────────────────────────────────
@@ -204,6 +228,18 @@ describe('authored /content', () => {
     expect(conjure.tradition).toBe('magic');
     expect(conjure.prerequisites.aptitude).toBe(true);      // gated
     expect(conjure.cost.mana).toBeGreaterThan(0);
+  });
+
+  it('defines the four magic schools as content, each with a valid signature & spells (M26)', () => {
+    const content = loadContentFromDisk('./content');
+    expect(content.magic.size).toBe(4);
+    for (const id of ['elementalism', 'restoration', 'divination', 'conjuration']) {
+      expect(content.magic.has(id)).toBe(true);
+    }
+    const elem = content.magic.require('elementalism');
+    expect(elem.signature).toBe('bolt');
+    expect(elem.spells.length).toBe(3);
+    expect(elem.spells[elem.spells.length - 1].name).toBe('Storm Wrath');
   });
 
   it('the hedge-witch profession requires aptitude', () => {
