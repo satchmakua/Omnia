@@ -61,6 +61,21 @@ export function getOrg(store: OrgStoreData, id: string): Organization | undefine
   return store.byId[id];
 }
 
+// How many techs with a given effect tag a tribe has unlocked (0 if no tribe / none) — the
+// tribe-wide bonus level for arms/medicine/farming/tools/industry/research (M17/M25).
+export function effectOf(store: OrgStoreData | undefined, orgId: string | undefined, tag: string): number {
+  return (orgId && store && store.byId[orgId]?.effects?.[tag]) || 0;
+}
+
+// The highest level of an effect tag across all living tribes — for town-wide infrastructure
+// (e.g. industry boosting every business, M25), where the most advanced tribe sets the base.
+export function maxEffect(store: OrgStoreData | undefined, tag: string): number {
+  if (!store) return 0;
+  let m = 0;
+  for (const o of Object.values(store.byId)) if (!o.extinct) m = Math.max(m, o.effects?.[tag] ?? 0);
+  return m;
+}
+
 // A hue-spaced colour, never red. Golden-angle steps from a green base, nudged clear of the
 // red band ([344,360]∪[0,16]). Returned as an hsl() string the renderer can use directly.
 export function orgHue(index: number): number {

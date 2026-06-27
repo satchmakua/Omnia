@@ -6,3 +6,4 @@ era: "Modern Age"
 cost: 820
 prerequisites: ["steam_power"]
 blurb: "Tamed lightning — light, motors, and signals."
+effects: ["industry"]

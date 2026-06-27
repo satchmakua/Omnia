@@ -11,13 +11,19 @@ import { ageInYears } from '../config.ts';
 import { earn, spend } from '../economy.ts';
 import { getMarket } from '../market.ts';
 import { marketFactor } from './CivicSystem.ts';
+import { getOrgStore, maxEffect } from '../../org/orgStore.ts';
 import { C_POSITION } from '../components.ts';
 import type { Position } from '../components.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { remember } from '../../ai/memory.ts';
 
+const INDUSTRY_BONUS = 0.06;   // each `industry` tech lifts town-wide business revenue (M25)
+
 export function runEconomySystem(world: World, cfg: SimConfig): void {
   const businesses = world.query(C_BUSINESS);
+  // Industrial tech (engineering/machining/steam/electricity/fusion) is shared infrastructure —
+  // the town's most advanced tribe sets the base, lifting every business's revenue (M25).
+  const industry = 1 + INDUSTRY_BONUS * maxEffect(getOrgStore(world), 'industry');
   const clockEntsTop = world.query(C_CLOCK);
   const now = clockEntsTop.length ? world.getComponent<Clock>(clockEntsTop[0], C_CLOCK)!.tick : 0;
 
@@ -92,7 +98,7 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
     // Food producers earn from real market sales (MarketSystem), so they get no synthetic
     // revenue — that's what lets an unprofitable farm actually go broke (M15 slice 2). Other
     // trades still book abstract revenue until their goods get markets (a later M15 slice).
-    if (!biz.producesFood) biz.balance += biz.revenuePerWorkerPerTick;
+    if (!biz.producesFood) biz.balance += biz.revenuePerWorkerPerTick * industry;
   }
 
   // ── Cost of living (once per day) ─────────────────────────────────────────────

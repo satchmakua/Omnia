@@ -6,3 +6,4 @@ era: "Tribal Age"
 cost: 50
 prerequisites: []
 blurb: "Knapped stone and bone — the first real tools."
+effects: ["tools"]
