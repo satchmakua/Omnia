@@ -460,13 +460,20 @@ export class Inspector {
 
   private _civic(world: World, e: EntityId, pos: Position): string {
     const c = world.getComponent<Civic>(e, C_CIVIC)!;
+    const fn = c.effect === 'heal'
+      ? `<div style="color:#8fe0a0">🜨 Heals the sick &amp; wounded within ${c.radius} tiles.</div>`
+      : c.effect === 'cheer'
+        ? `<div style="color:#ffd27a">🍺 Lifts the spirits of folk within ${c.radius} tiles.</div>`
+        : c.effect === 'ward'
+          ? `<div style="color:#9ec6e0">⚖ Keeps the peace — crime is rarer within ${c.radius} tiles.</div>`
+          : `<div style="color:#9ab">A place the town holds in common.</div>`;
     return `
-      ${this.title(c.name, 'a civic place · shared by all')}
+      ${this.title(c.name, c.effect ? 'a civic place · serves the town' : 'a civic place · shared by all')}
       ${this.terrainLine(world, pos)}
       <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
       <hr style="${RULE}">
       <div style="${SECTION}">Civic</div>
-      <div style="color:#9ab">A place the town holds in common.</div>`;
+      ${fn}`;
   }
 
   // A special agent (M21): a monster or uncanny visitor — its menace, condition, and how long

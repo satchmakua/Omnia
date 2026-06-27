@@ -7,7 +7,7 @@ import {
   C_CLOCK, C_TILEMAP, C_EVENTLOG,
 } from '../sim/components.ts';
 import type {
-  Position, Agent, Health, Flora, Fauna, Resource, Business, Clock, Ruin, Combat, Special,
+  Position, Agent, Health, Flora, Fauna, Resource, Business, Clock, Ruin, Combat, Special, Civic,
 } from '../sim/components.ts';
 import type { EventLogData } from '../history/eventlog.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -240,9 +240,10 @@ export class Renderer {
       const p = world.getComponent<Position>(e, C_POSITION)!;
       this.iconBuilding(p.x, p.y, CATEGORY_COLOR.home);
     }
-    for (const e of world.query(C_CIVIC, C_POSITION)) {     // shared civic landmarks (M11 s3)
+    for (const e of world.query(C_CIVIC, C_POSITION)) {     // civic buildings — landmarks + functional (M11/M21)
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      this.iconCivic(p.x, p.y, CATEGORY_COLOR.civic);
+      const civic = world.getComponent<Civic>(e, C_CIVIC)!;
+      this.iconCivicBuilding(p.x, p.y, civic.icon ?? 'civic');
     }
     for (const e of world.query(C_RUIN, C_POSITION)) {       // ruins of the past (M20 s2b)
       const p = world.getComponent<Position>(e, C_POSITION)!;
@@ -494,6 +495,60 @@ export class Renderer {
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(-2, 3, 4, 6);
       ctx.fillStyle = color;
       ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(0, -13); ctx.lineTo(4, -12); ctx.lineTo(0, -11); ctx.closePath(); ctx.fill();
+    });
+  }
+
+  // A civic building (M21): a plain landmark, or one of the functional kinds (infirmary /
+  // tavern / watch-house), each with its own glyph.
+  private iconCivicBuilding(gx: number, gy: number, icon: string): void {
+    switch (icon) {
+      case 'infirmary': this.iconInfirmary(gx, gy); break;
+      case 'tavern':    this.iconTavern(gx, gy); break;
+      case 'watch':     this.iconWatch(gx, gy); break;
+      default:          this.iconCivic(gx, gy, CATEGORY_COLOR.civic); break;
+    }
+  }
+
+  // An infirmary: the civic house silhouette marked with a red cross.
+  private iconInfirmary(gx: number, gy: number): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 1, () => {
+      ctx.fillStyle = '#d4dbe0';
+      ctx.beginPath(); ctx.moveTo(-9, -1); ctx.lineTo(0, -9); ctx.lineTo(9, -1); ctx.closePath(); ctx.fill();
+      ctx.fillRect(-7, -1, 14, 10);
+      ctx.fillStyle = '#d23b3b';
+      ctx.fillRect(-1.3, 0.5, 2.6, 8);   // the cross — vertical bar
+      ctx.fillRect(-4, 3.2, 8, 2.6);     // …and horizontal bar
+    });
+  }
+
+  // A tavern: the civic house with a foaming ale-mug on the front.
+  private iconTavern(gx: number, gy: number): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 1, () => {
+      ctx.fillStyle = '#c89a5a';
+      ctx.beginPath(); ctx.moveTo(-9, -1); ctx.lineTo(0, -9); ctx.lineTo(9, -1); ctx.closePath(); ctx.fill();
+      ctx.fillRect(-7, -1, 14, 10);
+      ctx.fillStyle = '#ecdcb8';
+      ctx.fillRect(-3.2, 1.8, 5, 6.2);   // mug body
+      ctx.strokeStyle = '#ecdcb8'; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(1.8, 2.6); ctx.quadraticCurveTo(4.6, 3, 1.8, 6.6); ctx.stroke();   // handle
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.ellipse(-0.7, 1.8, 3, 1.3, 0, 0, Math.PI * 2); ctx.fill();   // foam
+    });
+  }
+
+  // A watch-house: a crenellated tower bearing a shield.
+  private iconWatch(gx: number, gy: number): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 1, () => {
+      ctx.fillStyle = '#8696b3';
+      ctx.fillRect(-5, -6, 10, 15);                         // the tower
+      ctx.fillRect(-5, -8.5, 2.6, 2.6); ctx.fillRect(-1.3, -8.5, 2.6, 2.6); ctx.fillRect(2.4, -8.5, 2.6, 2.6);  // crenellations
+      ctx.fillStyle = '#cdd6e2';
+      ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(3, -2); ctx.lineTo(3, 1.5); ctx.quadraticCurveTo(3, 4, 0, 5); ctx.quadraticCurveTo(-3, 4, -3, 1.5); ctx.lineTo(-3, -2); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#5b6b86'; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(0, -1); ctx.lineTo(0, 3); ctx.moveTo(-2, 0.5); ctx.lineTo(2, 0.5); ctx.stroke();   // shield mark
     });
   }
 

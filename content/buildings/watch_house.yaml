@@ -1,0 +1,9 @@
+# The watch-house — the town's constabulary. Under the eye of the watch, the
+# wicked think twice: crime is far less likely within its reach.
+id: "watch_house"
+name: "Watch-house"
+kind: "watch"
+icon: "watch"
+effect: "ward"      # crime chance is scaled by (1 - magnitude) for folk within radius
+radius: 7
+magnitude: 0.6

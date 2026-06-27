@@ -25,6 +25,10 @@ export const CATEGORY_COLOR = {
   monster:  '#d06b6b',
   ghost:    '#aec4ea',
   alien:    '#5cc95c',
+  // Functional civic buildings (M21) — each icon carries its own palette.
+  infirmary: '#d98b8b',
+  tavern:    '#c89a5a',
+  watch:     '#8696b3',
 } as const;
 
 export type Category = keyof typeof CATEGORY_COLOR;
@@ -119,6 +123,19 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
         `<ellipse cx="-2.3" cy="-3" rx="1.3" ry="1.8" fill="#2a3550"/><ellipse cx="2.3" cy="-3" rx="1.3" ry="1.8" fill="#2a3550"/>` +
         `<ellipse cx="0" cy="1" rx="1.1" ry="1.6" fill="#2a3550"/>`;
     }
+    case 'infirmary':   // a healer's house — the civic silhouette marked with a red cross
+      return `<path d="M-9 -1 L0 -9 L9 -1 Z" fill="#d4dbe0"/><rect x="-7" y="-1" width="14" height="10" fill="#d4dbe0"/>` +
+        `<rect x="-1.3" y="0.5" width="2.6" height="8" fill="#d23b3b"/><rect x="-4" y="3.2" width="8" height="2.6" fill="#d23b3b"/>`;
+    case 'tavern':      // an alehouse — the civic silhouette with a foaming mug
+      return `<path d="M-9 -1 L0 -9 L9 -1 Z" fill="#c89a5a"/><rect x="-7" y="-1" width="14" height="10" fill="#c89a5a"/>` +
+        `<rect x="-3.2" y="1.8" width="5" height="6.2" rx="1" fill="#ecdcb8"/>` +
+        `<path d="M1.8 2.6 Q4.6 3 1.8 6.6" stroke="#ecdcb8" stroke-width="1.3" fill="none"/>` +
+        `<ellipse cx="-0.7" cy="1.8" rx="3" ry="1.3" fill="#ffffff"/>`;
+    case 'watch':       // a watch-tower — crenellated, bearing a shield
+      return `<rect x="-5" y="-6" width="10" height="15" fill="#8696b3"/>` +
+        `<rect x="-5" y="-8.5" width="2.6" height="2.6" fill="#8696b3"/><rect x="-1.3" y="-8.5" width="2.6" height="2.6" fill="#8696b3"/><rect x="2.4" y="-8.5" width="2.6" height="2.6" fill="#8696b3"/>` +
+        `<path d="M0 -3 L3 -2 V1.5 Q3 4 0 5 Q-3 4 -3 1.5 V-2 Z" fill="#cdd6e2"/>` +
+        `<path d="M0 -1 V3 M-2 0.5 H2" stroke="#5b6b86" stroke-width="0.9" fill="none"/>`;
     case 'alien': { // a grey in green: bulbous head, big slanted black eyes, slender body
       const skin = '#5cc95c';
       return `<path d="M-2 11 L-1.4 1 L1.4 1 L2 11 Z" fill="${skin}"/>` +
@@ -144,6 +161,9 @@ export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; lab
   { key: 'building', label: 'Workplace', desc: 'a business that employs folk' },
   { key: 'home', label: 'Home', desc: 'a dwelling folk build and own' },
   { key: 'civic', label: 'Civic', desc: 'a shared place — hall, well, or shrine' },
+  { key: 'infirmary', label: 'Infirmary', desc: 'a healer’s house — the sick nearby mend faster' },
+  { key: 'tavern', label: 'Tavern', desc: 'ale & company — lifts the spirits of folk nearby' },
+  { key: 'watch', label: 'Watch-house', desc: 'the constabulary — crime is rarer under its eye' },
   { key: 'ruin', label: 'Ruin', desc: 'remains of a fallen clan / lost relic — folk discover them' },
   { key: 'wonder', label: 'Wonder', desc: 'a town-scale mega-project (the space elevator)' },
   { key: 'dragon', label: 'Dragon', desc: 'a rare terror of the wilds — to slay one is legend' },

@@ -6,7 +6,7 @@ import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { FOLDER_SCHEMAS } from './schema.ts';
 import type {
-  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, Good, Recipe, Wonder, Monster, ContentFolder,
+  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, Good, Recipe, Wonder, Monster, Building, ContentFolder,
 } from './schema.ts';
 import { Registry } from './registry.ts';
 import { isKnownEffectTag } from '../capability/effects.ts';
@@ -28,6 +28,7 @@ export interface Content {
   recipes: Registry<Recipe>;
   wonders: Registry<Wonder>;
   monsters: Registry<Monster>;
+  buildings: Registry<Building>;
 }
 
 // Relative path like "species/human.yaml" -> "species".
@@ -51,7 +52,7 @@ function formatZodError(relPath: string, err: z.ZodError): string {
  */
 export function loadContent(files: Map<string, string>): Content {
   const buckets: Record<ContentFolder, unknown[]> = {
-    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [], goods: [], recipes: [], wonders: [], monsters: [],
+    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [], goods: [], recipes: [], wonders: [], monsters: [], buildings: [],
   };
   const errors: string[] = [];
 
@@ -126,6 +127,7 @@ export function loadContent(files: Map<string, string>): Content {
   let recipes: Registry<Recipe>;
   let wonders: Registry<Wonder>;
   let monsters: Registry<Monster>;
+  let buildings: Registry<Building>;
   try {
     species = new Registry(buckets.species as Species[]);
     capabilities = new Registry(buckets.capabilities as Capability[]);
@@ -142,6 +144,7 @@ export function loadContent(files: Map<string, string>): Content {
     recipes = new Registry(buckets.recipes as Recipe[]);
     wonders = new Registry(buckets.wonders as Wonder[]);
     monsters = new Registry(buckets.monsters as Monster[]);
+    buildings = new Registry(buckets.buildings as Building[]);
   } catch (e) {
     throw new Error(`Content failed to load: ${(e as Error).message}`);
   }
@@ -200,5 +203,5 @@ export function loadContent(files: Map<string, string>): Content {
     );
   }
 
-  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events, goods, recipes, wonders, monsters };
+  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events, goods, recipes, wonders, monsters, buildings };
 }

@@ -1,0 +1,6 @@
+# The town hall — the seat of common affairs. A landmark, no mechanical effect.
+id: "town_hall"
+name: "Town Hall"
+kind: "hall"
+icon: "civic"
+effect: "none"

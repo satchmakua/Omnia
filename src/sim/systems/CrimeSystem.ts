@@ -20,6 +20,7 @@ import { killAgent } from '../death.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
+import { wardFactor } from './CivicSystem.ts';
 
 const OFF = [-1, 0, 1];
 const AGGRESSIVE = new Set(['hot-headed', 'brave', 'ambitious']);
@@ -82,8 +83,10 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const wicked = al.good < cfg.crimeAlignmentThreshold;
     const desperate = wallet.debt > 0 && al.good < 0.4;
     if (!wicked && !desperate) continue;
-    // The lawful resist, the chaotic indulge (D26): law scales the offend chance.
-    if (rng() >= cfg.crimeChancePerDay * (wicked ? 2 : 1) * lawCrimeFactor(al.law)) continue;
+    // The lawful resist, the chaotic indulge (D26): law scales the offend chance. Under the eye
+    // of a watch-house the wicked think twice (M21): `wardFactor` cuts the chance near the watch.
+    const p0 = world.getComponent<Position>(e, C_POSITION)!;
+    if (rng() >= cfg.crimeChancePerDay * (wicked ? 2 : 1) * lawCrimeFactor(al.law) * wardFactor(world, p0.x, p0.y)) continue;
 
     const victim = nearby(e, 3, () => true);   // a mark somewhere in the vicinity
     if (victim === null) continue;

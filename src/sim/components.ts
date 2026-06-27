@@ -360,12 +360,17 @@ export interface Home {
   builtTick: number;   // when it was raised
 }
 
-// A shared civic building (M11 slice 3) — a town landmark folk hold in common (a hall,
-// a well, a shrine). Static, no brain; a legible hook for later institutions (M14) and
-// religion (M15). The town's third building kind alongside workplaces and homes.
+// A shared civic building (M11 slice 3; functions M21) — a town landmark folk hold in common.
+// Some are mere landmarks (a hall, a well, a shrine); others carry a real **function** that
+// radiates to the folk nearby — an infirmary heals, a tavern cheers, a watch-house keeps the
+// peace. Content-driven (content/buildings/*.yaml); the CivicSystem applies the effects.
 export interface Civic {
-  kind: string;   // 'hall' | 'well' | 'shrine'
-  name: string;   // display name
+  kind: string;     // 'hall' | 'well' | 'shrine' | 'infirmary' | 'tavern' | 'watch'
+  name: string;     // display name
+  icon?: string;    // which glyph to draw (defaults to the civic hall icon)
+  effect?: 'heal' | 'cheer' | 'ward';   // the function it radiates (absent = a plain landmark)
+  radius?: number;  // how many tiles its presence reaches
+  magnitude?: number; // strength of the effect (per day, or as a factor for 'ward')
 }
 
 // Resolved, per-agent species facts baked in at spawn so hot systems don't

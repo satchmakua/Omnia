@@ -279,6 +279,25 @@ export const MonsterSchema = z.object({
 
 export type Monster = z.infer<typeof MonsterSchema>;
 
+// ── Building (M21) ──────────────────────────────────────────────────────────────
+// A civic building the town raises — some are mere landmarks (a hall, a well), others
+// have a real **function** over the folk nearby: an infirmary heals the sick, a tavern
+// lifts spirits, a watch-house keeps the peace. Data declares the building (its icon, the
+// effect it radiates and how far/strong); the CivicSystem implements *how* each effect tag
+// works (the data/behaviour boundary, D9) — so adding a new building is data-only as long
+// as its effect already has an implementation.
+export const BuildingSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  kind: z.string().min(1),                        // a stable category tag (hall/well/infirmary/…)
+  icon: z.enum(['civic', 'infirmary', 'tavern', 'watch']).default('civic'),
+  effect: z.enum(['none', 'heal', 'cheer', 'ward']).default('none'),  // what it radiates to nearby folk
+  radius: z.number().int().positive().default(5), // how many tiles its presence reaches
+  magnitude: z.number().min(0).max(1).default(0.15),  // strength of the effect (per day, or as a factor for 'ward')
+}).strict();
+
+export type Building = z.infer<typeof BuildingSchema>;
+
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
 export const FOLDER_SCHEMAS = {
@@ -297,6 +316,7 @@ export const FOLDER_SCHEMAS = {
   recipes: RecipeSchema,
   wonders: WonderSchema,
   monsters: MonsterSchema,
+  buildings: BuildingSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

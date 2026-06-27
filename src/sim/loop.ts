@@ -23,6 +23,7 @@ import { runReproductionSystem } from './systems/ReproductionSystem.ts';
 import { runHealthSystem }   from './systems/HealthSystem.ts';
 import { runMoodSystem }     from './systems/MoodSystem.ts';
 import { runStatusSystem }   from './systems/StatusSystem.ts';
+import { runCivicSystem }    from './systems/CivicSystem.ts';
 import { runOrgSystem }      from './systems/OrgSystem.ts';
 import { runResearchSystem } from './systems/ResearchSystem.ts';
 import { runAchievementSystem } from './systems/AchievementSystem.ts';
@@ -72,6 +73,7 @@ export function tick(
   runHealthSystem(world, cfg, rng);      // illness, ageing, death → tombstones
   runMoodSystem(world, cfg);             // daily well-being: home / family / solvency / health → mood
   runStatusSystem(world, cfg);           // daily social standing/reputation from deeds & means (M14)
+  runCivicSystem(world, cfg);            // functional buildings: infirmary heals, tavern cheers (M21)
   runOrgSystem(world, cfg, rng);         // tribes: leadership succession, extinction, schism (M14)
   runResearchSystem(world, cfg, content); // tribes accumulate research & climb the tech ladder (M17)
   runAchievementSystem(world, cfg);      // civ + agent milestones fire once (M17)

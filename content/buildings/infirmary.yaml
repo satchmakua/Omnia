@@ -1,0 +1,9 @@
+# The infirmary — a healer's house. The sick and the wounded who linger near it
+# mend faster, and fewer folk are lost to illness.
+id: "infirmary"
+name: "Infirmary"
+kind: "infirmary"
+icon: "infirmary"
+effect: "heal"      # daily: ill/wounded folk within radius regain `magnitude` health
+radius: 5
+magnitude: 0.18
