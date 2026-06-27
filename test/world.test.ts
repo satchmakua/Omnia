@@ -11,7 +11,7 @@ import { World } from '../src/sim/ecs.ts';
 import { createSimulation } from '../src/sim/world.ts';
 import { runTicks } from '../src/sim/loop.ts';
 import { runMovementSystem } from '../src/sim/systems/MovementSystem.ts';
-import { defaultConfig } from '../src/sim/config.ts';
+import { defaultConfig, ageInYears } from '../src/sim/config.ts';
 import {
   C_AGENT, C_POSITION, C_NEEDS, C_FLORA, C_FAUNA, C_BUSINESS, C_JOB, C_TILEMAP, C_CIVIC,
 } from '../src/sim/components.ts';
@@ -224,7 +224,9 @@ describe('createSimulation with terrain', () => {
     const sim = createSimulation(cfg, content);
     expect(sim.world.query(C_BUSINESS).length).toBe(cfg.businessCount);
     runTicks(sim.world, sim.rng, cfg, sim.clockEntity, content, 5);
-    // With ample openings, every agent should hold a job.
-    expect(sim.world.query(C_AGENT, C_JOB).length).toBe(sim.world.query(C_AGENT).length);
+    // With ample openings, every working-age adult should hold a job (children don't work — the
+    // Kids Pass; and a birth may already have occurred by now).
+    const adults = sim.world.query(C_AGENT).filter(e => ageInYears(sim.world.getComponent<Agent>(e, C_AGENT)!.ticksAlive, cfg) >= cfg.adultAgeYears);
+    expect(adults.every(e => sim.world.hasComponent(e, C_JOB))).toBe(true);
   });
 });

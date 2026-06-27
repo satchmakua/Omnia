@@ -8,7 +8,7 @@ import { C_AGENT, C_CLOCK, C_ORGSTORE } from '../src/sim/components.ts';
 import type { Agent, Clock } from '../src/sim/components.ts';
 import { createRNG } from '../src/sim/rng.ts';
 import {
-  createOrgStore, createOrg, forkOrg, getOrg, orgHue, governmentOf, pruneOrgs,
+  createOrgStore, createOrg, forkOrg, getOrg, getOrgStore, orgHue, governmentOf, pruneOrgs,
 } from '../src/org/orgStore.ts';
 import type { OrgStoreData } from '../src/org/orgStore.ts';
 import { runOrgSystem } from '../src/sim/systems/OrgSystem.ts';
@@ -116,7 +116,10 @@ describe('seedTribes through world-gen (M14)', () => {
     const { world } = createSimulation({ ...defaultConfig, seed: 3 }, testContent());
     const adults = world.query(C_AGENT).filter(e => world.getComponent<Agent>(e, C_AGENT)!.orgId !== undefined);
     expect(adults.length).toBeGreaterThan(0);
-    const orgs = new Set(adults.map(e => world.getComponent<Agent>(e, C_AGENT)!.orgId));
+    // Count only mainland tribes — an overseas island clan (M24) is a separate settlement.
+    const store = getOrgStore(world)!;
+    const orgs = new Set(adults.map(e => world.getComponent<Agent>(e, C_AGENT)!.orgId)
+      .filter(id => id !== undefined && !store.byId[id].overseas));
     expect(orgs.size).toBeLessThanOrEqual(defaultConfig.initialTribes);
     expect(orgs.size).toBeGreaterThan(0);
   });

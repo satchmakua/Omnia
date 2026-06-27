@@ -46,7 +46,9 @@ describe('causal coupling (D26): communal value lowers wealth goal', () => {
   });
 
   it('the more communal culture ends up with a lower mean wealth goal in a real town', () => {
-    const cfg = { ...defaultConfig, initialPopulation: 80, seed: 5 };
+    // A large town so the per-agent wealth-goal noise (a random base) averages out and the
+    // culture's communal factor (vant 0.85 vs drakhan 1.09) dominates the means.
+    const cfg = { ...defaultConfig, initialPopulation: 300, seed: 5 };
     const { world } = createSimulation(cfg, content);
     const sums: Record<string, { total: number; n: number }> = {};
     for (const e of world.query(C_AGENT)) {

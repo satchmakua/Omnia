@@ -6,9 +6,11 @@ import {
   C_AGENT, C_POSITION, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_TILEMAP,
 } from '../src/sim/components.ts';
 import type { Position } from '../src/sim/components.ts';
-import { isPassable } from '../src/world/tilemap.ts';
+import { isPassable, isWater } from '../src/world/tilemap.ts';
 import type { TileMapData } from '../src/world/tilemap.ts';
 import type { World } from '../src/sim/ecs.ts';
+import type { Agent } from '../src/sim/components.ts';
+import { getOrgStore } from '../src/org/orgStore.ts';
 import { testContent } from './helpers.ts';
 
 const count = (w: World, comp: string) => w.query(comp).length;
@@ -48,21 +50,27 @@ describe('big configurable map (M8)', () => {
     const sim = createSimulation(cfg, content);
     const map = sim.world.getComponent<TileMapData>(sim.world.query(C_TILEMAP)[0], C_TILEMAP)!;
 
-    const allOnPassableInBounds = (): boolean => {
+    const allOnValidTiles = (): boolean => {
+      const store = getOrgStore(sim.world);
       for (const e of sim.world.query(C_AGENT, C_POSITION)) {
         const p = sim.world.getComponent<Position>(e, C_POSITION)!;
         if (p.x < 0 || p.x >= cfg.gridWidth || p.y < 0 || p.y >= cfg.gridHeight) return false;
-        if (!isPassable(map, p.x, p.y)) return false;
+        if (isPassable(map, p.x, p.y)) continue;
+        // A seafaring folk (M24) may legitimately be on water (in a boat); anything else may not.
+        const orgId = sim.world.getComponent<Agent>(e, C_AGENT)!.orgId;
+        const seafarer = !!(orgId && store && (store.byId[orgId]?.effects?.seafaring ?? 0) > 0);
+        if (!(seafarer && isWater(map, p.x, p.y))) return false;
       }
       return true;
     };
 
-    expect(count(sim.world, C_AGENT)).toBe(cfg.initialPopulation);
-    expect(allOnPassableInBounds()).toBe(true);
+    // The mainland town founds with initialPopulation; an island settlement (M24) may add a few.
+    expect(count(sim.world, C_AGENT)).toBeGreaterThanOrEqual(cfg.initialPopulation);
+    expect(allOnValidTiles()).toBe(true);
 
     runTicks(sim.world, sim.rng, cfg, sim.clockEntity, content, 400);
 
     expect(count(sim.world, C_AGENT)).toBeGreaterThan(0); // didn't collapse
-    expect(allOnPassableInBounds()).toBe(true);           // still valid after running
+    expect(allOnValidTiles()).toBe(true);                 // still valid after running
   }, 20_000);
 });
