@@ -2,7 +2,7 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_CLOCK,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
@@ -12,7 +12,7 @@ import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity
 import { socialClassOf } from '../sim/society.ts';
 import { schoolOf } from '../magic/schools.ts';
 import { getReligionStore, getReligion } from '../religion/religionStore.ts';
-import { biomeNameAt, inBounds } from '../world/tilemap.ts';
+import { biomeNameAt, inBounds, isWater } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { ageInYears } from '../sim/config.ts';
 import { defaultConfig } from '../sim/config.ts';
@@ -32,6 +32,7 @@ export class Inspector {
   private readonly panel: HTMLDivElement;
   private readonly bodyEl: HTMLDivElement;
   private selected: EntityId | null = null;
+  private selectedTile: { x: number; y: number } | null = null;
 
   constructor() {
     this.panel = document.createElement('div');
@@ -72,8 +73,17 @@ export class Inspector {
 
   inspect(entity: EntityId, world: World): void {
     this.selected = entity;
+    this.selectedTile = null;   // an entity click supersedes a tile click
     this.panel.style.display = 'block';
     this._render(entity, world);
+  }
+
+  // Inspect a bare tile (M24): clicking empty ground/water shows the terrain itself.
+  inspectTile(x: number, y: number, world: World): void {
+    this.selected = null;
+    this.selectedTile = { x, y };
+    this.panel.style.display = 'block';
+    this.bodyEl.innerHTML = this._tile(world, x, y);
   }
 
   /** The currently-inspected entity, if any (used by the family-tree dashboard). */
@@ -82,6 +92,7 @@ export class Inspector {
   get isOpen(): boolean { return this.panel.style.display !== 'none'; }
 
   update(world: World): void {
+    if (this.selectedTile !== null) { this.bodyEl.innerHTML = this._tile(world, this.selectedTile.x, this.selectedTile.y); return; }
     if (this.selected === null) return;
     if (!world.isAlive(this.selected)) {
       this.bodyEl.innerHTML = '<b style="color:#f88">— gone —</b>';
@@ -93,6 +104,7 @@ export class Inspector {
 
   close(): void {
     this.selected = null;
+    this.selectedTile = null;
     this.panel.style.display = 'none';
   }
 
@@ -123,6 +135,8 @@ export class Inspector {
       body = this._special(world, entity, pos);
     } else if (world.hasComponent(entity, C_FAUNA)) {
       body = this._fauna(world, entity, pos);
+    } else if (world.hasComponent(entity, C_FISH)) {
+      body = this._fish(world, pos);
     } else if (world.hasComponent(entity, C_RESOURCE)) {
       body = this._resource(world, entity, pos);
     } else if (world.hasComponent(entity, C_FLORA)) {
@@ -518,6 +532,48 @@ export class Inspector {
       <div style="${SECTION}">Instinct</div>
       <div>Hunger ${bar(fa.hunger)}</div>
       <div><b>Breed in</b> ${fa.breedCooldownTicks} ticks</div>`;
+  }
+
+  // A fish (M24): aquatic life that swims the water — caught for food by the fishing trade.
+  private _fish(world: World, pos: Position): string {
+    return `
+      ${this.title('A fish', 'aquatic life · instinct')}
+      ${this.terrainLine(world, pos)}
+      <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
+      <hr style="${RULE}">
+      <div style="${SECTION}">Aquatic</div>
+      <div style="color:#9ab">It swims the water in shoals, and may be netted for food.</div>`;
+  }
+
+  // A bare tile (M24): clicking empty ground or water shows the terrain itself — land or water,
+  // what biome it is, and (for water) the shoals swimming in it.
+  private _tile(world: World, x: number, y: number): string {
+    const mapEnts = world.query(C_TILEMAP);
+    const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
+    if (!map || !inBounds(map, x, y)) return this.title('Beyond the map', 'the unknown edge');
+    const name = biomeNameAt(map, x, y);
+    const water = isWater(map, x, y);
+    if (water) {
+      let fishHere = 0;
+      for (const e of world.query(C_FISH, C_POSITION)) {
+        const p = world.getComponent<Position>(e, C_POSITION)!;
+        if (Math.max(Math.abs(p.x - x), Math.abs(p.y - y)) <= 1) fishHere++;
+      }
+      const stock = fishHere === 0 ? 'still, empty water' : `${fishHere} fish in these waters`;
+      return `
+        ${this.title(name, 'water · folk cannot cross it (yet)')}
+        <div><b>Pos</b> (${x}, ${y})</div>
+        <hr style="${RULE}">
+        <div style="${SECTION}">Water</div>
+        <div style="color:#9ab">Deep water — impassable on foot. A boat will one day cross it.</div>
+        <div style="color:#7fb8cf">🐟 ${stock}</div>`;
+    }
+    return `
+      ${this.title(name, 'open ground')}
+      <div><b>Pos</b> (${x}, ${y})</div>
+      <hr style="${RULE}">
+      <div style="${SECTION}">Terrain</div>
+      <div style="color:#9ab">Passable land — folk walk, build, and forage here.</div>`;
   }
 
   private _flora(world: World, e: EntityId, pos: Position): string {

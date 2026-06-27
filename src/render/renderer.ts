@@ -3,7 +3,7 @@ import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
   C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN, C_WONDERSITE,
-  C_QUEST, C_CRIME, C_COMBAT, C_SPECIAL,
+  C_QUEST, C_CRIME, C_COMBAT, C_SPECIAL, C_FISH,
   C_CLOCK, C_TILEMAP, C_EVENTLOG,
 } from '../sim/components.ts';
 import type {
@@ -51,6 +51,7 @@ export class Renderer {
   private mapW: number;
   private mapH: number;
   private onEntityClick: ((entity: EntityId) => void) | null = null;
+  onTileClick: ((x: number, y: number) => void) | null = null;   // empty-tile click → inspect terrain (M24)
   private _pendingClick: { gx: number; gy: number } | null = null;
 
   // Camera: screen = world*scale + offset (world is in map pixels).
@@ -254,6 +255,10 @@ export class Renderer {
       const p = world.getComponent<Position>(e, C_POSITION)!;
       this.iconWonder(p.x, p.y);
     }
+    for (const e of world.query(C_FISH, C_POSITION)) {        // aquatic life in the water (M24)
+      const p = world.getComponent<Position>(e, C_POSITION)!;
+      this.iconFish(drawX(e, p.x), drawY(e, p.y));
+    }
     for (const e of world.query(C_FAUNA, C_POSITION)) {
       const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
@@ -408,6 +413,18 @@ export class Renderer {
     ctx.moveTo(x, y - 3.2); ctx.lineTo(x + 1.6, y); ctx.lineTo(x, y + 3.2); ctx.lineTo(x - 1.6, y); ctx.closePath();
     ctx.moveTo(x - 3.2, y); ctx.lineTo(x, y - 1.6); ctx.lineTo(x + 3.2, y); ctx.lineTo(x, y + 1.6); ctx.closePath();
     ctx.fill();
+  }
+
+  // A small fish (M24): body, tail fin, dorsal fin, eye. Drawn a touch smaller than fauna.
+  private iconFish(gx: number, gy: number): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 0.72, () => {
+      ctx.fillStyle = CATEGORY_COLOR.fish;
+      ctx.beginPath(); ctx.ellipse(0.5, 0, 6, 3, 0, 0, Math.PI * 2); ctx.fill();   // body
+      ctx.beginPath(); ctx.moveTo(-5.5, 0); ctx.lineTo(-9, -3); ctx.lineTo(-9, 3); ctx.closePath(); ctx.fill();   // tail
+      ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(2, -5); ctx.lineTo(3.5, -3); ctx.closePath(); ctx.fill();    // dorsal fin
+      ctx.fillStyle = '#0c1a22'; ctx.beginPath(); ctx.arc(4, -0.6, 0.9, 0, Math.PI * 2); ctx.fill();              // eye
+    });
   }
 
   private iconAnimal(gx: number, gy: number, color: string, size: 'small' | 'medium' | 'large' = 'medium'): void {
@@ -753,8 +770,9 @@ export class Renderer {
       return null;
     };
 
-    const hit = at(C_SPECIAL) ?? at(C_AGENT) ?? at(C_FAUNA) ?? at(C_WONDERSITE) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_CIVIC) ?? at(C_RUIN) ?? at(C_RESOURCE) ?? at(C_FLORA);
+    const hit = at(C_SPECIAL) ?? at(C_AGENT) ?? at(C_FAUNA) ?? at(C_WONDERSITE) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_CIVIC) ?? at(C_RUIN) ?? at(C_RESOURCE) ?? at(C_FISH) ?? at(C_FLORA);
     if (hit !== null) this.onEntityClick?.(hit);
+    else this.onTileClick?.(gx, gy);   // empty tile → inspect the terrain itself (M24: water is inspectable)
     return hit;
   }
 }

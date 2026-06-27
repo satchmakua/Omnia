@@ -6,6 +6,7 @@
 export const CATEGORY_COLOR = {
   folk:     '#e6d29a',
   animal:   '#dd8f54',
+  fish:     '#7fb8cf',
   plant:    '#7faa5e',
   ore:      '#8a93a0',
   timber:   '#a9794e',
@@ -57,6 +58,11 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
         `<path d="M4.7 -4.5 L4.2 -7.2 L6.1 -5.3 Z M8.3 -4.5 L9.3 -7 L7 -5.3 Z" fill="${color}"/>` +
         `<path d="M-6 3.5 V8 M-2 4 V8.2 M2 4 V8.2 M5 3.5 V7.8 M-8 -0.5 Q -11.5 -1.5 -10.8 -5.5" stroke="${color}" stroke-width="1.7" fill="none" stroke-linecap="round"/>` +
         `<circle cx="7.4" cy="-2.4" r="0.9" fill="#0c0c14"/>`;
+    case 'fish':   // a small side-on fish — body, tail fin, dorsal fin, eye
+      return `<ellipse cx="0.5" cy="0" rx="6" ry="3" fill="${color}"/>` +
+        `<path d="M-5.5 0 L-9 -3 L-9 3 Z" fill="${color}"/>` +
+        `<path d="M0 -3 L2 -5 L3.5 -3 Z" fill="${color}"/>` +
+        `<circle cx="4" cy="-0.6" r="0.9" fill="#0c1a22"/>`;
     case 'plant':
       return `<path d="M0 9 V-3" stroke="${color}" stroke-width="1.8" fill="none" stroke-linecap="round"/>` +
         `<ellipse cx="-4" cy="0" rx="3.6" ry="2" fill="${color}" transform="rotate(-30 -4 0)"/>` +
@@ -166,6 +172,7 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
 export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; label: string; desc: string }[] = [
   { key: 'folk', label: 'Folk', desc: 'a sapient person (any race)' },
   { key: 'animal', label: 'Animal', desc: 'instinct-driven fauna' },
+  { key: 'fish', label: 'Fish', desc: 'aquatic life — swims the water, caught for food' },
   { key: 'plant', label: 'Plant', desc: 'flora — food when ripe' },
   { key: 'ore', label: 'Ore', desc: 'minable rock node' },
   { key: 'timber', label: 'Timber', desc: 'harvestable wood' },

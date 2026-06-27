@@ -14,6 +14,7 @@ import type { Content } from '../content/loader.ts';
 import type { Species } from '../content/schema.ts';
 import { spawnAgent, renameToClan } from './spawnAgent.ts';
 import { raiseCivic } from './civicBuild.ts';
+import { seedFish } from './systems/FishSystem.ts';
 import { generateTileMap } from '../world/worldgen.ts';
 import { isPassable, findPassableTile } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
@@ -247,6 +248,9 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // Found the initial tribes and assign the founders (M14).
   seedTribes(world, cfg, rng);
   seedReligions(world, cfg, rng);   // faiths, one per founding culture (M18)
+
+  // Stock the waters with fish (M24). Last, so it doesn't perturb prior gen RNG.
+  seedFish(world, cfg, tileMap, rng);
 
   return { world, rng, clockEntity, content };
 }
