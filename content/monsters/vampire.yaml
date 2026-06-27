@@ -7,5 +7,5 @@ str: 13
 dex: 14
 con: 13
 ferocity: 1.4
-spawnChancePerDay: 0.003
+spawnChancePerDay: 0.006
 despawnDays: 14

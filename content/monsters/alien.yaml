@@ -3,5 +3,5 @@ id: "alien"
 name: "an alien visitor"
 icon: "alien"
 behavior: "haunt"
-spawnChancePerDay: 0.0025
+spawnChancePerDay: 0.005
 despawnDays: 5
