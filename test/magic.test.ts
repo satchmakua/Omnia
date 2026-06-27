@@ -3,12 +3,14 @@ import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS, C_POSITION, C_FAUNA, C_HEALTH, C_CLOCK, C_COMBAT,
+  C_AGENT, C_NEEDS, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS, C_POSITION, C_FAUNA, C_HEALTH, C_CLOCK, C_COMBAT, C_WARD, C_CURSE,
 } from '../src/sim/components.ts';
-import type { Needs, Magic, Agent, Wallet, Business, Job, Fauna, Health, Clock, Combat } from '../src/sim/components.ts';
+import type { Needs, Magic, Agent, Wallet, Business, Job, Fauna, Health, Clock, Combat, Ward, Curse } from '../src/sim/components.ts';
 import { runCapabilitySystem } from '../src/sim/systems/CapabilitySystem.ts';
 import { runEconomySystem } from '../src/sim/systems/EconomySystem.ts';
 import { runMagicSystem } from '../src/sim/systems/MagicSystem.ts';
+import { runCombatSystem } from '../src/sim/systems/CombatSystem.ts';
+import { combatantOf } from '../src/sim/combat.ts';
 import { schoolOf, knownSpells, topSpell, schoolIds } from '../src/magic/schools.ts';
 import { createSimulation } from '../src/sim/world.ts';
 import { testContent } from './helpers.ts';
@@ -134,13 +136,15 @@ describe('magical-profession hiring', () => {
 
 // ── The magic tree + MagicSystem (M17 slice 3) ────────────────────────────────────────
 describe('magic schools (M17 s3)', () => {
-  it('there are four schools and mastery gates spells', () => {
+  it('the schools are content and mastery gates spells', () => {
     expect(schoolIds()).toContain('elementalism');
-    expect(schoolIds().length).toBe(4);
+    expect(schoolIds().length).toBe(6);   // four founding + abjuration/maleficence (M26 s2)
     expect(knownSpells('elementalism', 1).length).toBe(1);   // only Spark at mastery 1
     expect(knownSpells('elementalism', 5).length).toBe(3);   // all three by mastery 5
     expect(topSpell('elementalism', 5)!.name).toBe('Storm Wrath');
     expect(schoolOf('restoration')!.signature).toBe('heal');
+    expect(schoolOf('abjuration')!.signature).toBe('ward');
+    expect(schoolOf('maleficence')!.signature).toBe('curse');
   });
 });
 
@@ -213,5 +217,74 @@ describe('MagicSystem (M17 s3)', () => {
       expect(schoolIds()).toContain(magic.school);
       expect(magic.mastery).toBeGreaterThanOrEqual(1);
     }
+  });
+});
+
+// ── Battle magic: wards & curses (M26 s2) ─────────────────────────────────────────────
+function plainFolk(w: World, x: number, y: number, hp = 1): EntityId {
+  const e = w.createEntity();
+  w.addComponent<Agent>(e, C_AGENT, { name: 'Folk', action: 'wander', ticksAlive: 20000, wealthGoal: 50, sex: 'male', lifespanTicks: 1e9 });
+  w.addComponent<Health>(e, C_HEALTH, { value: hp, ill: false });
+  w.addComponent(e, C_POSITION, { x, y });
+  return e;
+}
+
+describe('battle magic — wards (M26 s2)', () => {
+  it('an abjurer shields the neighbour in danger (a folk beside a predator)', () => {
+    const w = mageWorld();
+    castMage(w, 5, 5, 'abjuration', 3);
+    const ally = plainFolk(w, 6, 5);     // beside the mage…
+    predator(w, 7, 5);                   // …and beside a predator → endangered
+    runMagicSystem(w, cfg, noRng);
+    const ward = w.getComponent<Ward>(ally, C_WARD);
+    expect(ward).toBeDefined();
+    expect(ward!.soak).toBeGreaterThan(0);
+    expect(ward!.expiresTick).toBeGreaterThan(100);
+  });
+
+  it('a ward adds armour-soak to the bearer in combat', () => {
+    const w = mageWorld();
+    const f = plainFolk(w, 5, 5);
+    const before = combatantOf(w, f).armour;
+    w.addComponent<Ward>(f, C_WARD, { soak: 5, expiresTick: 200 });
+    expect(combatantOf(w, f).armour).toBe(before + 5);
+  });
+
+  it('an expired ward is swept even with no mages present', () => {
+    const w = mageWorld(100);
+    const stale = plainFolk(w, 1, 1); w.addComponent<Ward>(stale, C_WARD, { soak: 5, expiresTick: 50 });
+    const fresh = plainFolk(w, 2, 2); w.addComponent<Ward>(fresh, C_WARD, { soak: 5, expiresTick: 200 });
+    runMagicSystem(w, cfg, noRng);    // no mages in this world
+    expect(w.hasComponent(stale, C_WARD)).toBe(false);
+    expect(w.hasComponent(fresh, C_WARD)).toBe(true);
+  });
+});
+
+describe('battle magic — curses (M26 s2)', () => {
+  it('a maleficent mage hexes an adjacent beast', () => {
+    const w = mageWorld();
+    const m = castMage(w, 5, 5, 'maleficence', 3);
+    const b = predator(w, 6, 5);
+    runMagicSystem(w, cfg, noRng);
+    const curse = w.getComponent<Curse>(b, C_CURSE);
+    expect(curse).toBeDefined();
+    expect(curse!.weaken).toBeGreaterThan(0);
+    expect(w.isAlive(b)).toBe(true);                       // hexed, not slain (unlike a bolt)
+    expect(w.getComponent<Magic>(m, C_MAGIC)!.mana).toBeLessThan(80);
+  });
+
+  it("a cursed beast's blows land softer — the folk it mauls keeps more health", () => {
+    const setup = (cursed: boolean): number => {
+      const w = mageWorld();
+      const f = plainFolk(w, 5, 5);
+      const b = predator(w, 6, 5);
+      if (cursed) w.addComponent<Curse>(b, C_CURSE, { weaken: 0.5, expiresTick: 999 });
+      runCombatSystem(w, cfg, () => 0);   // rng 0 → the beast always strikes and lands
+      return w.getComponent<Health>(f, C_HEALTH)!.value;
+    };
+    const plain = setup(false);
+    const hexed = setup(true);
+    expect(plain).toBeLessThan(1);          // the beast did wound the folk
+    expect(hexed).toBeGreaterThan(plain);   // …but a cursed beast wounds less
   });
 });
