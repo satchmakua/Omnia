@@ -1,0 +1,10 @@
+# Wolf — the grey hunter of plains and forest, thinning the herds. Hardy and
+# slow-breeding, so it stays a small, persistent regulator.
+id: "wolf"
+name: "Wolf"
+color: "#8a8f96"
+size: "medium"
+diet: "predator"
+hungerDecayPerDay: 0.13
+breedThreshold: 0.7
+breedCooldownDays: 6

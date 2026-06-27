@@ -1,0 +1,10 @@
+# Rabbit — small, skittish, and ever-multiplying. The broad base of the food web:
+# quick to breed, quick to be eaten.
+id: "rabbit"
+name: "Rabbit"
+color: "#b8a890"
+size: "small"
+diet: "grazer"
+hungerDecayPerDay: 0.7
+breedThreshold: 0.62
+breedCooldownDays: 1.5   # breeds like a rabbit

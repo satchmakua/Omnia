@@ -11,9 +11,13 @@ flora:
   - { id: "emberwheat", weight: 4 }
   - { id: "spore_fern", weight: 1 }
 fauna:
-  - { id: "moth_grazer", weight: 4 }
-  - { id: "thistle_doe", weight: 3 }
+  - { id: "rabbit", weight: 5 }           # the broad prey base
+  - { id: "moth_grazer", weight: 3 }
+  - { id: "deer", weight: 3 }
+  - { id: "thistle_doe", weight: 2 }
+  - { id: "wild_horse", weight: 2 }
   - { id: "spire_elk", weight: 2 }
-  - { id: "crag_ram", weight: 2 }
-  - { id: "pallid_stalker", weight: 1 }   # predator — rarer than the herds
+  - { id: "crag_ram", weight: 1 }
+  - { id: "wolf", weight: 1 }             # predator — rarer than the herds
+  - { id: "pallid_stalker", weight: 1 }   # predator
 resources: []

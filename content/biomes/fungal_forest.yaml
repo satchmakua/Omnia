@@ -12,9 +12,14 @@ flora:
   - { id: "bruisewort", weight: 3 }
   - { id: "lantern_moss", weight: 3 }
 fauna:
-  - { id: "glow_moth", weight: 4 }
+  - { id: "rabbit", weight: 4 }
+  - { id: "deer", weight: 3 }
+  - { id: "glow_moth", weight: 3 }
+  - { id: "wild_boar", weight: 3 }
   - { id: "moth_grazer", weight: 2 }
-  - { id: "spire_elk", weight: 2 }
+  - { id: "spire_elk", weight: 1 }
+  - { id: "wolf", weight: 1 }             # predator
+  - { id: "bear", weight: 1 }             # predator — the great forest hunter
   - { id: "pallid_stalker", weight: 1 }   # predator
 resources:
   - { id: "timber", weight: 4 }

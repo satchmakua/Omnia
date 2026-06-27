@@ -1,0 +1,9 @@
+# Wild horse — large, free-roaming grazer of the open plains and flats.
+id: "wild_horse"
+name: "Wild Horse"
+color: "#8a6f52"
+size: "large"
+diet: "grazer"
+hungerDecayPerDay: 0.45
+breedThreshold: 0.75
+breedCooldownDays: 6

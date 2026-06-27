@@ -1,0 +1,9 @@
+# Deer — graceful plains-and-forest grazer, skittish and swift.
+id: "deer"
+name: "Deer"
+color: "#c2a06a"
+size: "medium"
+diet: "grazer"
+hungerDecayPerDay: 0.55
+breedThreshold: 0.72
+breedCooldownDays: 3
