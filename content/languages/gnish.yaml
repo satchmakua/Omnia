@@ -1,0 +1,12 @@
+# Gnish — the sharp, clipped, sibilant chatter of the goblins (high front vowels, hissing
+# fricatives, quick short syllables). Fast and needling where Urgakh is heavy. Spoken in the warrens.
+id: "gnish"
+name: "Gnish"
+phonemes:
+  consonants: ["s", "z", "k", "t", "n", "r", "g", "sk", "ch"]
+  vowels: ["i", "e", "a"]
+syllableShapes: ["CVC", "CV"]   # short & clipped — quick, needling (sk/ch give the hiss & chitter)
+namePatterns:
+  personal: ["{syl}{syl}", "{syl}"]   # short & clipped — goblins go by snappy little names
+  family: ["{syl}{syl}", "{syl}-{syl}"]
+soundChangeRate: 0.25   # restless, fast-drifting cant

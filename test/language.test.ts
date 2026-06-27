@@ -25,26 +25,26 @@ function onlyUsesPhonemes(lang: Language, name: string): boolean {
 
 const sylvaen = content.languages.require('sylvaen');
 const bergmund = content.languages.require('bergmund');
+const urgakh = content.languages.require('urgakh');
+const gnish = content.languages.require('gnish');
 
 describe('seed languages load', () => {
-  it('provides the authored tongues (human, dwarf, elf, halfling — M21)', () => {
-    expect(content.languages.has('old_vant')).toBe(true);
-    expect(content.languages.has('drakhan')).toBe(true);
-    expect(content.languages.has('sylvaen')).toBe(true);   // elven romance tongue (M21)
-    expect(content.languages.has('bergmund')).toBe(true);  // halfling fantasy-German (M21)
+  it('provides the authored tongues (the six base races — M21)', () => {
+    for (const id of ['old_vant', 'drakhan', 'sylvaen', 'bergmund', 'urgakh', 'gnish']) {
+      expect(content.languages.has(id), id).toBe(true);
+    }
     expect(vant.phonemes.vowels.length).toBeGreaterThan(0);
   });
 });
 
 describe('the new tongues build valid, distinct names (M21)', () => {
-  it('Sylvaen & Bergmund build names only from their own phonemes', () => {
-    for (let k = 0; k < 60; k++) {
-      const ps = personalName(sylvaen, String(k)), fs = familyName(sylvaen, String(k));
-      const pb = personalName(bergmund, String(k)), fb = familyName(bergmund, String(k));
-      expect(onlyUsesPhonemes(sylvaen, ps), `sylvaen personal "${ps}"`).toBe(true);
-      expect(onlyUsesPhonemes(sylvaen, fs), `sylvaen family "${fs}"`).toBe(true);
-      expect(onlyUsesPhonemes(bergmund, pb), `bergmund personal "${pb}"`).toBe(true);
-      expect(onlyUsesPhonemes(bergmund, fb), `bergmund family "${fb}"`).toBe(true);
+  it('the four new tongues build names only from their own phonemes', () => {
+    for (const lang of [sylvaen, bergmund, urgakh, gnish]) {
+      for (let k = 0; k < 60; k++) {
+        const p = personalName(lang, String(k)), f = familyName(lang, String(k));
+        expect(onlyUsesPhonemes(lang, p), `${lang.id} personal "${p}"`).toBe(true);
+        expect(onlyUsesPhonemes(lang, f), `${lang.id} family "${f}"`).toBe(true);
+      }
     }
   });
 

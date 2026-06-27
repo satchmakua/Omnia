@@ -1,0 +1,13 @@
+# Urgakh Warbands — the orcish folk of the war-tongue: fierce, proud, and bound by
+# strength and oath. Loyal to the band, deeply martial, wary of outsiders; honour is
+# won in battle.
+id: "urgakh_warbands"
+name: "Urgakh Warbands"
+language: "urgakh"
+values:
+  communal: 0.50      # the warband is family, but a warrior's renown is their own
+  martial: 0.75       # the most warlike of the folk (eased from 0.85 — a tiny orc minority bled out in war)
+  traditional: 0.60
+  open: 0.20          # insular, suspicious of outsiders
+practices: ["blood-oath", "war-rite"]
+cohesion: 0.70

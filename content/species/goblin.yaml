@@ -1,0 +1,15 @@
+# Goblins — small, quick, cunning folk of the warrens. Nimble and sly, frail and
+# short-lived, but clever and quick to a deal. Named from the sharp Gnish cant.
+id: "goblin"
+name: "Goblin"
+lifespanYears: { min: 35, max: 58 }   # the shortest-lived folk — fast, short lives
+size: "small"
+spawnWeight: 4          # short-lived → needs a larger founding cohort to establish
+color: "#aeba4e"        # sickly yellow-green
+tags: ["sapient"]
+needs:
+  hunger: 1.1
+  energy: 1.05          # restless
+magicAptitudeChance: 0.03
+language: "gnish"
+abilityMods: { dex: 2, con: -1, str: -1, cha: -1 }   # quick & sly, but frail & off-putting

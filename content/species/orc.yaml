@@ -1,0 +1,15 @@
+# Orcs — big, strong, hard-living folk of the warbands. Fierce and tough, short of years
+# and rarely magical. Named from the brutal Urgakh war-tongue.
+id: "orc"
+name: "Orc"
+lifespanYears: { min: 50, max: 75 }   # hard lives, short years
+size: "large"
+spawnWeight: 5          # short-lived & combative → needs a larger founding cohort to weather attrition
+color: "#6f8f5a"        # dark war-green
+tags: ["sapient"]
+needs:
+  hunger: 1.2           # big appetites
+  energy: 1.0
+magicAptitudeChance: 0.01   # rarely magical
+language: "urgakh"
+abilityMods: { str: 2, con: 1, int: -1, cha: -1 }   # strong, tough, blunt

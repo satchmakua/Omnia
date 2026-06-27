@@ -1,16 +1,17 @@
-// The four base races (M21): human · dwarf · elf · halfling. Each is a content-defined
-// species naming itself from a tongue that a seeded culture speaks — so the species →
-// language → culture chain must resolve for every race, and the new folk must carry their
-// intended flavour (elves long-lived & magical; halflings small & hardy).
+// The six base races (M21): human · dwarf · elf · halfling · orc · goblin. Each is a
+// content-defined species naming itself from a tongue that a seeded culture speaks — so the
+// species → language → culture chain must resolve for every race, and the new folk must carry
+// their intended flavour (elves long-lived & magical; halflings small & hardy; orcs strong &
+// fierce; goblins quick & frail).
 import { describe, it, expect } from 'vitest';
 import { testContent } from './helpers.ts';
 import { createCultureStore, cultureForLanguage } from '../src/culture/cultureStore.ts';
 
 const content = testContent();
 
-describe('the four base races load (M21)', () => {
-  it('provides human, dwarf, elf and halfling', () => {
-    for (const id of ['human', 'dwarf', 'elf', 'halfling']) {
+describe('the six base races load (M21)', () => {
+  it('provides human, dwarf, elf, halfling, orc and goblin', () => {
+    for (const id of ['human', 'dwarf', 'elf', 'halfling', 'orc', 'goblin']) {
       expect(content.species.has(id)).toBe(true);
     }
   });
@@ -32,10 +33,22 @@ describe('the four base races load (M21)', () => {
     expect((h.abilityMods.con ?? 0)).toBeGreaterThan(0);
     expect((h.abilityMods.str ?? 0)).toBeLessThan(0);
   });
+
+  it('orcs are big and strong; goblins are small and quick but frail', () => {
+    const orc = content.species.require('orc');
+    expect(orc.size).toBe('large');
+    expect((orc.abilityMods.str ?? 0)).toBeGreaterThan(0);
+    expect((orc.abilityMods.con ?? 0)).toBeGreaterThan(0);
+    const gob = content.species.require('goblin');
+    expect(gob.size).toBe('small');
+    expect((gob.abilityMods.dex ?? 0)).toBeGreaterThan(0);
+    expect((gob.abilityMods.con ?? 0)).toBeLessThan(0);   // frail
+    expect(gob.lifespanYears.max).toBeLessThan(content.species.require('human').lifespanYears.min);  // short-lived
+  });
 });
 
 describe('every race names itself from a tongue a culture speaks (M21)', () => {
-  it('species → language → culture resolves for all four races', () => {
+  it('species → language → culture resolves for all six races', () => {
     const store = createCultureStore(content);
     for (const sp of content.species.all()) {
       expect(content.languages.has(sp.language), `${sp.id} → ${sp.language}`).toBe(true);
@@ -44,9 +57,11 @@ describe('every race names itself from a tongue a culture speaks (M21)', () => {
     }
   });
 
-  it('the new tongues map to the new courts/hearths', () => {
+  it('the new tongues map to the new courts/hearths/bands', () => {
     const store = createCultureStore(content);
     expect(cultureForLanguage(store, 'sylvaen')).toBe('sylvaen_courts');     // elves
     expect(cultureForLanguage(store, 'bergmund')).toBe('bergmund_hearths');  // halflings
+    expect(cultureForLanguage(store, 'urgakh')).toBe('urgakh_warbands');     // orcs
+    expect(cultureForLanguage(store, 'gnish')).toBe('gnish_warrens');        // goblins
   });
 });
