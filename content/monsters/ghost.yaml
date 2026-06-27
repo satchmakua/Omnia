@@ -3,5 +3,5 @@ id: "ghost"
 name: "a ghost"
 icon: "ghost"
 behavior: "haunt"
-spawnChancePerDay: 0.004
+spawnChancePerDay: 0.008
 despawnDays: 6
