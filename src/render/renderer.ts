@@ -235,7 +235,7 @@ export class Renderer {
     for (const e of world.query(C_BUSINESS, C_POSITION)) {
       const biz = world.getComponent<Business>(e, C_BUSINESS)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      this.iconBuilding(p.x, p.y, biz.color);
+      if (biz.fishery) this.iconDock(p.x, p.y); else this.iconBuilding(p.x, p.y, biz.color);
     }
     for (const e of world.query(C_HOME, C_POSITION)) {     // owned homes — the town's growth (M11)
       const p = world.getComponent<Position>(e, C_POSITION)!;
@@ -499,6 +499,21 @@ export class Renderer {
       ctx.fillRect(-7, -1, 14, 10);
       ctx.fillStyle = 'rgba(0,0,0,0.45)';
       ctx.fillRect(-2, 3, 4, 6);
+    });
+  }
+
+  // A fishery (M24): a wooden pier on pilings over a wavy waterline, with a mooring post.
+  private iconDock(gx: number, gy: number): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, 1, () => {
+      ctx.strokeStyle = '#5a93a8'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-10, 7);
+      for (let x = -10; x < 10; x += 5) ctx.quadraticCurveTo(x + 2.5, 5, x + 5, 7);   // waterline
+      ctx.stroke();
+      ctx.fillStyle = '#9a6c43'; ctx.fillRect(-8, -2, 16, 2.6);   // deck
+      ctx.fillStyle = '#7a5436';
+      ctx.fillRect(-6, 0.6, 1.6, 6); ctx.fillRect(4.4, 0.6, 1.6, 6);   // pilings
+      ctx.fillRect(-1, -7, 2, 5);   // mooring post
     });
   }
 

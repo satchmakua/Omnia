@@ -1,0 +1,10 @@
+# Fisher. Works a coastal fishery, netting fish from the water for the town's table.
+# A food producer like the farmer — but the catch is limited by the fish actually there,
+# so over-fished waters feed fewer folk (M24).
+id: "fisher"
+name: "Fisher"
+dailyWage: 9
+color: "#4f93a8"
+maxEmployeesPerBusiness: 4
+producesFood: true
+fishery: true

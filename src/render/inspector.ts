@@ -414,15 +414,26 @@ export class Inspector {
     for (const a of world.query(C_AGENT, C_JOB)) {
       if (world.getComponent<Job>(a, C_JOB)!.employer === e) staff++;
     }
+    // A fishery's catch depends on the fish nearby — show what swims in reach (M24).
+    let fisheryLine = '';
+    if (biz.fishery) {
+      let nearFish = 0;
+      for (const fe of world.query(C_FISH, C_POSITION)) {
+        const fp = world.getComponent<Position>(fe, C_POSITION)!;
+        if (Math.max(Math.abs(fp.x - pos.x), Math.abs(fp.y - pos.y)) <= 5) nearFish++;
+      }
+      fisheryLine = `<div style="color:#7fb8cf">🐟 ${nearFish === 0 ? 'fished-out waters — a poor catch' : `${nearFish} fish within the nets`}</div>`;
+    }
     return `
-      ${this.title(biz.professionName + ' house', 'business · employer')}
+      ${this.title(biz.fishery ? biz.professionName + 'y' : biz.professionName + ' house', biz.fishery ? 'fishery · by the water' : 'business · employer')}
       ${this.terrainLine(world, pos)}
       <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
       <hr style="${RULE}">
       <div style="${SECTION}">Business</div>
       <div><b>Trade</b> <span style="color:${biz.color}">${biz.professionName}</span></div>
       <div><b>Staff</b> ${staff} / ${biz.maxEmployees}</div>
-      <div><b>Balance</b> ${biz.balance.toFixed(0)}g</div>`;
+      <div><b>Balance</b> ${biz.balance.toFixed(0)}g</div>
+      ${fisheryLine}`;
   }
 
   private _home(world: World, e: EntityId, pos: Position): string {

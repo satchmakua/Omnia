@@ -14,7 +14,7 @@ import { ageInYears } from './config.ts';
 const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
 
 export function createMarket(cfg: SimConfig): Market {
-  return { price: cfg.provisionBasePrice, supply: 0, demand: 0, history: [] };
+  return { price: cfg.provisionBasePrice, supply: 0, demand: 0, history: [], fishCatch: 0 };
 }
 
 export function getMarket(world: World): Market | undefined {
@@ -34,13 +34,17 @@ export function measureSupplyDemand(world: World, cfg: SimConfig, forageFactor =
     const a = world.getComponent<Agent>(e, C_AGENT)!;
     if (ageInYears(a.ticksAlive, cfg) >= cfg.adultAgeYears) demand += cfg.provisionPerAdult;
   }
+  // Farm food-workers produce a fixed ration each. Fishery workers are NOT counted here — a
+  // fishery's food is the fish it actually catches (FishingSystem → market.fishCatch), so an
+  // over-fished coast feeds fewer folk even when fully staffed (M24).
   let foodWorkers = 0;
   for (const e of world.query(C_AGENT, C_JOB)) {
     const j = world.getComponent<Job>(e, C_JOB)!;
     const biz = world.getComponent<Business>(j.employer, C_BUSINESS);
-    if (biz?.producesFood) foodWorkers++;
+    if (biz?.producesFood && !biz.fishery) foodWorkers++;
   }
-  const supply = cfg.baseForagedProvisions * forageFactor + foodWorkers * cfg.provisionPerFarmer;
+  const fishCatch = getMarket(world)?.fishCatch ?? 0;
+  const supply = cfg.baseForagedProvisions * forageFactor + foodWorkers * cfg.provisionPerFarmer + fishCatch;
   return { supply, demand };
 }
 
