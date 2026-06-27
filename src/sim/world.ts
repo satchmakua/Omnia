@@ -2,10 +2,10 @@ import { World } from './ecs.ts';
 import { createRNG, rngFloat } from './rng.ts';
 import {
   C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_WORLDSTATS, C_CULTURESTORE, C_LANGUAGESTORE,
-  C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_CIVIC, C_ORGSTORE, C_MARKET, C_ACHIEVEMENTS,
+  C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_ORGSTORE, C_MARKET, C_ACHIEVEMENTS,
   C_RELIGIONSTORE, C_FIGURES, C_ARTIFACTS, C_WONDERS,
 } from './components.ts';
-import type { Clock, Agent, Lineage, Relationships, AIRecord, Position, Civic } from './components.ts';
+import type { Clock, Agent, Lineage, Relationships, AIRecord, Position } from './components.ts';
 import type { SimConfig } from './config.ts';
 import { ticksPerYear, ageInYears, scaledBiomeSeeds, scaledBusinessCount } from './config.ts';
 import type { EntityId } from './ecs.ts';
@@ -13,8 +13,9 @@ import type { RNG } from './rng.ts';
 import type { Content } from '../content/loader.ts';
 import type { Species } from '../content/schema.ts';
 import { spawnAgent, renameToClan } from './spawnAgent.ts';
+import { raiseCivic } from './civicBuild.ts';
 import { generateTileMap } from '../world/worldgen.ts';
-import { isPassable, inBounds, findPassableTile } from '../world/tilemap.ts';
+import { isPassable, findPassableTile } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { populateWorld } from '../world/populate.ts';
 import { spawnBusiness } from '../world/spawn.ts';
@@ -78,37 +79,20 @@ function pairFounders(world: World, cfg: SimConfig): void {
 // scan if the random draws keep landing on water (keeps spawns off impassable tiles).
 // The town's shared civic buildings (M11 s3; functions M21). Content-driven
 // (content/buildings/*.yaml): some are mere landmarks (hall/well/shrine), others
-// radiate a real function over nearby folk (infirmary heals, tavern cheers, watch
-// wards off crime — applied by the CivicSystem). Placed deterministically AFTER all
-// RNG-consuming generation in a spiral from the town centre, so placement is purely
-// additive to the RNG stream (the *effects* perturb the trajectory, like any system).
+// radiate a real function over nearby folk. At founding, the town raises every building
+// its starting size already warrants (landmarks have minPopulation 0; a market/tavern come
+// with a modest town); the rest are raised later, as it grows, by the CivicBuildSystem.
+// Placed deterministically AFTER all RNG-consuming generation, so placement is purely additive
+// to the RNG stream (the *effects* perturb the trajectory, like any system).
 function placeCivic(world: World, cfg: SimConfig, map: TileMapData, content: Content): void {
-  const W = cfg.gridWidth;
   const occupied = new Set<number>();
   for (const e of world.query(C_BUSINESS, C_POSITION)) {
     const p = world.getComponent<Position>(e, C_POSITION)!;
-    occupied.add(p.y * W + p.x);
+    occupied.add(p.y * cfg.gridWidth + p.x);
   }
-  const cx = Math.floor(map.width / 2), cy = Math.floor(map.height / 2);
-  const limit = Math.max(map.width, map.height);
+  const pop = world.query(C_AGENT).length;
   for (const b of content.buildings.all()) {
-    const civic: Civic = { kind: b.kind, name: b.name, icon: b.icon };
-    if (b.effect !== 'none') { civic.effect = b.effect; civic.radius = b.radius; civic.magnitude = b.magnitude; }
-    let placed = false;
-    for (let r = 0; r <= limit && !placed; r++) {
-      for (let dy = -r; dy <= r && !placed; dy++) {
-        for (let dx = -r; dx <= r && !placed; dx++) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-          const x = cx + dx, y = cy + dy;
-          if (!inBounds(map, x, y) || !isPassable(map, x, y) || occupied.has(y * W + x)) continue;
-          const e = world.createEntity();
-          world.addComponent<Position>(e, C_POSITION, { x, y });
-          world.addComponent<Civic>(e, C_CIVIC, civic);
-          occupied.add(y * W + x);
-          placed = true;
-        }
-      }
-    }
+    if (b.minPopulation <= pop) raiseCivic(world, cfg, map, b, occupied);
   }
 }
 

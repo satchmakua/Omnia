@@ -7,3 +7,5 @@ icon: "infirmary"
 effect: "heal"      # daily: ill/wounded folk within radius regain `magnitude` health
 radius: 5
 magnitude: 0.18
+
+minPopulation: 26   # an infirmary once there are enough folk to tend

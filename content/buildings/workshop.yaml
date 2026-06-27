@@ -7,3 +7,5 @@ icon: "workshop"
 effect: "hone"      # daily: crafters within radius gain `magnitude` extra craft skill
 radius: 5
 magnitude: 0.1
+
+minPopulation: 32   # a guild workshop as the crafts grow
