@@ -11,6 +11,7 @@ import type {
 } from '../sim/components.ts';
 import type { EventLogData } from '../history/eventlog.ts';
 import type { TileMapData } from '../world/tilemap.ts';
+import { isWater } from '../world/tilemap.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import { ageInYears, calendarOf } from '../sim/config.ts';
 import { CATEGORY_COLOR, resourceIcon } from './icons.ts';
@@ -300,6 +301,7 @@ export class Renderer {
         quest: world.hasComponent(e, C_QUEST),                       // ⚑ on a quest (M20 s3)
         veteran: !!cmb && (cmb.kills > 0 || cmb.scars > 0),          // ⚔ a fighter (M16)
         outlaw: world.hasComponent(e, C_CRIME),                      // ⚖ an outlaw (M16)
+        boat: !!map && isWater(map, p.x, p.y),                       // ⛵ afloat — a folk on the water rides a boat (M24)
       });
     }
 
@@ -319,8 +321,18 @@ export class Renderer {
     ctx.restore();
   }
 
-  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; wounded: boolean; action: string; chatting: boolean; bodyColor?: string; quest?: boolean; veteran?: boolean; outlaw?: boolean }): void {
+  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; wounded: boolean; action: string; chatting: boolean; bodyColor?: string; quest?: boolean; veteran?: boolean; outlaw?: boolean; boat?: boolean }): void {
     const ctx = this.ctx;
+    // A folk on the water rides a boat (M24): a wooden hull beneath them, with a little wake.
+    if (st.boat) {
+      this.at(gx, gy, 1, () => {
+        ctx.strokeStyle = '#5a93a8'; ctx.lineWidth = 1; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-10, 10); ctx.quadraticCurveTo(-7.5, 8.5, -5, 10); ctx.moveTo(5, 10); ctx.quadraticCurveTo(7.5, 8.5, 10, 10); ctx.stroke();   // wake
+        ctx.fillStyle = '#8a5a36';   // the hull
+        ctx.beginPath(); ctx.moveTo(-8, 5); ctx.lineTo(8, 5); ctx.lineTo(5.5, 11); ctx.lineTo(-5.5, 11); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#6b4426'; ctx.fillRect(-8, 4.2, 16, 1.4);   // gunwale
+      });
+    }
     this.at(gx, gy, child ? 0.72 : 1, () => {
       ctx.fillStyle = st.bodyColor ?? CATEGORY_COLOR.folk;   // tinted by tribe (M14)
       ctx.beginPath(); ctx.arc(0, -6, 4, 0, Math.PI * 2); ctx.fill();

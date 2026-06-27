@@ -14,8 +14,9 @@ import {
 import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock, Market, Combat, Crime } from './components.ts';
 import type { SimConfig } from './config.ts';
 import { ageInYears, calendarOf } from './config.ts';
-import { isPassable } from '../world/tilemap.ts';
+import { isPassable, isWater } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
+import { getOrgStore } from '../org/orgStore.ts';
 import { wealthStats } from './wealth.ts';
 import { measureWorld } from '../analysis/metrics.ts';
 
@@ -39,6 +40,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     const clock  = world.getComponent<Clock>(clockEntity, C_CLOCK)!;
     let inv = 0;
     const bySpecies: Record<string, number> = {};
+    const orgStore = getOrgStore(world);
 
     for (const e of agents) {
       const n = world.getComponent<Needs>(e, C_NEEDS)!;
@@ -49,7 +51,10 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       if (sp) bySpecies[sp.id] = (bySpecies[sp.id] ?? 0) + 1;
       if (n.hunger < 0 || n.hunger > 1 || n.energy < 0 || n.energy > 1 || n.social < 0 || n.social > 1) inv++;
       if (p.x < 0 || p.x >= cfg.gridWidth || p.y < 0 || p.y >= cfg.gridHeight) inv++;
-      if (!isPassable(tileMap, p.x, p.y)) inv++;  // M2 invariant: never on water/blocked
+      // M2 invariant: folk stay on passable land — UNLESS they're seafaring (a boat on the water, M24).
+      const orgId = world.getComponent<Agent>(e, C_AGENT)?.orgId;
+      const seafarer = !!(orgId && orgStore && (orgStore.byId[orgId]?.effects?.seafaring ?? 0) > 0);
+      if (!isPassable(tileMap, p.x, p.y) && !(seafarer && isWater(tileMap, p.x, p.y))) inv++;
       if (w && (w.gold < 0 || w.debt < 0)) inv++; // M3 invariant: no negative gold/debt
       if (h && (h.value < 0 || h.value > 1)) inv++; // M4 invariant: health in [0,1]
       const m = world.getComponent(e, C_MEMORY) as { utterances: unknown[]; summaries: unknown[] } | undefined;

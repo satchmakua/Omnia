@@ -1,0 +1,10 @@
+# Boatcraft and sailing — hulls, oars and sails to cross the water (M24). Unlocks boats,
+# so a tribe that masters it can send its folk over rivers, lakes and the open sea.
+id: "seafaring"
+name: "Seafaring"
+tier: 2
+era: "Bronze Age"
+cost: 60
+prerequisites: ["toolmaking"]
+effects: ["seafaring"]
+blurb: "Hulls, oars and sails — the folk take to the water."
