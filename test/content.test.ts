@@ -230,16 +230,18 @@ describe('authored /content', () => {
     expect(conjure.cost.mana).toBeGreaterThan(0);
   });
 
-  it('defines the four magic schools as content, each with a valid signature & spells (M26)', () => {
+  it('defines the magic schools as content, each with a valid signature & spells (M26)', () => {
     const content = loadContentFromDisk('./content');
-    expect(content.magic.size).toBe(4);
-    for (const id of ['elementalism', 'restoration', 'divination', 'conjuration']) {
+    expect(content.magic.size).toBe(6);   // elementalism/restoration/divination/conjuration + abjuration/maleficence (s2)
+    for (const id of ['elementalism', 'restoration', 'divination', 'conjuration', 'abjuration', 'maleficence']) {
       expect(content.magic.has(id)).toBe(true);
     }
     const elem = content.magic.require('elementalism');
     expect(elem.signature).toBe('bolt');
     expect(elem.spells.length).toBe(3);
     expect(elem.spells[elem.spells.length - 1].name).toBe('Storm Wrath');
+    expect(content.magic.require('abjuration').signature).toBe('ward');
+    expect(content.magic.require('maleficence').signature).toBe('curse');
   });
 
   it('the hedge-witch profession requires aptitude', () => {

@@ -5,8 +5,8 @@
 // the existing health/mortality machinery. Used by hunting, crime (M16 s2), and war (M16 s3).
 import type { RNG } from './rng.ts';
 import type { World, EntityId } from './ecs.ts';
-import { C_BODY, C_COMBAT, C_AGENT, C_EQUIPMENT, C_QUEST } from './components.ts';
-import type { Body, Combat, Agent, Equipment, Quest } from './components.ts';
+import { C_BODY, C_COMBAT, C_AGENT, C_EQUIPMENT, C_QUEST, C_WARD } from './components.ts';
+import type { Body, Combat, Agent, Equipment, Quest, Ward } from './components.ts';
 import { getCultureStore, getCulture } from '../culture/cultureStore.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 
@@ -75,6 +75,9 @@ export function combatantOf(world: World, e: EntityId): Combatant {
   const ostore = getOrgStore(world);
   if (ostore && agent?.orgId) arms = ostore.byId[agent.orgId]?.effects?.arms ?? 0;
   const eq = world.getComponent<Equipment>(e, C_EQUIPMENT);
+  // A ward (M26 s2) lends temporary armour-soak; expiry is swept by the MagicSystem, so a present
+  // ward is live (at worst one tick stale, harmlessly — combat runs just before that sweep).
+  const ward = world.getComponent<Ward>(e, C_WARD);
   return {
     str: body?.str ?? 10,
     dex: body?.dex ?? 10,
@@ -84,7 +87,7 @@ export function combatantOf(world: World, e: EntityId): Combatant {
     prowess: combat ? combat.scars + combat.kills * 2 : 0,
     arms,
     weapon: eq?.weapon ?? 0,
-    armour: eq?.armour ?? 0,
+    armour: (eq?.armour ?? 0) + (ward?.soak ?? 0),
   };
 }
 

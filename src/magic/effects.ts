@@ -12,6 +12,8 @@ export const SPELL_EFFECTS = [
   'heal',     // mend the most-wounded neighbour
   'inspire',  // hearten a downcast neighbour
   'sustain',  // conjure a meal for a hungry neighbour
+  'ward',     // shield an endangered ally with temporary combat soak (M26 s2)
+  'curse',    // hex a marauding beast, sapping its blows (M26 s2)
 ] as const;
 
 export type SpellEffect = (typeof SPELL_EFFECTS)[number];

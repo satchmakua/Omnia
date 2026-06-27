@@ -1,0 +1,10 @@
+# A magic school (M26 s2) — see elementalism.yaml for the shape. The abjurer is a protector:
+# their signature `ward` lays a temporary shield (combat soak) on the ally in most danger.
+id: abjuration
+name: Abjuration
+blurb: wards & shielding — the magic of protection
+signature: ward
+spells:
+  - { name: Shield, mastery: 1, effect: ward }
+  - { name: Aegis, mastery: 3, effect: ward }
+  - { name: Sanctuary, mastery: 5, effect: ward }

@@ -46,6 +46,8 @@ export const C_WONDERSITE   = 'WonderSite';   // a completed wonder, a landmark 
 export const C_SPECIAL      = 'Special';      // a special agent — a monster / uncanny visitor that roams the map (M21)
 export const C_FISH         = 'Fish';         // aquatic life — swims in water tiles, breeds, fished for food (M24)
 export const C_VOYAGE       = 'Voyage';       // a seafaring merchant on a trade voyage to an overseas settlement (M25 s3)
+export const C_WARD         = 'Ward';         // a protective enchantment on a folk — temporary combat soak (M26 s2)
+export const C_CURSE        = 'Curse';        // a debilitating hex on a foe — temporary combat weakening (M26 s2)
 
 export interface Position {
   x: number;
@@ -195,6 +197,19 @@ export interface Magic {
   manaRegenPerTick: number;
   school?: string;    // the mage's discipline (elementalism / restoration / divination / conjuration) (M17 s3)
   mastery?: number;   // skill in that school (grows with practice; unlocks stronger spells)
+}
+
+// Battle magic (M26 s2): two short-lived enchantments read by the combat path (combat.ts).
+// A **ward** (cast by an abjurer on an endangered ally) adds temporary armour-soak; a **curse**
+// (cast by a maleficent mage on a marauding beast) saps its blows. Both carry an `expiresTick`;
+// the MagicSystem sweeps expired ones each tick. Lazily attached only to enchanted entities.
+export interface Ward {
+  soak: number;        // bonus armour while warded (added to Equipment armour in combatantOf)
+  expiresTick: number; // tick at which the ward fades
+}
+export interface Curse {
+  weaken: number;      // 0..1 fraction by which the hexed foe's attacks are sapped
+  expiresTick: number; // tick at which the hex lifts
 }
 
 // An agent's occupation. `employer` points at a Business entity; `wagePerTick`

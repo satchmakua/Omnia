@@ -1,0 +1,10 @@
+# A magic school (M26 s2) — see elementalism.yaml for the shape. The maleficent mage hexes a
+# marauding beast beside them: its `curse` saps the creature's blows so the folk can cut it down.
+id: maleficence
+name: Maleficence
+blurb: curses, hexes & blight — the magic of ruin
+signature: curse
+spells:
+  - { name: Hex, mastery: 1, effect: curse }
+  - { name: Blight, mastery: 3, effect: curse }
+  - { name: Doom, mastery: 5, effect: curse }

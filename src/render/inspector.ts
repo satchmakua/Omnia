@@ -2,11 +2,11 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
 import { socialClassOf } from '../sim/society.ts';
@@ -266,6 +266,9 @@ export class Inspector {
     // A procedural quest the soul has taken up (M20 s3).
     const quest = world.getComponent<Quest>(e, C_QUEST);
     const questLine = quest ? `<div style="color:#ffd27a">⚑ on a quest — to ${quest.text}</div>` : '';
+    // A protective ward laid by an abjurer (M26 s2).
+    const ward = world.getComponent<Ward>(e, C_WARD);
+    const wardLine = ward ? `<div style="color:#8fd8ff">🛡 warded — shielded against harm</div>` : '';
 
     // Carried materials & goods + craft skill (M23): what the gatherer/crafter holds & can make.
     const inv = world.getComponent<Inventory>(e, C_INVENTORY);
@@ -322,6 +325,7 @@ export class Inspector {
       ${moodLine}
       ${healthBlock}
       ${questLine}
+      ${wardLine}
       ${livelihoodBlock}
       ${carryingBlock}
       ${family}
@@ -536,10 +540,13 @@ export class Inspector {
 
   private _fauna(world: World, e: EntityId, pos: Position): string {
     const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
+    const curse = world.getComponent<Curse>(e, C_CURSE);
+    const curseLine = curse ? `<div style="color:#c98fe0">☠ cursed — its blows are sapped</div>` : '';
     return `
       ${this.title(fa.name, 'fauna · instinct (no LLM)')}
       <div><b>Colour</b> <span style="color:${fa.color}">${fa.color}</span></div>
       ${this.terrainLine(world, pos)}
+      ${curseLine}
       <div><b>Age</b> ${fa.ticksAlive} ticks</div>
       <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
       <hr style="${RULE}">

@@ -4,8 +4,8 @@
 // folk fights back: a strong, brave one drives off or slays the beast and earns a kill (a
 // veteran). Runs after movement/fauna so positions are final; uses 8-neighbour adjacency.
 import type { World, EntityId } from '../ecs.ts';
-import { C_FAUNA, C_AGENT, C_POSITION, C_HEALTH, C_CLOCK } from '../components.ts';
-import type { Fauna, Agent, Health, Position, Clock } from '../components.ts';
+import { C_FAUNA, C_AGENT, C_POSITION, C_HEALTH, C_CLOCK, C_CURSE } from '../components.ts';
+import type { Fauna, Agent, Health, Position, Clock, Curse } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
@@ -49,6 +49,10 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
 
     const beast = world.getComponent<Fauna>(pe, C_FAUNA)!;
     const atk = beastCombatant(beast.size, true);
+    // A maleficent mage's curse (M26 s2) saps the beast: it strikes less often & softer, so the
+    // folk it menaces can cut it down. Expiry is swept by the MagicSystem.
+    const curse = world.getComponent<Curse>(pe, C_CURSE);
+    if (curse) { const k = 1 - curse.weaken; atk.str *= k; atk.dex *= k; atk.ferocity *= k; }
     const def = combatantOf(world, folk);
     const health = world.getComponent<Health>(folk, C_HEALTH)!;
     const agent = world.getComponent<Agent>(folk, C_AGENT)!;
