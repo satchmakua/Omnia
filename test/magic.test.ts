@@ -202,7 +202,10 @@ describe('MagicSystem (M17 s3)', () => {
   });
 
   it('aptitude-gifted folk are given a school and mastery at world-gen', () => {
-    const { world } = createSimulation({ ...defaultConfig, seed: 8 }, content);
+    // A larger founding town so the rare magic aptitude is near-certain to appear in someone
+    // (otherwise this is sensitive to which species the seed spawns — M21 added races with low
+    // aptitude, which shifted the per-seed mage count at the default population).
+    const { world } = createSimulation({ ...defaultConfig, seed: 8, initialPopulation: 80 }, content);
     const mages = world.query(C_MAGIC, C_AGENT);
     expect(mages.length).toBeGreaterThan(0);
     for (const e of mages) {

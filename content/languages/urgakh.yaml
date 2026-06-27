@@ -1,0 +1,12 @@
+# Urgakh — the brutal, guttural war-tongue of the orcs (back vowels, growled stops and
+# throaty clusters). Heavier and more snarling than dwarven Drakhan. Spoken by the warbands.
+id: "urgakh"
+name: "Urgakh"
+phonemes:
+  consonants: ["g", "k", "r", "z", "b", "d", "n", "m", "gh", "kr"]
+  vowels: ["a", "o", "u"]
+syllableShapes: ["CVC", "CV"]   # heavy, closed, growled (gh/kr give the throaty bite)
+namePatterns:
+  personal: ["{syl}{syl}", "{syl}{syl}{syl}"]
+  family: ["{syl}{syl}", "{syl}-{syl}"]
+soundChangeRate: 0.22   # a loud, fast-shifting tongue of warbands

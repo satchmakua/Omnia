@@ -1,0 +1,13 @@
+# Gnish Warrens — the goblin folk of the sharp cant: cunning, opportunistic, and
+# every-goblin-for-themselves. Little love for tradition, keen for a quick deal, and
+# open to anyone with something to trade.
+id: "gnish_warrens"
+name: "Gnish Warrens"
+language: "gnish"
+values:
+  communal: 0.25      # every goblin for themselves
+  martial: 0.40       # scrappy, not soldierly
+  traditional: 0.30   # little use for the old ways
+  open: 0.55          # deal with anyone
+practices: ["scrap-hoard", "quick-deal"]
+cohesion: 0.45        # drifts readily
