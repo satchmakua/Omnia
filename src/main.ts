@@ -109,6 +109,7 @@ let activeProvider: AIProvider = stubProvider;
 const OLLAMA = { baseUrl: 'http://localhost:11434', model: 'llama3.2' };
 
 renderer.setClickHandler((entity) => { if (active) inspector.inspect(entity, active.world); });
+renderer.onTileClick = (x, y) => { if (active) inspector.inspectTile(x, y, active.world); };   // inspect bare terrain/water (M24)
 
 let speed = baseCfg.simSpeedTicksPerSecond;
 const controls = new SpeedControl(speed, (v) => { speed = v; });

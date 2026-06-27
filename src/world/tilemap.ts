@@ -46,6 +46,12 @@ export function isPassable(map: TileMapData, x: number, y: number): boolean {
   return map.passableByBiome[biomeIndexAt(map, x, y)];
 }
 
+// Water = an in-bounds tile folk cannot stand on (the impassable biomes are the water ones).
+// Fish swim here (M24), and boats will later cross it; the complement of isPassable, in-bounds.
+export function isWater(map: TileMapData, x: number, y: number): boolean {
+  return inBounds(map, x, y) && !map.passableByBiome[biomeIndexAt(map, x, y)];
+}
+
 // A random passable tile (for placing world-gen entities and re-opened businesses).
 // Falls back to a deterministic scan if random sampling keeps missing.
 export function findPassableTile(rng: RNG, map: TileMapData): { x: number; y: number } {
