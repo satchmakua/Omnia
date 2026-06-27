@@ -16,7 +16,7 @@ import { spawnAgent, renameToClan } from './spawnAgent.ts';
 import { raiseCivic } from './civicBuild.ts';
 import { seedFish } from './systems/FishSystem.ts';
 import { generateTileMap } from '../world/worldgen.ts';
-import { isPassable, findPassableTile } from '../world/tilemap.ts';
+import { isPassable, findPassableTile, coastalTile } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { populateWorld } from '../world/populate.ts';
 import { spawnBusiness } from '../world/spawn.ts';
@@ -215,12 +215,15 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // Populate the world with flora, fauna, and resources from biome spawn tables.
   populateWorld(world, rng, cfg, content, tileMap);
 
-  // Place employer businesses (round-robin over professions for variety).
+  // Place employer businesses (round-robin over professions for variety). A fishery is built
+  // on the coast (a passable tile bordering water) so it can net the fish; if the map has no
+  // coast it falls back to dry land (a degenerate, catchless fishery — rare).
   const professions = content.professions.all();          // deterministic (sorted by id)
   if (professions.length > 0) {
     for (let i = 0; i < scaledBusinessCount(cfg); i++) {
-      const { x, y } = findPassableTile(rng, tileMap);
-      spawnBusiness(world, x, y, professions[i % professions.length], cfg);
+      const prof = professions[i % professions.length];
+      const spot = (prof.fishery ? coastalTile(rng, tileMap) : null) ?? findPassableTile(rng, tileMap);
+      spawnBusiness(world, spot.x, spot.y, prof, cfg);
     }
   }
 

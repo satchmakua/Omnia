@@ -216,6 +216,7 @@ export interface Business {
   requiresAptitude: boolean;  // magical employers hire only agents with magic aptitude
   gathers: string | null;     // resource id employees harvest from nodes, or null
   producesFood?: boolean;     // a food producer (farm) — its workforce supplies the staple market (M15)
+  fishery?: boolean;          // a coastal fishing house (M24) — its food is the fish it catches, not its headcount
   lowFundsDays?: number;      // consecutive days struggling — folds past the grace (M15 slice 2b)
 }
 
@@ -351,6 +352,7 @@ export interface Market {
   supply: number;       // provisions produced per day (last computed)
   demand: number;       // provisions demanded per day (last computed)
   history: number[];    // bounded recent daily prices, for the chart
+  fishCatch?: number;   // provisions from yesterday's fish catch (M24) — fed into supply; fish-limited
 }
 
 // A dwelling an agent built and owns (M11). Homes are static (no brain) — they mark

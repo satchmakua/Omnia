@@ -67,3 +67,21 @@ export function findPassableTile(rng: RNG, map: TileMapData): { x: number; y: nu
   }
   throw new Error('World generation produced no passable tiles');
 }
+
+// A random passable tile that borders water — a coastal spot for a fishery/dock (M24).
+// Returns null if the map has no coast (e.g. a water-less map), so the caller can fall back.
+export function coastalTile(rng: RNG, map: TileMapData): { x: number; y: number } | null {
+  const borders = (x: number, y: number) =>
+    isWater(map, x + 1, y) || isWater(map, x - 1, y) || isWater(map, x, y + 1) || isWater(map, x, y - 1);
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const x = rngInt(rng, 0, map.width - 1);
+    const y = rngInt(rng, 0, map.height - 1);
+    if (isPassable(map, x, y) && borders(x, y)) return { x, y };
+  }
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      if (isPassable(map, x, y) && borders(x, y)) return { x, y };
+    }
+  }
+  return null;
+}
