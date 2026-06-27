@@ -1,0 +1,8 @@
+# A magic school (M26) — see elementalism.yaml for the shape.
+id: divination
+name: Divination
+blurb: insight, luck and foresight
+signature: inspire
+spells:
+  - { name: Insight, mastery: 1, effect: inspire }
+  - { name: Foresight, mastery: 4, effect: inspire }

@@ -281,6 +281,30 @@ export const MonsterSchema = z.object({
 
 export type Monster = z.infer<typeof MonsterSchema>;
 
+// ── Magic school (M26) ────────────────────────────────────────────────────────
+// A discipline a mage practises — a ladder of named spells unlocked by growing mastery
+// (MAGIC_AND_TECHNOLOGY.md). Content declares the school (its signature effect + its spells);
+// the MagicSystem implements *how* each effect tag is cast on a neighbour, and the loader
+// boundary-checks every `signature`/`effect` against src/magic/effects.ts (the data/behaviour
+// boundary, D9) — so adding a school is data-only as long as its effects already exist in code.
+export const SpellSchema = z.object({
+  name: z.string().min(1),
+  mastery: z.number().min(1),      // mastery level at which this spell is learned
+  effect: z.string().min(1),       // a spell-effect tag; code must implement it (effects.ts)
+}).strict();
+
+export type MageSpell = z.infer<typeof SpellSchema>;
+
+export const MagicSchoolSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  blurb: z.string().default(''),
+  signature: z.string().min(1),    // the school's active effect (the spell it casts on others)
+  spells: z.array(SpellSchema).min(1),
+}).strict();
+
+export type MagicSchool = z.infer<typeof MagicSchoolSchema>;
+
 // ── Building (M21) ──────────────────────────────────────────────────────────────
 // A civic building the town raises — some are mere landmarks (a hall, a well), others
 // have a real **function** over the folk nearby: an infirmary heals the sick, a tavern
@@ -320,6 +344,7 @@ export const FOLDER_SCHEMAS = {
   wonders: WonderSchema,
   monsters: MonsterSchema,
   buildings: BuildingSchema,
+  magic: MagicSchoolSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

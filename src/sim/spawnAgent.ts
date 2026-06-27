@@ -24,7 +24,7 @@ import { getLanguageStore, getLanguage } from '../lang/languageStore.ts';
 import { getCultureStore, getCulture, cultureForLanguage, wealthGoalFactor } from '../culture/cultureStore.ts';
 import { nativeFluency } from '../lang/fluency.ts';
 import { MOOD_BASELINE } from './systems/MoodSystem.ts';
-import { SCHOOL_IDS } from '../magic/schools.ts';
+import { schoolIds } from '../magic/schools.ts';
 
 // Re-surname a living agent to their clan (M20): their family name IS the clan's word, so a
 // clan reassignment (world-gen founding, or a schism) renames them. Keeps the given name.
@@ -124,7 +124,8 @@ export function spawnAgent(
   if (rng() < aptChance) {
     // A mage practises one of the four schools; mastery starts scaled by age (a seasoned
     // founder is already adept) and grows over a life (MagicSystem).
-    const school = SCHOOL_IDS[Math.floor(rng() * SCHOOL_IDS.length)];
+    const ids = schoolIds();
+    const school = ids[Math.floor(rng() * ids.length)];
     const mastery = 1 + Math.floor((opts.ageTicks / ticksPerYear(cfg)) / 10);
     world.addComponent<Magic>(e, C_MAGIC, {
       mana: cfg.magicManaMax,

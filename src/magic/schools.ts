@@ -1,63 +1,37 @@
-// The magic tree (M17 slice 3): four schools a mage practices, each a ladder of named spells
-// unlocked by growing mastery. Defined here as one table (data-shaped; could become content
-// later) so the inspector can show the whole tree and the MagicSystem can pick what to cast.
-// Effect tags: 'bolt' (war — strike a foe), 'heal' (mend a neighbour), 'inspire' (lift spirits),
-// 'sustain' (the basic self-conjuring every mage knows — handled by the CapabilitySystem).
+// The magic tree (M26, was M17 s3): the schools a mage practises — each a ladder of named spells
+// unlocked by growing mastery. Schools are now **content** (content/magic/*.yaml), validated +
+// boundary-checked at load (loader.ts); this module holds the shared read helpers the MagicSystem,
+// spawnAgent and the inspector use, backed by a module-level registry set once at content load.
+//
+// Why a module singleton (not threaded `content`): schools are immutable, load-once data, and the
+// helpers are pure reads from many call sites (inspector, two systems, spawn). Setting the registry
+// at the single content-load chokepoint keeps those call sites argument-free. Until content loads
+// (or in a test that never loads it) the readers return empty/undefined — magic simply does nothing,
+// never crashes. (Mirrors how culture/language stores back their helpers, but module-level since
+// schools never mutate at runtime.) See DECISIONS.
+import type { Registry } from '../content/registry.ts';
+import type { MagicSchool, MageSpell } from '../content/schema.ts';
 
-export interface MageSpell {
-  name: string;
-  mastery: number;   // mastery level at which this spell is learned
-  effect: 'bolt' | 'heal' | 'inspire' | 'sustain';
+export type { MagicSchool, MageSpell };
+
+let registry: Registry<MagicSchool> | null = null;
+
+// Called once by loadContent() with the validated schools registry.
+export function setMagicSchools(reg: Registry<MagicSchool>): void {
+  registry = reg;
 }
-export interface MagicSchool {
-  id: string;
-  name: string;
-  blurb: string;
-  signature: 'bolt' | 'heal' | 'inspire' | 'sustain';   // the school's active effect
-  spells: MageSpell[];
+
+// Every school, in a stable order (Registry.all() sorts by id) — for the inspector tree & spawn pick.
+export function allSchools(): MagicSchool[] {
+  return registry ? registry.all() : [];
 }
 
-export const SCHOOLS: MagicSchool[] = [
-  {
-    id: 'elementalism', name: 'Elementalism', blurb: 'fire, frost & storm — the magic of war and the hunt',
-    signature: 'bolt',
-    spells: [
-      { name: 'Spark', mastery: 1, effect: 'bolt' },
-      { name: 'Flame Lash', mastery: 3, effect: 'bolt' },
-      { name: 'Storm Wrath', mastery: 5, effect: 'bolt' },
-    ],
-  },
-  {
-    id: 'restoration', name: 'Restoration', blurb: 'mending flesh and spirit',
-    signature: 'heal',
-    spells: [
-      { name: 'Soothe', mastery: 1, effect: 'heal' },
-      { name: 'Mend Wounds', mastery: 3, effect: 'heal' },
-      { name: 'Renewal', mastery: 5, effect: 'heal' },
-    ],
-  },
-  {
-    id: 'divination', name: 'Divination', blurb: 'insight, luck and foresight',
-    signature: 'inspire',
-    spells: [
-      { name: 'Insight', mastery: 1, effect: 'inspire' },
-      { name: 'Foresight', mastery: 4, effect: 'inspire' },
-    ],
-  },
-  {
-    id: 'conjuration', name: 'Conjuration', blurb: 'summoning meal, vigour and matter from the aether',
-    signature: 'sustain',
-    spells: [
-      { name: 'Conjure Meal', mastery: 1, effect: 'sustain' },
-      { name: 'Mend Vigour', mastery: 1, effect: 'sustain' },
-    ],
-  },
-];
-
-export const SCHOOL_IDS = SCHOOLS.map(s => s.id);
+export function schoolIds(): string[] {
+  return allSchools().map(s => s.id);
+}
 
 export function schoolOf(id: string | undefined): MagicSchool | undefined {
-  return SCHOOLS.find(s => s.id === id);
+  return id !== undefined ? registry?.get(id) : undefined;
 }
 
 // The spells a mage of this school commands at the given mastery (lowest first).
