@@ -3,9 +3,10 @@ import { createSimulation } from '../src/sim/world.ts';
 import { tick } from '../src/sim/loop.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import { C_AGENT, C_NEEDS, C_POSITION, C_TILEMAP } from '../src/sim/components.ts';
-import type { Needs, Position } from '../src/sim/components.ts';
-import { isPassable } from '../src/world/tilemap.ts';
+import type { Needs, Position, Agent } from '../src/sim/components.ts';
+import { isPassable, isWater } from '../src/world/tilemap.ts';
 import type { TileMapData } from '../src/world/tilemap.ts';
+import { getOrgStore } from '../src/org/orgStore.ts';
 import { testContent } from './helpers.ts';
 
 describe('Soak: 10,000-tick headless run', () => {
@@ -20,6 +21,7 @@ describe('Soak: 10,000-tick headless run', () => {
     }
 
     // Every surviving agent must be in a valid state.
+    const orgStore = getOrgStore(world);
     const agents = world.query(C_AGENT, C_NEEDS, C_POSITION);
     for (const e of agents) {
       const n = world.getComponent<Needs>(e, C_NEEDS)!;
@@ -35,7 +37,10 @@ describe('Soak: 10,000-tick headless run', () => {
       expect(p.y, `entity ${e} y out of bounds`).toBeGreaterThanOrEqual(0);
       expect(p.y, `entity ${e} y out of bounds`).toBeLessThan(cfg.gridHeight);
 
-      expect(isPassable(map, p.x, p.y), `entity ${e} on impassable tile`).toBe(true);
+      // Folk stay on passable land — unless seafaring (a boat on the water, M24).
+      const orgId = world.getComponent<Agent>(e, C_AGENT)!.orgId;
+      const seafarer = !!(orgId && orgStore && (orgStore.byId[orgId]?.effects?.seafaring ?? 0) > 0);
+      expect(isPassable(map, p.x, p.y) || (seafarer && isWater(map, p.x, p.y)), `entity ${e} on impassable tile`).toBe(true);
     }
   });
 });

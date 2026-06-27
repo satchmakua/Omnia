@@ -321,6 +321,7 @@ export interface Special {
   name: string;          // display name ("a dragon")
   icon: string;          // which creature glyph to draw
   behavior: 'predator' | 'haunt';
+  aquatic?: boolean;     // a sea-beast (M24): lives in the water, menacing the coast
   str: number;
   dex: number;
   con: number;
