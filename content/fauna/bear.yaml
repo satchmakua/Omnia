@@ -1,0 +1,9 @@
+# Bear — great forest predator, powerful and lean-tolerant. Rare and slow to breed.
+id: "bear"
+name: "Bear"
+color: "#6b5a48"
+size: "large"
+diet: "predator"
+hungerDecayPerDay: 0.10
+breedThreshold: 0.7
+breedCooldownDays: 8

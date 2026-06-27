@@ -12,6 +12,9 @@ flora:
   - { id: "prism_lily", weight: 1 }
 fauna:
   - { id: "crag_ram", weight: 3 }
+  - { id: "rabbit", weight: 3 }
+  - { id: "wild_horse", weight: 2 }
   - { id: "dust_hopper", weight: 2 }
+  - { id: "wolf", weight: 1 }             # wide-ranging hunter — follows the herds onto the flats
 resources:
   - { id: "reactive_crystal", weight: 3 }

@@ -1,0 +1,9 @@
+# Wild boar — tough, bristled rooter of the forests and wastes. Hardy and ill-tempered.
+id: "wild_boar"
+name: "Wild Boar"
+color: "#5e5246"
+size: "medium"
+diet: "grazer"
+hungerDecayPerDay: 0.5
+breedThreshold: 0.72
+breedCooldownDays: 4

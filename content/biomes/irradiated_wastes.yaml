@@ -13,6 +13,8 @@ flora:
 fauna:
   - { id: "dust_hopper", weight: 3 }
   - { id: "dust_beetle", weight: 3 }
+  - { id: "rabbit", weight: 2 }
+  - { id: "wild_boar", weight: 2 }
   - { id: "ember_hound", weight: 1 }
 resources:
   - { id: "ore", weight: 3 }
