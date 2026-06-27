@@ -368,7 +368,7 @@ export interface Civic {
   kind: string;     // 'hall' | 'well' | 'shrine' | 'infirmary' | 'tavern' | 'watch'
   name: string;     // display name
   icon?: string;    // which glyph to draw (defaults to the civic hall icon)
-  effect?: 'heal' | 'cheer' | 'ward';   // the function it radiates (absent = a plain landmark)
+  effect?: 'heal' | 'cheer' | 'ward' | 'trade' | 'hone';   // the function it radiates (absent = a plain landmark)
   radius?: number;  // how many tiles its presence reaches
   magnitude?: number; // strength of the effect (per day, or as a factor for 'ward')
 }
