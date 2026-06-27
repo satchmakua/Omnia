@@ -13,6 +13,7 @@ import { runMovementSystem } from './systems/MovementSystem.ts';
 import { runGatherSystem }   from './systems/GatherSystem.ts';
 import { runCraftSystem }    from './systems/CraftSystem.ts';
 import { runEquipSystem }    from './systems/EquipSystem.ts';
+import { runTradeSystem }    from './systems/TradeSystem.ts';
 import { runFishingSystem }  from './systems/FishingSystem.ts';
 import { runMarketSystem }   from './systems/MarketSystem.ts';
 import { runEconomySystem }  from './systems/EconomySystem.ts';
@@ -66,6 +67,7 @@ export function tick(
   runGatherSystem(world, cfg);           // deplete resource nodes being worked → materials into the bag
   runCraftSystem(world, cfg, content);   // crafters turn carried materials into goods, skill-gated (M23)
   runEquipSystem(world, cfg, content);   // denormalise best carried weapon/armour for combat (M23 s3)
+  runTradeSystem(world, cfg, content);   // sell crafted goods for gold — crafting feeds wealth (M25 s2)
   runFishingSystem(world, cfg);          // coastal fisheries net fish → food (fish-limited) (M24)
   runMarketSystem(world, cfg);           // staple market: price floats with supply/demand (sets the cost of living)
   runEconomySystem(world, cfg);          // hiring, wages, cost of living (at the market price)
