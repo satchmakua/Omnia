@@ -8,10 +8,12 @@ import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig, ticksPerYear } from '../src/sim/config.ts';
 import { createSimulation } from '../src/sim/world.ts';
 import {
-  C_CIVIC, C_AGENT, C_POSITION, C_NEEDS, C_HEALTH, C_CRAFTING, C_CLOCK,
+  C_CIVIC, C_AGENT, C_POSITION, C_NEEDS, C_HEALTH, C_CRAFTING, C_TILEMAP, C_CLOCK,
 } from '../src/sim/components.ts';
 import type { Civic, Agent, Needs, Health, Crafting, Clock, Position } from '../src/sim/components.ts';
+import type { TileMapData } from '../src/world/tilemap.ts';
 import { runCivicSystem, wardFactor, marketFactor } from '../src/sim/systems/CivicSystem.ts';
+import { runCivicBuildSystem } from '../src/sim/systems/CivicBuildSystem.ts';
 import { testContent } from './helpers.ts';
 
 const cfg = defaultConfig;
@@ -49,10 +51,22 @@ describe('civic building content (M21)', () => {
     expect(content.buildings.require('workshop').effect).toBe('hone');
   });
 
-  it('a real town raises the functional buildings as civic entities', () => {
-    const { world: w } = createSimulation({ ...cfg, seed: 11 }, content);
+  it('a town founded large enough has all the functional buildings at world-gen', () => {
+    // Founded at 60 — past every building's minPopulation, so the town starts fully built.
+    const { world: w } = createSimulation({ ...cfg, seed: 11, initialPopulation: 60 }, content);
     const effects = w.query(C_CIVIC).map(e => w.getComponent<Civic>(e, C_CIVIC)!.effect).filter(Boolean);
     for (const fx of ['heal', 'cheer', 'ward', 'trade', 'hone']) expect(effects).toContain(fx);
+  });
+
+  it('a small founding town starts with only the buildings its size warrants (emergent rest)', () => {
+    // Founded at 20 — only the landmarks + low-threshold functional buildings (tavern 16, market 20)
+    // appear at gen; the infirmary/workshop/watch-house are raised later as it grows.
+    const { world: w } = createSimulation({ ...cfg, seed: 11, initialPopulation: 20 }, content);
+    const kinds = new Set(w.query(C_CIVIC).map(e => w.getComponent<Civic>(e, C_CIVIC)!.kind));
+    expect(kinds.has('hall')).toBe(true);       // landmark
+    expect(kinds.has('tavern')).toBe(true);     // minPop 16 ≤ 20
+    expect(kinds.has('market')).toBe(true);     // minPop 20 ≤ 20
+    expect(kinds.has('watch')).toBe(false);     // minPop 38 > 20 — not yet
   });
 });
 
@@ -140,5 +154,46 @@ describe('CivicSystem — hone (workshop, M21)', () => {
     w.addComponent<Crafting>(master, C_CRAFTING, { skill: 9.8 });
     runCivicSystem(w, cfg);
     expect(w.getComponent<Crafting>(master, C_CRAFTING)!.skill).toBe(10);   // clamped at SKILL_CAP
+  });
+});
+
+// A world with a flat map, a clock at a daily tick, and `pop` folk — for the emergent builder.
+function buildWorld(pop: number): World {
+  const w = world();
+  const W = cfg.gridWidth, H = cfg.gridHeight;
+  w.addComponent<TileMapData>(w.createEntity(), C_TILEMAP, {
+    width: W, height: H, biomeIndex: new Uint16Array(W * H), biomeIds: ['g'], biomeNames: ['G'], colors: ['#333'], passableByBiome: [true],
+  });
+  for (let i = 0; i < pop; i++) folk(w, i % W, Math.floor(i / W));
+  return w;
+}
+const functionalKinds = (w: World) =>
+  w.query(C_CIVIC).map(e => w.getComponent<Civic>(e, C_CIVIC)!).filter(c => c.effect).map(c => c.kind);
+
+describe('CivicBuildSystem — the town raises buildings as it grows (M21)', () => {
+  it('a tiny hamlet raises nothing yet', () => {
+    const w = buildWorld(10);   // below every functional building's minPopulation
+    runCivicBuildSystem(w, cfg, content);
+    expect(functionalKinds(w).length).toBe(0);
+  });
+
+  it('raises one building a day, never doubling up, until the town has them all', () => {
+    const w = buildWorld(40);   // past every threshold (max is the watch-house at 38)
+    runCivicBuildSystem(w, cfg, content);
+    expect(functionalKinds(w).length).toBe(1);   // one a day
+    for (let d = 0; d < 8; d++) runCivicBuildSystem(w, cfg, content);
+    const kinds = functionalKinds(w);
+    expect(new Set(kinds).size).toBe(5);          // all five functional buildings, no duplicates
+    expect(kinds.length).toBe(5);
+  });
+
+  it('only raises buildings the population has grown into', () => {
+    const w = buildWorld(20);   // tavern (16) & market (20) eligible; the rest not
+    for (let d = 0; d < 8; d++) runCivicBuildSystem(w, cfg, content);
+    const kinds = new Set(functionalKinds(w));
+    expect(kinds.has('tavern')).toBe(true);
+    expect(kinds.has('market')).toBe(true);
+    expect(kinds.has('infirmary')).toBe(false);   // minPop 26 > 20
+    expect(kinds.has('watch')).toBe(false);       // minPop 38 > 20
   });
 });

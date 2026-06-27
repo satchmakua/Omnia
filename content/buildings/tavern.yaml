@@ -7,3 +7,5 @@ icon: "tavern"
 effect: "cheer"     # daily: folk within radius gain `magnitude` social need + a mood lift
 radius: 5
 magnitude: 0.2
+
+minPopulation: 16   # the town opens a tavern early

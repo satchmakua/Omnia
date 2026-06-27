@@ -7,3 +7,5 @@ icon: "watch"
 effect: "ward"      # crime chance is scaled by (1 - magnitude) for folk within radius
 radius: 7
 magnitude: 0.6
+
+minPopulation: 38   # a watch-house once the town is large enough to need one

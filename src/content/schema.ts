@@ -294,6 +294,7 @@ export const BuildingSchema = z.object({
   effect: z.enum(['none', 'heal', 'cheer', 'ward', 'trade', 'hone']).default('none'),  // what it radiates to nearby folk
   radius: z.number().int().positive().default(5), // how many tiles its presence reaches
   magnitude: z.number().min(0).max(1).default(0.15),  // strength of the effect (per day, or as a factor for 'ward')
+  minPopulation: z.number().int().min(0).default(0),  // the town raises it once it grows this big (0 = a founding landmark)
 }).strict();
 
 export type Building = z.infer<typeof BuildingSchema>;

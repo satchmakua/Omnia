@@ -7,3 +7,5 @@ icon: "market"
 effect: "trade"     # cost of living is scaled by (1 - magnitude) for folk within radius
 radius: 6
 magnitude: 0.25
+
+minPopulation: 20   # a market square once the town is established
