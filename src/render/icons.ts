@@ -28,6 +28,7 @@ export const CATEGORY_COLOR = {
   monster:  '#d06b6b',
   ghost:    '#aec4ea',
   alien:    '#5cc95c',
+  kraken:   '#577a87',
   // Functional civic buildings (M21) — each icon carries its own palette.
   infirmary: '#d98b8b',
   tavern:    '#c89a5a',
@@ -164,6 +165,12 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
         `<rect x="-5" y="-8.5" width="2.6" height="2.6" fill="#8696b3"/><rect x="-1.3" y="-8.5" width="2.6" height="2.6" fill="#8696b3"/><rect x="2.4" y="-8.5" width="2.6" height="2.6" fill="#8696b3"/>` +
         `<path d="M0 -3 L3 -2 V1.5 Q3 4 0 5 Q-3 4 -3 1.5 V-2 Z" fill="#cdd6e2"/>` +
         `<path d="M0 -1 V3 M-2 0.5 H2" stroke="#5b6b86" stroke-width="0.9" fill="none"/>`;
+    case 'kraken': { // a beast of the deep — a bulbous mantle, dark eyes, splaying tentacles
+      const skin = '#577a87';
+      return `<ellipse cx="0" cy="-3" rx="6" ry="5" fill="${skin}"/>` +
+        `<path d="M-5 1 Q-7 5 -5 9 M-2.5 2 Q-3.2 6 -1 10 M0 2.5 Q0 7 0 10.5 M2.5 2 Q3.2 6 1 10 M5 1 Q7 5 5 9" stroke="${skin}" stroke-width="1.6" fill="none" stroke-linecap="round"/>` +
+        `<circle cx="-2.2" cy="-3.4" r="1" fill="#0c1418"/><circle cx="2.2" cy="-3.4" r="1" fill="#0c1418"/>`;
+    }
     case 'alien': { // a grey in green: bulbous head, big slanted black eyes, slender body
       const skin = '#5cc95c';
       return `<path d="M-2 11 L-1.4 1 L1.4 1 L2 11 Z" fill="${skin}"/>` +
@@ -205,4 +212,5 @@ export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; lab
   { key: 'monster', label: 'Monster', desc: 'a dire beast that hunts the unwary' },
   { key: 'ghost', label: 'Ghost', desc: 'a haunt — it draws no blood, but chills the soul' },
   { key: 'alien', label: 'Visitor', desc: 'an uncanny wanderer — unsettling, but no killer' },
+  { key: 'kraken', label: 'Kraken', desc: 'a beast of the deep — it rises to seize folk at the water’s edge' },
 ];

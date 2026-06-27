@@ -20,6 +20,7 @@ import { ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
+import { isWater } from '../../world/tilemap.ts';
 import { makeEnterable, stepToward, wanderStep, buildOccupancy } from './movementUtil.ts';
 import type { Enterable } from './movementUtil.ts';
 import { SpatialGrid } from '../spatialGrid.ts';
@@ -57,6 +58,16 @@ function edgeSpawn(cfg: SimConfig, enterable: Enterable, rng: RNG): Position | n
   return null;
 }
 
+// A random water tile — where a sea-beast rises (M24). Null if the map has no sea.
+function waterSpawn(cfg: SimConfig, map: TileMapData | undefined, rng: RNG): Position | null {
+  if (!map) return null;
+  for (let tries = 0; tries < 60; tries++) {
+    const x = Math.floor(rng() * cfg.gridWidth), y = Math.floor(rng() * cfg.gridHeight);
+    if (isWater(map, x, y)) return { x, y };
+  }
+  return null;
+}
+
 export function runSpecialAgentSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const clockEnts = world.query(C_CLOCK);
   if (!clockEnts.length) return;
@@ -66,6 +77,7 @@ export function runSpecialAgentSystem(world: World, cfg: SimConfig, rng: RNG, co
   const mapEnts = world.query(C_TILEMAP);
   const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
   const enterable = makeEnterable(cfg, map);
+  const waterEnterable: Enterable = (x, y) => !!map && isWater(map, x, y);   // sea-beasts stay in the water (M24)
   const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0] ?? -1, C_CHRONICLE);
 
   let specials = world.query(C_SPECIAL, C_POSITION);
@@ -74,17 +86,17 @@ export function runSpecialAgentSystem(world: World, cfg: SimConfig, rng: RNG, co
   if (tick > 0 && tick % cfg.ticksPerDay === 0 && specials.length < MAX_SPECIALS && content.monsters.size > 0) {
     for (const m of content.monsters.all()) {
       if (rng() >= m.spawnChancePerDay) continue;
-      const pos = edgeSpawn(cfg, enterable, rng);
+      const pos = m.aquatic ? waterSpawn(cfg, map, rng) : edgeSpawn(cfg, enterable, rng);
       if (!pos) break;
       const e = world.createEntity();
       world.addComponent<Position>(e, C_POSITION, pos);
       world.addComponent<Health>(e, C_HEALTH, { value: 1, ill: false });
       world.addComponent<Special>(e, C_SPECIAL, {
-        kind: m.id, name: m.name, icon: m.icon, behavior: m.behavior,
+        kind: m.id, name: m.name, icon: m.icon, behavior: m.behavior, aquatic: m.aquatic,
         str: m.str, dex: m.dex, con: m.con, ferocity: m.ferocity,
         spawnTick: tick, despawnTick: tick + Math.round(m.despawnDays * cfg.ticksPerDay),
       });
-      emitEvent(world, 'paranormal', `${capitalize(m.name)} appeared at the edge of the wilds.`, pos);
+      emitEvent(world, 'paranormal', `${capitalize(m.name)} ${m.aquatic ? 'rose from the deep' : 'appeared at the edge of the wilds'}.`, pos);
       if (ch) chronicleAdd(ch, {
         tick, importance: 0.6, kind: 'paranormal', text: `${capitalize(m.name)} was abroad in the land.`,
       }, cfg.chronicleImportanceThreshold);
@@ -118,17 +130,19 @@ export function runSpecialAgentSystem(world: World, cfg: SimConfig, rng: RNG, co
       continue;
     }
 
+    const ent = s.aquatic ? waterEnterable : enterable;   // a sea-beast moves only through water (M24)
+
     if (s.behavior === 'haunt') {
       runHaunt(world, s, pos, folkGrid, tick, cfg);
-      wanderStep(pos, rng, enterable, occ);
+      wanderStep(pos, rng, ent, occ);
       continue;
     }
 
     // ── Predator: hunt the nearest folk; trade blows when adjacent ──
     const prey = folkGrid.nearest(pos.x, pos.y);
-    if (!prey) { wanderStep(pos, rng, enterable, occ); continue; }
+    if (!prey) { wanderStep(pos, rng, ent, occ); continue; }
     const dist = Math.abs(prey.x - pos.x) + Math.abs(prey.y - pos.y);
-    if (dist > 1) { stepToward(pos, prey.x, prey.y, rng, enterable, occ); continue; }
+    if (dist > 1) { stepToward(pos, prey.x, prey.y, rng, ent, occ); continue; }
 
     // Adjacent: the monster strikes its target, then every adjacent folk strikes back.
     const atk = specialCombatant(s);

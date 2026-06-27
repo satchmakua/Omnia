@@ -660,6 +660,7 @@ export class Renderer {
         case 'undead':  this.drawUndead(); break;
         case 'ghost':   this.drawGhost(); break;
         case 'alien':   this.drawAlien(); break;
+        case 'kraken':  this.drawKraken(); break;
         default:        this.drawMonster(); break;   // 'monster' — a dire beast
       }
       if (wounded) { ctx.strokeStyle = '#ff5050'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-4, 11.5); ctx.lineTo(4, 11.5); ctx.stroke(); }
@@ -754,6 +755,22 @@ export class Renderer {
       ctx.beginPath(); ctx.ellipse(0, 0, 1.5, 2.7, 0, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
+  }
+
+  // A kraken (M24): a bulbous mantle with dark eyes and five splaying tentacles.
+  private drawKraken(): void {
+    const ctx = this.ctx, skin = '#577a87';
+    ctx.fillStyle = skin;
+    ctx.beginPath(); ctx.ellipse(0, -3, 6, 5, 0, 0, Math.PI * 2); ctx.fill();   // mantle
+    ctx.strokeStyle = skin; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.beginPath();
+    ctx.moveTo(-5, 1); ctx.quadraticCurveTo(-7, 5, -5, 9);
+    ctx.moveTo(-2.5, 2); ctx.quadraticCurveTo(-3.2, 6, -1, 10);
+    ctx.moveTo(0, 2.5); ctx.quadraticCurveTo(0, 7, 0, 10.5);
+    ctx.moveTo(2.5, 2); ctx.quadraticCurveTo(3.2, 6, 1, 10);
+    ctx.moveTo(5, 1); ctx.quadraticCurveTo(7, 5, 5, 9);
+    ctx.stroke();                                                                // tentacles
+    ctx.fillStyle = '#0c1418';
+    ctx.beginPath(); ctx.arc(-2.2, -3.4, 1, 0, Math.PI * 2); ctx.arc(2.2, -3.4, 1, 0, Math.PI * 2); ctx.fill();
   }
 
   private drawHud(world: World, clockEntity: EntityId, elapsedMs: number): void {

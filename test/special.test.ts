@@ -11,6 +11,7 @@ import {
 } from '../src/sim/components.ts';
 import type { Agent, Clock, Special, Position, Health, Body, Combat, Memory } from '../src/sim/components.ts';
 import type { TileMapData } from '../src/world/tilemap.ts';
+import { isWater } from '../src/world/tilemap.ts';
 import type { Content } from '../src/content/loader.ts';
 import { Registry } from '../src/content/registry.ts';
 import type { Monster } from '../src/content/schema.ts';
@@ -37,7 +38,7 @@ function contentWith(monsters: Monster[]): Content {
   return { ...testContent(), monsters: new Registry(monsters) };
 }
 function monster(over: Partial<Monster> = {}): Monster {
-  return { id: 'fiend', name: 'a fiend', icon: 'monster', behavior: 'predator', str: 13, dex: 10, con: 13, ferocity: 1.3, spawnChancePerDay: 1, despawnDays: 10, ...over };
+  return { id: 'fiend', name: 'a fiend', icon: 'monster', behavior: 'predator', aquatic: false, str: 13, dex: 10, con: 13, ferocity: 1.3, spawnChancePerDay: 1, despawnDays: 10, ...over };
 }
 
 function folk(w: World, x: number, y: number, over: Partial<Body> = {}, health = 1): EntityId {
@@ -156,5 +157,60 @@ describe('SpecialAgentSystem — haunt (M21)', () => {
     const rng = createRNG(6);
     for (let t = 0; t < 30; t++) runSpecialAgentSystem(w, cfg, rng, contentWith([]));
     expect(w.getComponent<Health>(e, C_HEALTH)!.value).toBe(1);
+  });
+});
+
+// A coastal map: the left half is land, the right half (x ≥ HALF) is water.
+const HALF = Math.floor(cfg.gridWidth / 2);
+function pondWorld(tick: number): World {
+  const w = new World();
+  w.addComponent<Clock>(w.createEntity(), C_CLOCK, { tick, day: 1, hour: 0, isDay: true });
+  const W = cfg.gridWidth, H = cfg.gridHeight;
+  const biomeIndex = new Uint16Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) biomeIndex[y * W + x] = x >= HALF ? 1 : 0;
+  w.addComponent<TileMapData>(w.createEntity(), C_TILEMAP, {
+    width: W, height: H, biomeIndex, biomeIds: ['g', 's'], biomeNames: ['G', 'S'], colors: ['#333', '#258'], passableByBiome: [true, false],
+  });
+  return w;
+}
+const krakenMon = (over: Partial<Monster> = {}): Monster =>
+  monster({ id: 'kraken', name: 'a kraken', icon: 'kraken', aquatic: true, spawnChancePerDay: 1, ...over });
+
+describe('SpecialAgentSystem — sea beasts (M24)', () => {
+  it('an aquatic monster rises in the water (not on land)', () => {
+    const w = pondWorld(cfg.ticksPerDay);
+    runSpecialAgentSystem(w, cfg, createRNG(1), contentWith([krakenMon()]));
+    const ss = specialsOf(w);
+    expect(ss.length).toBe(1);
+    const p = w.getComponent<Position>(ss[0], C_POSITION)!;
+    const map = w.getComponent<TileMapData>(w.query(C_TILEMAP)[0], C_TILEMAP)!;
+    expect(isWater(map, p.x, p.y)).toBe(true);   // it spawned in the sea
+  });
+
+  it('a sea beast never crawls onto land', () => {
+    const w = pondWorld(7);
+    folk(w, HALF - 1, 10);   // a coastal soul to lure it shoreward
+    const k = spawnSpecial(w, HALF + 2, 10, { aquatic: true, name: 'a kraken', icon: 'kraken' });
+    const map = w.getComponent<TileMapData>(w.query(C_TILEMAP)[0], C_TILEMAP)!;
+    const rng = createRNG(2);
+    for (let t = 0; t < 200; t++) {
+      runSpecialAgentSystem(w, cfg, rng, contentWith([]));
+      if (!w.hasComponent(k, C_SPECIAL)) break;   // (it may be slain; that's fine)
+      const p = w.getComponent<Position>(k, C_POSITION)!;
+      expect(isWater(map, p.x, p.y), `kraken on land at (${p.x},${p.y})`).toBe(true);
+    }
+  });
+
+  it('a sea beast menaces the coast — a frail soul at the water’s edge can be taken', () => {
+    const w = pondWorld(7);
+    const victim = folk(w, HALF - 1, 10, { str: 8, dex: 8, con: 8 }, 0.25);   // frail, on the shore
+    spawnSpecial(w, HALF, 10, { aquatic: true, name: 'a kraken', icon: 'kraken', str: 18, dex: 12, con: 17, ferocity: 1.5 });
+    let dead = false;
+    const rng = createRNG(3);
+    for (let t = 0; t < 300 && !dead; t++) {
+      runSpecialAgentSystem(w, cfg, rng, contentWith([]));
+      dead = !w.hasComponent(victim, C_AGENT);
+    }
+    expect(dead).toBe(true);   // the deep took them
   });
 });

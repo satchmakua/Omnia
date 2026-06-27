@@ -268,8 +268,9 @@ export type Wonder = z.infer<typeof WonderSchema>;
 export const MonsterSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  icon: z.enum(['monster', 'dragon', 'undead', 'vampire', 'ghost', 'alien']),
+  icon: z.enum(['monster', 'dragon', 'undead', 'vampire', 'ghost', 'alien', 'kraken']),
   behavior: z.enum(['predator', 'haunt']).default('predator'),  // predator: hunts folk; haunt: eerie, no blood
+  aquatic: z.boolean().default(false),   // a sea-beast (M24): spawns in & stays in water, menacing the coast
   str: z.number().default(13),
   dex: z.number().default(10),
   con: z.number().default(13),

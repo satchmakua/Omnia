@@ -1,0 +1,14 @@
+# The kraken — a great beast of the deep that rises to seize folk who work the water's edge.
+# Aquatic: it lurks in the sea and strikes the coast, but cannot crawl onto dry land. Rare,
+# and a mighty foe — to slay one is a saga.
+id: "kraken"
+name: "a kraken"
+icon: "kraken"
+behavior: "predator"
+aquatic: true
+str: 18
+dex: 11
+con: 17
+ferocity: 1.5
+spawnChancePerDay: 0.004
+despawnDays: 12
