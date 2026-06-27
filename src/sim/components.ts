@@ -45,6 +45,7 @@ export const C_WONDERS      = 'Wonders';      // singleton: town-scale mega-proj
 export const C_WONDERSITE   = 'WonderSite';   // a completed wonder, a landmark on the map (M20 s3b)
 export const C_SPECIAL      = 'Special';      // a special agent — a monster / uncanny visitor that roams the map (M21)
 export const C_FISH         = 'Fish';         // aquatic life — swims in water tiles, breeds, fished for food (M24)
+export const C_VOYAGE       = 'Voyage';       // a seafaring merchant on a trade voyage to an overseas settlement (M25 s3)
 
 export interface Position {
   x: number;
@@ -423,6 +424,15 @@ export interface Fauna {
 // source the fishing economy (M24 s2) draws on. Entity = Position + Fish.
 export interface Fish {
   breedCooldownTicks: number;  // counts down to 0, then it may spawn another fish
+}
+
+// A seafaring merchant on a trade voyage to an overseas settlement (M25 s3). While they carry
+// this, the MovementSystem sails them toward (tx,ty); on arrival the VoyageSystem makes first
+// contact + trades, then removes it so they resume their life on the mainland.
+export interface Voyage {
+  tx: number;
+  ty: number;
+  orgId: string;   // the overseas settlement being visited (for contact + trade)
 }
 
 // Resource node. No brain — the ResourceSystem regrows renewables by rule.

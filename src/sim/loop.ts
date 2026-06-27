@@ -14,6 +14,7 @@ import { runGatherSystem }   from './systems/GatherSystem.ts';
 import { runCraftSystem }    from './systems/CraftSystem.ts';
 import { runEquipSystem }    from './systems/EquipSystem.ts';
 import { runTradeSystem }    from './systems/TradeSystem.ts';
+import { runVoyageSystem }   from './systems/VoyageSystem.ts';
 import { runFishingSystem }  from './systems/FishingSystem.ts';
 import { runMarketSystem }   from './systems/MarketSystem.ts';
 import { runEconomySystem }  from './systems/EconomySystem.ts';
@@ -89,6 +90,7 @@ export function tick(
   runArchaeologySystem(world, cfg);      // ruins of fallen clans / lost relics, discoverable (M20 s2b)
   runQuestSystem(world, cfg);            // folk take up & fulfil procedural goals (hunt/avenge/explore) (M20 s3)
   runWonderSystem(world, cfg, content);  // the town raises tech-gated mega-projects (M20 s3b)
+  runVoyageSystem(world, cfg, rng);      // sea trade: a merchant sails to the island → first contact + trade (M25 s3)
   runAISystem(world, cfg, provider);     // the "soul": reflection / dialogue / dreams / decisions (rare)
   runMemorySystem(world, cfg);           // multi-resolution rollup: old memories → episodic summaries
   runHistorySystem(world, cfg);          // world history: sample strata + compress the Chronicle
