@@ -1,0 +1,6 @@
+# The town well — where folk draw water and gossip. A landmark, no mechanical effect.
+id: "town_well"
+name: "Town Well"
+kind: "well"
+icon: "civic"
+effect: "none"

@@ -76,15 +76,13 @@ function pairFounders(world: World, cfg: SimConfig): void {
 
 // Find a passable tile by rejection sampling, falling back to a deterministic
 // scan if the random draws keep landing on water (keeps spawns off impassable tiles).
-// The town's shared civic landmarks (M11 slice 3). Placed deterministically AFTER all
-// RNG-consuming generation, so they're purely additive — the trajectory is unchanged. They
-// have no mechanical role yet: legible hooks for institutions (M14) and religion (M15).
-const CIVIC_BUILDINGS: { kind: string; name: string }[] = [
-  { kind: 'hall', name: 'Town Hall' },
-  { kind: 'well', name: 'Town Well' },
-  { kind: 'shrine', name: 'Old Shrine' },
-];
-function placeCivic(world: World, cfg: SimConfig, map: TileMapData): void {
+// The town's shared civic buildings (M11 s3; functions M21). Content-driven
+// (content/buildings/*.yaml): some are mere landmarks (hall/well/shrine), others
+// radiate a real function over nearby folk (infirmary heals, tavern cheers, watch
+// wards off crime — applied by the CivicSystem). Placed deterministically AFTER all
+// RNG-consuming generation in a spiral from the town centre, so placement is purely
+// additive to the RNG stream (the *effects* perturb the trajectory, like any system).
+function placeCivic(world: World, cfg: SimConfig, map: TileMapData, content: Content): void {
   const W = cfg.gridWidth;
   const occupied = new Set<number>();
   for (const e of world.query(C_BUSINESS, C_POSITION)) {
@@ -93,7 +91,9 @@ function placeCivic(world: World, cfg: SimConfig, map: TileMapData): void {
   }
   const cx = Math.floor(map.width / 2), cy = Math.floor(map.height / 2);
   const limit = Math.max(map.width, map.height);
-  for (const c of CIVIC_BUILDINGS) {
+  for (const b of content.buildings.all()) {
+    const civic: Civic = { kind: b.kind, name: b.name, icon: b.icon };
+    if (b.effect !== 'none') { civic.effect = b.effect; civic.radius = b.radius; civic.magnitude = b.magnitude; }
     let placed = false;
     for (let r = 0; r <= limit && !placed; r++) {
       for (let dy = -r; dy <= r && !placed; dy++) {
@@ -103,7 +103,7 @@ function placeCivic(world: World, cfg: SimConfig, map: TileMapData): void {
           if (!inBounds(map, x, y) || !isPassable(map, x, y) || occupied.has(y * W + x)) continue;
           const e = world.createEntity();
           world.addComponent<Position>(e, C_POSITION, { x, y });
-          world.addComponent<Civic>(e, C_CIVIC, { ...c });
+          world.addComponent<Civic>(e, C_CIVIC, civic);
           occupied.add(y * W + x);
           placed = true;
         }
@@ -257,8 +257,8 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // spending years courting while the elders die off.
   pairFounders(world, cfg);
 
-  // Civic landmarks (deterministic, additive — no RNG, trajectory unchanged).
-  placeCivic(world, cfg, tileMap);
+  // Civic buildings (deterministic placement; their functions act via the CivicSystem).
+  placeCivic(world, cfg, tileMap, content);
 
   // Found the initial tribes and assign the founders (M14).
   seedTribes(world, cfg, rng);

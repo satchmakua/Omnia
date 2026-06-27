@@ -1,0 +1,6 @@
+# The old shrine — a quiet place of devotion. A landmark, no mechanical effect.
+id: "old_shrine"
+name: "Old Shrine"
+kind: "shrine"
+icon: "civic"
+effect: "none"

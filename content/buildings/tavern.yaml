@@ -1,0 +1,9 @@
+# The tavern — hearth, ale and good company. Folk who pass near it find their
+# spirits lifted and their loneliness eased.
+id: "tavern"
+name: "The Tavern"
+kind: "tavern"
+icon: "tavern"
+effect: "cheer"     # daily: folk within radius gain `magnitude` social need + a mood lift
+radius: 5
+magnitude: 0.2
