@@ -15,8 +15,8 @@ import type { Species } from '../content/schema.ts';
 import { spawnAgent, renameToClan } from './spawnAgent.ts';
 import { raiseCivic } from './civicBuild.ts';
 import { seedFish } from './systems/FishSystem.ts';
+import { carveIsland, findMainlandTile, findMainlandCoastalTile, findIslandTile } from '../world/islands.ts';
 import { generateTileMap } from '../world/worldgen.ts';
-import { isPassable, findPassableTile, coastalTile } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { populateWorld } from '../world/populate.ts';
 import { spawnBusiness } from '../world/spawn.ts';
@@ -27,7 +27,7 @@ import { createEventLog } from '../history/eventlog.ts';
 import type { EventLogData } from '../history/eventlog.ts';
 import { createWorldStats } from '../history/stats.ts';
 import type { WorldStatsData } from '../history/stats.ts';
-import { createCultureStore, getCultureStore, getCulture } from '../culture/cultureStore.ts';
+import { createCultureStore, getCultureStore, getCulture, cultureForLanguage } from '../culture/cultureStore.ts';
 import type { CultureStoreData } from '../culture/cultureStore.ts';
 import { createLanguageStore, getLanguageStore, getLanguage } from '../lang/languageStore.ts';
 import type { LanguageStoreData } from '../lang/languageStore.ts';
@@ -138,6 +138,62 @@ function seedTribes(world: World, cfg: SimConfig, rng: RNG): void {
   }
 }
 
+// A foreign settlement on the island (M24 s4): sometimes the far shore is already home to its
+// own people — one species, in their own overseas clan, isolated until a boat bridges the sea.
+const ISLAND_POPULATE_CHANCE = 0.6;
+const ISLAND_FOUNDERS = 5;
+function seedIslandSettlement(
+  world: World, cfg: SimConfig, rng: RNG, content: Content, map: TileMapData,
+  island: ReturnType<typeof carveIsland>,
+): void {
+  if (!island) return;
+  if (rng() >= ISLAND_POPULATE_CHANCE) return;   // the isle is sometimes uninhabited
+  const store = getOrgStore(world);
+  const cstore = getCultureStore(world);
+  const lstore = getLanguageStore(world);
+  if (!store) return;
+
+  // One species for the whole settlement — a coherent foreign people (e.g. "the elves across the sea").
+  const speciesList = content.species.all();
+  const species = speciesList[Math.floor(rng() * speciesList.length)];
+  const cid = cstore ? cultureForLanguage(cstore, species.language) : undefined;
+  const culture = cid && cstore ? getCulture(cstore, cid) : undefined;
+  const values = culture ? { ...culture.values } : { communal: 0.5, martial: 0.5, traditional: 0.5, open: 0.5 };
+  const lang = culture && lstore ? getLanguage(lstore, culture.language) : undefined;
+  const coined = cap(lang ? word(lang, `isle-${store.created}`) : 'Isle');
+  const orgId = createOrg(store, `${coined} folk`, values, rngFloat(rng, 0.5, 0.8), 0);
+  const org = store.byId[orgId];
+  org.surname = coined;        // a clean kin-name (clanWordOf would leave "folk" attached)
+  org.overseas = true;
+  org.discovered = false;
+
+  const tpy = ticksPerYear(cfg);
+  const founders: EntityId[] = [];
+  for (let i = 0; i < ISLAND_FOUNDERS; i++) {
+    const spot = findIslandTile(rng, map, island);
+    if (!spot) break;
+    const ageTicks = Math.floor(rngFloat(rng, cfg.initialAgeMinYears, cfg.initialAgeMaxYears) * tpy);
+    const e = spawnAgent(world, cfg, rng, species, content, { x: spot.x, y: spot.y, ageTicks, orgId });
+    renameToClan(world.getComponent<Agent>(e, C_AGENT)!, store.byId[orgId].surname);
+    founders.push(e);
+  }
+  if (founders.length === 0) return;
+  store.byId[orgId].leader = founders[0];
+
+  // Pre-pair the island founders among themselves (never across the sea) so the colony can breed.
+  const males = founders.filter(e => world.getComponent<Agent>(e, C_AGENT)!.sex === 'male');
+  const females = founders.filter(e => world.getComponent<Agent>(e, C_AGENT)!.sex === 'female');
+  for (let i = 0; i < Math.min(males.length, females.length); i++) {
+    const m = males[i], f = females[i];
+    const lm = world.getComponent<Lineage>(m, C_LINEAGE), lf = world.getComponent<Lineage>(f, C_LINEAGE);
+    if (lm) lm.partner = f;
+    if (lf) lf.partner = m;
+    const rm = world.getComponent<Relationships>(m, C_RELATIONSHIPS), rf = world.getComponent<Relationships>(f, C_RELATIONSHIPS);
+    if (rm) rm.edges[f] = { type: 'partner', sentiment: 0.8 };
+    if (rf) rf.edges[m] = { type: 'partner', sentiment: 0.8 };
+  }
+}
+
 // Found a faith for each seed culture (its tenets & devoutness emerge from the culture's
 // values, D18), then assign each founder the faith of their culture (M18).
 function seedReligions(world: World, cfg: SimConfig, rng: RNG): void {
@@ -177,6 +233,8 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
 
   // Generate terrain first (consumes RNG), store as a singleton component.
   const tileMap = generateTileMap(rng, cfg.gridWidth, cfg.gridHeight, content.biomes, scaledBiomeSeeds(cfg));
+  // Carve an offshore island (M24 s4) — a far shore across the sea, reachable only by boat.
+  const island = carveIsland(rng, tileMap);
   const mapEntity = world.createEntity();
   world.addComponent<TileMapData>(mapEntity, C_TILEMAP, tileMap);
 
@@ -222,7 +280,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   if (professions.length > 0) {
     for (let i = 0; i < scaledBusinessCount(cfg); i++) {
       const prof = professions[i % professions.length];
-      const spot = (prof.fishery ? coastalTile(rng, tileMap) : null) ?? findPassableTile(rng, tileMap);
+      const spot = (prof.fishery ? findMainlandCoastalTile(rng, tileMap, island) : null) ?? findMainlandTile(rng, tileMap, island);
       spawnBusiness(world, spot.x, spot.y, prof, cfg);
     }
   }
@@ -234,7 +292,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const tpy = ticksPerYear(cfg);
   for (let i = 0; i < cfg.initialPopulation; i++) {
     const species = rollSpecies(rng, speciesList, totalWeight);
-    const { x, y } = findPassableTile(rng, tileMap);
+    const { x, y } = findMainlandTile(rng, tileMap, island);   // the town founds on the mainland
     // Founders have a spread of ages so the town starts with a real generation mix.
     const ageTicks = Math.floor(rngFloat(rng, cfg.initialAgeMinYears, cfg.initialAgeMaxYears) * tpy);
     spawnAgent(world, cfg, rng, species, content, { x, y, ageTicks });
@@ -251,6 +309,9 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // Found the initial tribes and assign the founders (M14).
   seedTribes(world, cfg, rng);
   seedReligions(world, cfg, rng);   // faiths, one per founding culture (M18)
+
+  // Sometimes a foreign people already lives on the island, across the sea (M24 s4).
+  seedIslandSettlement(world, cfg, rng, content, tileMap, island);
 
   // Stock the waters with fish (M24). Last, so it doesn't perturb prior gen RNG.
   seedFish(world, cfg, tileMap, rng);

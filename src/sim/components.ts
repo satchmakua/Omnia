@@ -135,6 +135,8 @@ export interface Organization {
   techs?: string[];      // tech ids this tribe has unlocked, in discovery order (M17)
   tier?: number;         // highest tech tier reached (1 tribal … 7 sci-fi) — denormalized for display (M17)
   effects?: Record<string, number>;  // tech effect tags → how many unlocked (e.g. arms 3, medicine 1) — confers tribe-wide bonuses (M17 s2)
+  overseas?: boolean;    // an island settlement across the sea (M24 s4) — isolated until contact
+  discovered?: boolean;  // first contact with the rest of the world has been made (M24 s4)
 }
 
 // Body & heredity (M13): six D&D-style ability scores (3..18) plus heritable physical
