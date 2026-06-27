@@ -1,6 +1,6 @@
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_FAUNA, C_JOB, C_RESOURCE, C_TILEMAP, C_HOME, C_QUEST } from '../components.ts';
-import type { Agent, Needs, Position, Flora, Job, Resource, Home, Quest } from '../components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_FAUNA, C_JOB, C_RESOURCE, C_TILEMAP, C_HOME, C_QUEST, C_VOYAGE } from '../components.ts';
+import type { Agent, Needs, Position, Flora, Job, Resource, Home, Quest, Voyage } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
@@ -87,6 +87,13 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
     const pos   = world.getComponent<Position>(entity, C_POSITION)!;
     const needs = world.getComponent<Needs>(entity, C_NEEDS)!;
     const ent = seafaring(agent.orgId) ? seaEnterable : enterable;   // boats let seafarers cross water
+
+    // A merchant on a sea voyage (M25 s3) attends to nothing else — they sail for the far shore.
+    const voyage = world.getComponent<Voyage>(entity, C_VOYAGE);
+    if (voyage) {
+      if (pos.x !== voyage.tx || pos.y !== voyage.ty) pathToward(pos, voyage.tx, voyage.ty, rng, ent, occ, cfg.gridWidth, cfg.gridHeight);
+      continue;
+    }
 
     if (agent.action === 'sleep') {
       const home = homeOf.get(entity);
