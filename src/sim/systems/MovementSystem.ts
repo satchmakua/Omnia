@@ -9,6 +9,7 @@ import type { TileMapData } from '../../world/tilemap.ts';
 import { makeEnterable, wanderStep, buildOccupancy } from './movementUtil.ts';
 import { SpatialGrid } from '../spatialGrid.ts';
 import { pathToward } from '../pathfinding.ts';
+import { getOrgStore } from '../../org/orgStore.ts';
 
 // Mobile creatures never share a tile; a content agent at its workplace fidgets a
 // little so it looks alive rather than frozen on the spot.
@@ -22,7 +23,12 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
   const mapEnts = world.query(C_TILEMAP);
   const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
   const enterable = makeEnterable(cfg, map);
+  const seaEnterable = makeEnterable(cfg, map, true);   // a seafarer's boat may cross water (M24)
   const occ = buildOccupancy(world, cfg.gridWidth, [C_AGENT, C_FAUNA]);
+  // A tribe that has mastered Seafaring grants its folk boats — they treat water as crossable.
+  const orgStore = getOrgStore(world);
+  const seafaring = (orgId: string | undefined): boolean =>
+    !!(orgId && orgStore && (orgStore.byId[orgId]?.effects?.seafaring ?? 0) > 0);
 
   // Perception via spatial grids (M8): rebuilt each tick, queried for the nearest
   // target without scanning every entity. Insertion order follows the component
@@ -80,12 +86,13 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
     const agent = world.getComponent<Agent>(entity, C_AGENT)!;
     const pos   = world.getComponent<Position>(entity, C_POSITION)!;
     const needs = world.getComponent<Needs>(entity, C_NEEDS)!;
+    const ent = seafaring(agent.orgId) ? seaEnterable : enterable;   // boats let seafarers cross water
 
     if (agent.action === 'sleep') {
       const home = homeOf.get(entity);
       if (home && (pos.x !== home.x || pos.y !== home.y)) {
         // Head to one's own bed, winding down on the way.
-        pathToward(pos, home.x, home.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight);
+        pathToward(pos, home.x, home.y, rng, ent, occ, cfg.gridWidth, cfg.gridHeight);
         needs.energy = Math.min(1.0, needs.energy + cfg.sleepRestorePerTick);
       } else {
         // Resting in place — one's own home is more comfortable, so sleep restores faster.
@@ -102,7 +109,7 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       if (job && job.gathers) {
         const node = nearestNode(job.gathers, pos.x, pos.y);
         if (node) {
-          if (pos.x !== node.x || pos.y !== node.y) pathToward(pos, node.x, node.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight);
+          if (pos.x !== node.x || pos.y !== node.y) pathToward(pos, node.x, node.y, rng, ent, occ, cfg.gridWidth, cfg.gridHeight);
           continue;
         }
         // Resource exhausted everywhere — fall back to the employer.
@@ -111,8 +118,8 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       // occasionally so a working agent looks busy rather than frozen on the spot.
       const ep = job ? world.getComponent<Position>(job.employer, C_POSITION) : undefined;
       if (ep) {
-        if (pos.x !== ep.x || pos.y !== ep.y) pathToward(pos, ep.x, ep.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight);
-        else if (rng() < WORK_FIDGET) wanderStep(pos, rng, enterable, occ);
+        if (pos.x !== ep.x || pos.y !== ep.y) pathToward(pos, ep.x, ep.y, rng, ent, occ, cfg.gridWidth, cfg.gridHeight);
+        else if (rng() < WORK_FIDGET) wanderStep(pos, rng, enterable, occ);   // fidget on land, not out to sea
         continue;
       }
       // No job/employer to walk to — fall through to wander.
@@ -122,7 +129,7 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       // Walk toward the nearest other person; converging onto a shared tile lets
       // the SocialSystem strike up an interaction.
       const nearest = agentGrid.nearest(pos.x, pos.y, (id) => id !== entity);
-      if (nearest) { pathToward(pos, nearest.x, nearest.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight); continue; }
+      if (nearest) { pathToward(pos, nearest.x, nearest.y, rng, ent, occ, cfg.gridWidth, cfg.gridHeight); continue; }
       // Alone in the world — wander.
     }
 
@@ -150,16 +157,16 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       }
       // Otherwise forage the nearest ripe flora; wander if none exists yet.
       const flora = floraGrid.nearest(pos.x, pos.y);
-      if (flora) { pathToward(pos, flora.x, flora.y, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight); continue; }
+      if (flora) { pathToward(pos, flora.x, flora.y, rng, ent, occ, cfg.gridWidth, cfg.gridHeight); continue; }
     }
 
     // A folk on an explore quest walks toward the ruins they vowed to seek, rather than
     // wandering aimlessly (M20 s3 — active pursuit; ArchaeologySystem discovers it on arrival).
     const quest = world.getComponent<Quest>(entity, C_QUEST);
     if (quest && quest.kind === 'explore' && quest.tx !== undefined && (pos.x !== quest.tx || pos.y !== quest.ty)) {
-      pathToward(pos, quest.tx, quest.ty!, rng, enterable, occ, cfg.gridWidth, cfg.gridHeight);
+      pathToward(pos, quest.tx, quest.ty!, rng, ent, occ, cfg.gridWidth, cfg.gridHeight);
       continue;
     }
-    wanderStep(pos, rng, enterable, occ, cfg.wanderIdleChance);   // aimless wandering: linger more, pace less
+    wanderStep(pos, rng, enterable, occ, cfg.wanderIdleChance);   // aimless wandering stays on land (boats are for crossing, not idle drifting)
   }
 }

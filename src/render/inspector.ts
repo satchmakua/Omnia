@@ -370,10 +370,13 @@ export class Inspector {
     const org = agent.orgId && store ? getOrg(store, agent.orgId) : undefined;
     if (!org) return '';
     const role = org.leader === e ? ' <span style="color:#ffd27a">· leads it</span>' : '';
+    const seafaring = (org.effects?.seafaring ?? 0) > 0
+      ? '<div style="color:#7fb8cf">⛵ seafaring — they cross the water by boat</div>' : '';
     return `<hr style="${RULE}">
       <div style="${SECTION}">Clan</div>
       <div><span style="color:${org.color}">${org.name}</span>${role}</div>
-      <div style="color:#9ab">${org.government} · kin &amp; faction</div>`;
+      <div style="color:#9ab">${org.government} · kin &amp; faction</div>
+      ${seafaring}`;
   }
 
   // Faith (M18): the religion this person follows — its deity, tenets, and their devoutness.
@@ -571,12 +574,19 @@ export class Inspector {
         if (Math.max(Math.abs(p.x - x), Math.abs(p.y - y)) <= 1) fishHere++;
       }
       const stock = fishHere === 0 ? 'still, empty water' : `${fishHere} fish in these waters`;
+      // Once any tribe has mastered Seafaring, boats can cross the water (M24).
+      const store = getOrgStore(world);
+      const boats = !!store && Object.values(store.byId).some(o => (o.effects?.seafaring ?? 0) > 0);
+      const sub = boats ? 'water · boats can cross it' : 'water · folk cannot cross it (yet)';
+      const crossLine = boats
+        ? 'Deep water — but the folk have boats now, and cross it.'
+        : 'Deep water — impassable on foot. A boat will one day cross it.';
       return `
-        ${this.title(name, 'water · folk cannot cross it (yet)')}
+        ${this.title(name, sub)}
         <div><b>Pos</b> (${x}, ${y})</div>
         <hr style="${RULE}">
         <div style="${SECTION}">Water</div>
-        <div style="color:#9ab">Deep water — impassable on foot. A boat will one day cross it.</div>
+        <div style="color:#9ab">${crossLine}</div>
         <div style="color:#7fb8cf">🐟 ${stock}</div>`;
     }
     return `

@@ -2,7 +2,7 @@
 // instinct FaunaSystem, so the "step toward a target around impassable terrain"
 // logic lives in exactly one place. Movement also respects an optional Occupancy
 // so two mobile creatures (folk or fauna) never stand on the same tile (M6.5).
-import { isPassable } from '../../world/tilemap.ts';
+import { isPassable, isWater } from '../../world/tilemap.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
 import type { World, EntityId } from '../ecs.ts';
 import { C_POSITION } from '../components.ts';
@@ -17,11 +17,14 @@ const DIRS = [
   { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
 ] as const;
 
-// A tile is enterable if in bounds and (no map, or the map marks it passable).
-export function makeEnterable(cfg: SimConfig, map: TileMapData | undefined): Enterable {
+// A tile is enterable if in bounds and (no map, or the map marks it passable). With
+// `allowWater` (a seafarer in a boat, M24), water tiles are enterable too — so a folk whose
+// tribe has the Seafaring tech can cross rivers, lakes and the sea.
+export function makeEnterable(cfg: SimConfig, map: TileMapData | undefined, allowWater = false): Enterable {
   return (x, y) => {
     if (x < 0 || x >= cfg.gridWidth || y < 0 || y >= cfg.gridHeight) return false;
-    return map ? isPassable(map, x, y) : true;
+    if (!map) return true;
+    return isPassable(map, x, y) || (allowWater && isWater(map, x, y));
   };
 }
 

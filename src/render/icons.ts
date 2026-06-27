@@ -13,6 +13,7 @@ export const CATEGORY_COLOR = {
   crystal:  '#6fc3c9',
   building: '#6f8fb0',
   dock:     '#5a93a8',
+  boat:     '#8a5a36',
   home:     '#caa46a',
   civic:    '#b58fd0',
   grave:    '#9a9a9a',
@@ -83,6 +84,9 @@ export function iconSvgInner(key: Category | 'ore' | 'timber' | 'crystal', color
     case 'home':
       return `<path d="M-9 -1 L0 -9 L9 -1 Z" fill="${color}"/><rect x="-7" y="-1" width="14" height="10" fill="${color}"/>` +
         `<rect x="-2" y="3" width="4" height="6" fill="rgba(0,0,0,0.45)"/>`;
+    case 'boat':   // a little sailing boat — hull, mast and sail (M24, seafaring)
+      return `<path d="M-8 5 L8 5 L5.5 11 L-5.5 11 Z" fill="#8a5a36"/><rect x="-8" y="4.2" width="16" height="1.4" fill="#6b4426"/>` +
+        `<rect x="-0.6" y="-6" width="1.2" height="11" fill="#6b4426"/><path d="M0.6 -5 L6 3 L0.6 3 Z" fill="#cdd6e2"/>`;
     case 'dock':   // a fishery: a wooden pier on pilings over water, with a mooring post
       return `<path d="M-10 7 q2.5 -2 5 0 t5 0 t5 0 t5 0" stroke="#5a93a8" stroke-width="1.3" fill="none"/>` +
         `<rect x="-8" y="-2" width="16" height="2.6" fill="#9a6c43"/>` +
@@ -185,6 +189,7 @@ export const LEGEND_ENTRIES: { key: Category | 'ore' | 'timber' | 'crystal'; lab
   { key: 'crystal', label: 'Crystal', desc: 'rare gem node' },
   { key: 'building', label: 'Workplace', desc: 'a business that employs folk' },
   { key: 'dock', label: 'Fishery', desc: 'a coastal fishing house — nets fish for the table' },
+  { key: 'boat', label: 'Boat', desc: 'a seafaring folk afloat — crossing the water (needs the Seafaring tech)' },
   { key: 'home', label: 'Home', desc: 'a dwelling folk build and own' },
   { key: 'civic', label: 'Civic', desc: 'a shared place — hall, well, or shrine' },
   { key: 'infirmary', label: 'Infirmary', desc: 'a healer’s house — the sick nearby mend faster' },
