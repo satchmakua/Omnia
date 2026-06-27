@@ -6,3 +6,4 @@ era: "Tribal Age"
 cost: 50
 prerequisites: []
 blurb: "Tending and making fire — warmth, cooking, defence."
+effects: ["tools"]

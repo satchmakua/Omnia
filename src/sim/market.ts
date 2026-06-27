@@ -10,8 +10,10 @@ import type { Market, Agent, Job, Business } from './components.ts';
 import type { World, EntityId } from './ecs.ts';
 import type { SimConfig } from './config.ts';
 import { ageInYears } from './config.ts';
+import { getOrgStore, effectOf } from '../org/orgStore.ts';
 
 const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
+const FARMING_BONUS = 0.2;   // each `farming` tech (agriculture) lifts a farmer's output (M25)
 
 export function createMarket(cfg: SimConfig): Market {
   return { price: cfg.provisionBasePrice, supply: 0, demand: 0, history: [], fishCatch: 0 };
@@ -34,17 +36,20 @@ export function measureSupplyDemand(world: World, cfg: SimConfig, forageFactor =
     const a = world.getComponent<Agent>(e, C_AGENT)!;
     if (ageInYears(a.ticksAlive, cfg) >= cfg.adultAgeYears) demand += cfg.provisionPerAdult;
   }
-  // Farm food-workers produce a fixed ration each. Fishery workers are NOT counted here — a
-  // fishery's food is the fish it actually catches (FishingSystem → market.fishCatch), so an
-  // over-fished coast feeds fewer folk even when fully staffed (M24).
-  let foodWorkers = 0;
+  // Farm food-workers produce rations — more if their tribe knows Agriculture (the `farming`
+  // effect, M25). Fishery workers are NOT counted here — a fishery's food is the fish it actually
+  // catches (FishingSystem → market.fishCatch), so an over-fished coast feeds fewer folk (M24).
+  const orgStore = getOrgStore(world);
+  let farmOutput = 0;
   for (const e of world.query(C_AGENT, C_JOB)) {
     const j = world.getComponent<Job>(e, C_JOB)!;
     const biz = world.getComponent<Business>(j.employer, C_BUSINESS);
-    if (biz?.producesFood && !biz.fishery) foodWorkers++;
+    if (!biz?.producesFood || biz.fishery) continue;
+    const farming = 1 + FARMING_BONUS * effectOf(orgStore, world.getComponent<Agent>(e, C_AGENT)!.orgId, 'farming');
+    farmOutput += cfg.provisionPerFarmer * farming;
   }
   const fishCatch = getMarket(world)?.fishCatch ?? 0;
-  const supply = cfg.baseForagedProvisions * forageFactor + foodWorkers * cfg.provisionPerFarmer + fishCatch;
+  const supply = cfg.baseForagedProvisions * forageFactor + farmOutput + fishCatch;
   return { supply, demand };
 }
 

@@ -8,10 +8,14 @@ import { C_AGENT, C_JOB, C_POSITION, C_RESOURCE } from '../components.ts';
 import type { Agent, Job, Position, Resource } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ensureInventory, addItem } from '../inventory.ts';
+import { getOrgStore, effectOf } from '../../org/orgStore.ts';
 import { emitEvent } from '../../history/eventlog.ts';
+
+const TOOLS_BONUS = 0.12;   // each `tools` tech (firecraft/toolmaking/masonry) lifts gather yield (M25)
 
 export function runGatherSystem(world: World, cfg: SimConfig): void {
   const gatherPerTick = cfg.gatherPerDay / cfg.ticksPerDay;
+  const orgStore = getOrgStore(world);
 
   // Index resource nodes by tile for O(1) lookup under an agent.
   const nodeAt = new Map<number, EntityId>();
@@ -36,8 +40,10 @@ export function runGatherSystem(world: World, cfg: SimConfig): void {
     res.amount = Math.max(0, res.amount - gatherPerTick);
     // The worker keeps what they extracted (M23): the raw material goes into their bag,
     // scaled to usable units (`materialYield`) and bounded by the carrying cap. Crafting
-    // consumes it into goods (slice 2); node depletion above is unchanged.
-    addItem(ensureInventory(world, e), res.typeId, (before - res.amount) * cfg.materialYield, cfg.inventoryMaxPerItem);
+    // consumes it into goods (slice 2); node depletion above is unchanged. Better tools (M25)
+    // lift the usable yield from the same dug ore — climbing the ages makes work pay more.
+    const tools = 1 + TOOLS_BONUS * effectOf(orgStore, world.getComponent<Agent>(e, C_AGENT)!.orgId, 'tools');
+    addItem(ensureInventory(world, e), res.typeId, (before - res.amount) * cfg.materialYield * tools, cfg.inventoryMaxPerItem);
     if (res.amount <= 0 && !res.renewable) exhausted.push({ e: nodeE, res, x: pos.x, y: pos.y });
   }
 

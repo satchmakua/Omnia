@@ -6,3 +6,4 @@ era: "Iron Age"
 cost: 200
 prerequisites: ["agriculture"]
 blurb: "Cut stone, raised walls, lasting halls."
+effects: ["tools"]

@@ -5,5 +5,5 @@ tier: 4
 era: "Medieval Age"
 cost: 360
 prerequisites: ["masonry", "iron_working"]
-effects: ["arms"]
+effects: ["arms", "industry"]
 blurb: "Mills, cranes, aqueducts, and machines of war."

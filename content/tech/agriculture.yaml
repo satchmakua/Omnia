@@ -6,3 +6,4 @@ era: "Bronze Age"
 cost: 110
 prerequisites: ["toolmaking"]
 blurb: "Sowing and reaping — a settled, reliable harvest."
+effects: ["farming"]

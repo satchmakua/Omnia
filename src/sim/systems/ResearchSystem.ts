@@ -13,6 +13,8 @@ import { emitEvent } from '../../history/eventlog.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
 
+const RESEARCH_BONUS = 0.12;   // each `research` tech (scholarship/computing) speeds research (M25)
+
 export function runResearchSystem(world: World, cfg: SimConfig, content: Content): void {
   const store = getOrgStore(world);
   if (!store) return;
@@ -39,7 +41,9 @@ export function runResearchSystem(world: World, cfg: SimConfig, content: Content
     const n = members.get(id) ?? 0;
     if (n === 0) continue;
 
-    org.research = (org.research ?? 0) + cfg.researchBasePerDay + cfg.researchPerMemberPerDay * n;
+    // Schools & computing (the `research` effect) compound: a learned tribe researches faster (M25).
+    const scholarship = 1 + RESEARCH_BONUS * (org.effects?.research ?? 0);
+    org.research = (org.research ?? 0) + (cfg.researchBasePerDay + cfg.researchPerMemberPerDay * n) * scholarship;
     if (!org.techs) org.techs = [];
 
     // Unlock as many affordable techs as research allows, cheapest-available first.

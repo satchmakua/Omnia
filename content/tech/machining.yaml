@@ -5,5 +5,5 @@ tier: 5
 era: "Industrial Age"
 cost: 580
 prerequisites: ["engineering", "scholarship"]
-effects: ["arms"]
+effects: ["arms", "industry"]
 blurb: "Precise, interchangeable parts — the machine age."
