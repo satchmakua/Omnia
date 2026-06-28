@@ -350,7 +350,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD met (S87–S95):** the map shows many distinct races (6), animals (real + fantasy food web), monsters/special agents (6, now ~2× more frequent so they're actually seen — S95), and building types (5 functional + landmarks, raised emergently as the town grows), each with a clear icon and a content-defined role; **adding more is data-only** (proven across buildings/races/animals/monsters); soak-stable. *(Deferred to future milestones/backlog: the **special building tier** (floating-city/dungeon/science-lab/power-plant — overlaps M24 water + late-game), **livestock** (cow/chicken — wants a husbandry model), flavor-duplicate buildings (school/temple/jail — reuse existing effects, low value), and **content-ifying the magic schools** (→ M26 magic-depth).)*
 
-## Milestone 22 — UI, Inspectors & Aesthetic Polish
+## ✅ Milestone 22 — UI, Inspectors & Aesthetic Polish  *(DoD met — 2026-06-27)*
 
 **Goal:** make all the depth perceivable (RimWorld / Dwarf Fortress / Kenshi / Sims-grade).
 
@@ -360,7 +360,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 - [x] Fix the **finder "f"-typed-into-search bug** *(S33: `preventDefault` on the letter hotkeys, so the F that opens Find isn't typed into its search field)*; aesthetic/lo-fi pass (D13); optional ambient audio. *(S111 — **aesthetic pass began: a day/night colour wash.** The renderer now lays a soft, pastel time-of-day tint over the map (D13's "soft, muted, calm"): a warm rose **dawn** (the sim's day begins at f=0), a clear bright **day**, a warm amber **dusk** (f=0.5, night begins per ClockSystem), and a cool blue **night** (deepest ~f=0.75). Pure render — a `dayNightTint(f)` keyframe-lerp drawn over the world but under the HUD (banner stays legible), keyed off the Clock tick so the wash agrees with the day/night the sim already tracks. **Damped toward nothing at fast-forward** (>~4 ticks/frame) so skipping through time doesn't strobe. Verified: night emits `rgba(24,34,78,0.34)`, midday emits no wash. **Remaining aesthetic options** (future, optional): subtle vignette / biome texture, weather tint, ambient audio.)*
 - [x] **Bestiary / Wildlife view** *(user-requested 2026-06-27, the "#4" priority)*: a tab listing every race, animal, monster & special agent — icon + live count + "last seen" — so the rare creatures (dragon/vampire/alien) **register even if you missed them live**. *(S109: `BestiaryDashboard` (master tab, hotkey **B**) — three sections (sapient **races** from `content.species`, wild **beasts** from `content.fauna` + fish, **monsters & visitors** from `content.monsters`), each row an icon + live count + status (×N abroad now / last seen yr N · peak ×N / not yet witnessed). A render-side `observe(world)` runs **every frame from the loop** (not just when the tab is open, so a monster that roams for a few days while you're elsewhere is still recorded — even at fast-forward, since monsters persist for days). Pure read of `C_SPECIES`/`C_FAUNA`/`C_FISH`/`C_SPECIAL` (sim/render separation holds); conjured guardians excluded. Browser-verified: races/beasts show live counts + icons; an injected dragon goes "abroad now" → "last seen yr 0" after it leaves.)*
 
-**DoD:** every system from M8–M21 is inspectable; the top bar is minimal and controls/help live under Esc; the finder bug is gone; the UI reads richly; soak-stable. *(Top-bar/controls/finder/time/legend done S33; the master tabbed view + Conversation/Language tabs moved to M10; this milestone is now the closing inspector-completeness + aesthetic/audio polish pass.)*
+**DoD:** every system from M8–M21 is inspectable; the top bar is minimal and controls/help live under Esc; the finder bug is gone; the UI reads richly; soak-stable. **Met (S33, S109–S111):** the per-entity inspector is complete (every entity type + a rich agent sheet, audited S110); 13 master-tab dashboards + the Bestiary (S109) make every global system inspectable; the top bar is minimal with controls under Esc and the finder bug fixed (S33); the day/night colour wash (S111) opened the aesthetic pass; soak-stable throughout. *(Remaining D13 polish — vignette/biome texture, weather tint, ambient audio — is **optional** and deferred to the backlog; it does not gate the DoD.)*
 
 ## ✅ Milestone 23 — Inventory, Materials & Crafting  *(DoD met — 2026-06-25; pulled forward)*
 
@@ -408,6 +408,81 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 ---
 
+# The M27+ arc — to the next level *(planned 2026-06-27; gap analysis vs Dwarf Fortress / The Sims / RimWorld / Kenshi)*
+
+*M0–M26 built a deep, deterministic, content-driven town. The arc from here deepens the **agents' inner/social/physical life** (the #1 pillar) and the **fate of the groups they form**, plus the player's hand on the world. Same standing rules as the M8–M26 arc (legibility is a gate D35; behaviour stays procedural & causal D26; content-driven breadth D9; tenable at scale D12; deterministic). Suggested order: M27 (god mode, user-directed next), then the inner-life trio M28–M30, then M31–M33.*
+
+## Milestone 27 — God Mode: The Hand of the Player  *(activates D30; **next**, user-directed 2026-06-27)*
+
+**Goal:** turn the observatory into an optional **god-sim** while determinism and "main is always green" hold. Built as an **opt-in mode in `main`, NOT a fork/branch** (D54): every intervention is a **recorded event** in the deterministic log (what D30 was designed for), so observe-only stays the default and replay stays exact.
+
+- [ ] **The intervention seam:** a player action becomes a deterministic, recorded `Intervention` applied on a tick boundary (reuses the M5 record/replay machinery — a god-action is just another recorded event). A **god-mode toggle**, off by default. Replay of a recorded run reproduces interventions exactly.
+- [ ] **First powers (content-driven, a handful):** **bless / curse** (mood/health/luck nudge), **smite** (a bolt from on high), **bestow** (gold / a meal / a relic), **incite** (set/redirect a quest or stir a feud), **summon an event** (a storm, bounty, festival, or monster via the M19 Event pipeline). Each power is data (cost/cooldown/effect tag), so adding one is content.
+- [ ] **The god UI:** select a target (click an agent/tile) → choose a power → apply; a "divine acts" log; cooldowns/limits so it's a nudge, not a cheat. The Chronicle remembers notable divine acts as legends.
+
+**DoD:** with god-mode on, the player acts through a handful of powers; every intervention is a recorded event so seed-replay reproduces the run **exactly** (tested); with god-mode off, nothing changes (observe-only default); legible (divine acts in feed/Chronicle); soak-stable. *(Activates D30; updates the VISION "not a god-game (yet)" non-goal — a deterministic mode, not a separate build.)*
+
+## Milestone 28 — Inner Life II: Emotion, Mood-Driven Behaviour & Recreation  *(Sims + RimWorld)*
+
+**Goal:** the emotional inner life becomes **causal** (D26) — mood steers behaviour, and folk have a life beyond survival. Highest-leverage milestone for pillar #1.
+
+- [ ] **A recreation/fun need + leisure:** folk relax, play, drink, and **actually attend the festivals** that today are only events — a new need met by leisure actions, so life isn't only work/eat/sleep/talk.
+- [ ] **Mood becomes causal (mental states):** thoughts (good/bad memories, environment, recent births/deaths/wounds) feed a mood that, when it bottoms out, triggers procedural **mental states** — despair → withdraws, anger → fights / offends, elation → celebrates (RimWorld breaks, deterministic, never the LLM).
+- [ ] **Multi-trait personality:** expand the single trait into a small set of heritable traits shaping preferences & reactions (who they befriend, what lifts/sours mood, how they bear hardship).
+
+**DoD:** a despairing vs. content agent **measurably behaves differently** (a test shows the action-distribution shift); the fun need is met by leisure/festivals; the inspector shows mood + its causes + any mental state; determinism + soak hold.
+
+## Milestone 29 — Bonds & Rivalries: Relationship Depth  *(DF + Sims + RimWorld)*
+
+**Goal:** relationships gain **type, opinion, and reasons** — friendships, rivalries, mentorships, feuds — driving behaviour, so dynasties and vendettas *emerge* (pillar #4).
+
+- [ ] **Opinions with reasons (a social log):** typed edges carry an opinion + the reasons behind it ("loathes X — X killed their kin; rivals for Y's hand"), surfaced in the inspector + a social view.
+- [ ] **Rivalries → feuds → vendettas:** rivalry escalates into crime/combat; **family feuds** inherit across generations (DF's grudges); reconciliation possible.
+- [ ] **Mentorship:** a master teaches an apprentice a skill (ties crafting/knowledge — learn-by-teaching), forming a bond.
+
+**DoD:** feuds/rivalries **emerge from interactions and drive conflict** (a grudge causes a fight or crime — tested); the inspector shows key relationships *with reasons*; emergent rivalries read in the Conflict view; determinism + soak hold.
+
+## Milestone 30 — Body & Medicine: Injury, Affliction & Care  *(RimWorld + DF + Kenshi)*
+
+**Goal:** health becomes **specific and consequential** — wounds, disease, disability, treatment, recovery — so combat and age leave real marks and healers do real work.
+
+- [ ] **Specific afflictions:** injuries (a maimed leg slows movement, a lost eye drops DEX), chronic conditions/disease (beyond binary `ill`), age **infirmity** — each a mechanically-real effect, not just a Health number.
+- [ ] **Treatment & recovery:** healers / the infirmary actively **tend** the afflicted; recovery over time; herbal remedies as content; some wounds become permanent **disabilities** the agent carries.
+- [ ] **Ties:** combat scars (M16) become real disabilities; the healer profession (M18 medicine) gains teeth; death has more on-ramps than a single Health=0.
+
+**DoD:** a serious wound leaves a **lasting, mechanically-real effect** that can be treated/recovered; healers treat the afflicted; the inspector shows specific afflictions; no death-spiral; determinism + soak hold.
+
+## Milestone 31 — Geopolitics: Diplomacy, Territory & the Fate of Nations  *(Kenshi + RimWorld + DF)*
+
+**Goal:** organizations relate in **more than war** — so the rise and fall of groups becomes real history (pillars #3/#4). Kept **town-scale** (a handful of clans, not a 4X map; ecology/space still bound growth — D2/D32).
+
+- [ ] **Inter-org diplomacy:** relations on the OrgStore — alliance, peace, rivalry, **vassalage**, **tribute** — that evolve and shape war/trade (closes the top-ranked "orgs only war" gap).
+- [ ] **Caravans & territory:** land **trade caravans** between mainland clans (extends M25 sea trade); clans **hold settlements/ground** (a light territory model); **faction reputation** — a person's deeds ripple to how other clans regard their clan.
+- [ ] **Conquest:** a war can end in **annexation / tribute / captives** (not just attrition); a hegemon or balance-of-power can emerge.
+
+**DoD:** orgs form **alliances and vassalages** (not only wars) and wars can end in conquest; a hegemon or balance-of-power **emerges** over deep time; the Heritage/Conflict views show it; determinism + soak hold (no runaway, no collapse).
+
+## Milestone 32 — The Storyteller: an Adaptive Event Director  *(RimWorld; reuses the M27 seam)*
+
+**Goal:** drama is **paced**, not random — an adaptive director keeps the world "interesting but survivable," reusing M27's intervention seam (the auto-director is just an automated god).
+
+- [ ] **A Director** reads world-health (population trend, mood, recent deaths, wealth, time since last drama) and tunes the Event pipeline's pressure — a placid town earns a raid/disaster, a reeling town earns respite/fortune — deterministic, content-driven, off the hot path.
+- [ ] **Selectable temperaments** (à la RimWorld's storytellers): *Calm chronicler* / *Hard times* / *Capricious* — a content knob on how hard the world pushes.
+
+**DoD:** event pacing **demonstrably adapts** to world-state (calm → escalation, crisis → relief — tested over a run), keeping the town in a bounded "drama band"; deterministic; soak-stable.
+
+## Milestone 33 — Things That Remember: Art, Craft & Embodied History  *(Dwarf Fortress)*
+
+**Goal:** objects and places **carry the town's history** — masterworks that depict events, heirlooms passed down — deepening the "history matters" pillar into the physical world.
+
+- [ ] **Quality tiers** on crafted goods (shoddy → masterwork, from skill) — quality affects value & combat power.
+- [ ] **Engravings / depictions:** a masterwork or wonder **commemorates a real Chronicle event** ("a shield depicting the Founding Cataclysm"), generated from the durable history, no authoring.
+- [ ] **Heirlooms:** an artifact **inherited down a lineage**, accruing history each generation — ties M20 artifacts + M23 crafting + the Chronicle.
+
+**DoD:** a masterwork **depicts a real historical event** and is inherited/remembered across generations; quality affects value & combat; legible in inspector + Legends; determinism + soak hold.
+
+---
+
 ## Backlog (unsorted — promote into a milestone before building)
 
 *(Append new ideas here with a date. Do not build directly from this list.)*
@@ -434,4 +509,6 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 - **Religion depth** (M18 deferred, reconfirmed in the 2026-06-27 audit): founding myths, holidays, cults, living/embodied gods + divine effects. Faiths currently have deity/tenets/fervor/schism but don't *do* much.
 - **Magic visibility / trigger-breadth** (stress campaign, 2026-06-27): the M26 battle-magic effects **ward** & **curse** are gated on combat-proximity (an endangered/wounded ally beside the abjurer; a predator beside the maleficent), which is genuinely rare in a peaceful town — so they almost never fire in normal play (verified correct, just seldom triggered). If magic should read more visibly, broaden the triggers: an abjurer could **proactively** ward a nearby veteran/fighter, a maleficent could curse **any** nearby predator (not only an adjacent one), a druid could weather on a schedule. Pairs with the M22 bestiary/registry visibility work. *(Correctness is fine — this is a balance/legibility knob.)*
 - **Tombstone bloat — lingering components** (stress campaign, 2026-06-27): `killAgent` strips a whitelist (`LIVING_COMPONENTS`), but several agent components still ride on the tombstone entity forever — `Equipment`, `Inventory`, `Crafting`, `Quest`, `Memory` (M26's `Ward`/`Enchantment` were added to the strip list S108). Harmless (nothing queries them without `C_AGENT`) but it compounds the known **graves grow O(deaths)** unboundedness — fold into the deep-time **tombstone compression** pass when that lands.
-- **Note (whole-sim audit, 2026-06-27):** weakest/thinnest systems ranked — (1) trade & goods economy [→ M25], (2) tech effects [→ M25], (3) magic depth [→ M26], (4) water [→ M24], (5) inter-org diplomacy [backlog, above], (6) rare-creature visibility [S95 rate bump + M22 bestiary]. M24→M25→M26 are queued in that order per the user.
+- **Note (whole-sim audit, 2026-06-27):** weakest/thinnest systems ranked — (1) trade & goods economy [→ M25], (2) tech effects [→ M25], (3) magic depth [→ M26], (4) water [→ M24], (5) inter-org diplomacy [→ M31], (6) rare-creature visibility [S95 rate bump + M22 bestiary]. M24→M25→M26 done.
+- **D13 aesthetic polish — remaining (optional)** (M22 closeout, 2026-06-27): the day/night colour wash landed (S111); remaining optional touches — a subtle **vignette / biome texture**, a **weather tint** (tie to the M19 disaster/season events), and the **lo-fi ambient audio** layer. Low priority; doesn't gate M22 (DoD met). Promote into a small polish slice if/when wanted.
+- **More inner-life needs & husbandry/farming/construction** (gap analysis, 2026-06-27): beyond M28's fun/leisure need — **domestication & livestock** (cow/chicken husbandry), **agriculture depth** (planted/tended crops vs. wild forage), and **agents building structures from gathered resources** over time (homes/civic are currently raised, not resource-gated). A Kenshi/RimWorld/DF "colony economy" theme; candidate for an M34 if the economy is to deepen further.
