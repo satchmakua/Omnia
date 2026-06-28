@@ -26,6 +26,7 @@ export const C_CRAFTING      = 'Crafting';      // a crafter's accumulated skill
 export const C_EQUIPMENT     = 'Equipment';     // denormalised best carried weapon/armour bonus, for combat (M23 s3)
 export const C_AIRECORD      = 'AIRecord';      // singleton: recorded LLM responses for replay (M5)
 export const C_AIRUNNER      = 'AIRunner';      // singleton: async live-model queue + pending jobs (M7.5)
+export const C_INTERVENTIONS = 'Interventions'; // singleton: recorded god-mode player acts, for deterministic replay (M27)
 export const C_CLOCK     = 'Clock';
 export const C_TILEMAP   = 'TileMap';   // singleton: the terrain grid (src/world/tilemap.ts)
 export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/history/chronicle.ts)
@@ -577,6 +578,18 @@ export interface Memory {
 // even though live generation varies (ARCHITECTURE determinism rule).
 export interface AIRecordEntry { tick: number; key: number; response: string; }
 export interface AIRecord { entries: AIRecordEntry[]; }
+
+// Singleton: the player's god-mode interventions (M27). A divine act is just a recorded event in
+// the deterministic log (D30/D54) — applied on a tick boundary by the InterventionSystem and
+// replayed exactly from the log, so determinism holds and observe-only stays the default.
+export interface Intervention {
+  tick: number;          // the tick it applies on (recorded → replays exactly)
+  kind: string;          // the power: smite / bless / bestow / … (content-ified in M27 s2)
+  target: number | null; // the EntityId the act lands on (deterministic id), or null for world-wide
+  amount?: number;       // optional magnitude (e.g. gold bestowed)
+  applied?: boolean;     // fired once — snapshot-restored acts are already applied; a guard
+}
+export interface InterventionsData { log: Intervention[]; }
 
 export interface Clock {
   tick: number;

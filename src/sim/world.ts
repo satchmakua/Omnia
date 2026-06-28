@@ -3,7 +3,7 @@ import { createRNG, rngFloat } from './rng.ts';
 import {
   C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_WORLDSTATS, C_CULTURESTORE, C_LANGUAGESTORE,
   C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_ORGSTORE, C_MARKET, C_ACHIEVEMENTS,
-  C_RELIGIONSTORE, C_FIGURES, C_ARTIFACTS, C_WONDERS,
+  C_RELIGIONSTORE, C_FIGURES, C_ARTIFACTS, C_WONDERS, C_INTERVENTIONS,
 } from './components.ts';
 import type { Clock, Agent, Lineage, Relationships, AIRecord, Position } from './components.ts';
 import type { SimConfig } from './config.ts';
@@ -38,6 +38,7 @@ import { createAchievements } from './systems/AchievementSystem.ts';
 import { createFigures } from '../history/figures.ts';
 import { createArtifacts } from '../history/artifacts.ts';
 import { createWonders } from './systems/WonderSystem.ts';
+import { createInterventions } from './interventions.ts';
 import { word } from '../lang/language.ts';
 
 export interface Simulation {
@@ -265,6 +266,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   world.addComponent(world.createEntity(), C_FIGURES, createFigures());     // historical figures (M20)
   world.addComponent(world.createEntity(), C_ARTIFACTS, createArtifacts()); // legendary artifacts (M20 s2)
   world.addComponent(world.createEntity(), C_WONDERS, createWonders());     // town-scale wonders (M20 s3b)
+  world.addComponent(world.createEntity(), C_INTERVENTIONS, createInterventions()); // god-mode acts, recorded (M27)
 
   // Recorded LLM responses, for deterministic replay of a live-model run.
   const recordEntity = world.createEntity();
