@@ -1,15 +1,14 @@
 // The on-screen legend key (M6.5): a small minimizable panel that names every map
 // symbol, so the category-first icons are self-explanatory. Built once from the
 // shared icons module; minimized via its header caret, or hidden with the 'L' key.
-import { CATEGORY_COLOR, iconSvgInner, LEGEND_ENTRIES } from './icons.ts';
+import { CATEGORY_COLOR, LEGEND_ENTRIES } from './icons.ts';
+import { glyphHtml, isEmoji } from './skin.ts';
 import { makePanel } from './panelUtil.ts';
 
-// A legend swatch; `scale` < 1 shows a thing at reduced size (e.g. a child).
-function swatch(inner: string, scale = 1): string {
-  const g = scale === 1 ? inner : `<g transform="scale(${scale})">${inner}</g>`;
+// A legend swatch — the active skin's glyph for `key` (lo-fi icon or emoji); `scale` < 1 shrinks it.
+function swatch(key: string, color: string, scale = 1): string {
   return `<span style="display:inline-flex;width:24px;height:24px;border-radius:5px;background:#12131c;
-    align-items:center;justify-content:center;flex:0 0 auto">
-    <svg width="22" height="22" viewBox="-12 -12 24 24">${g}</svg></span>`;
+    align-items:center;justify-content:center;flex:0 0 auto">${glyphHtml(key, color, 22, scale)}</span>`;
 }
 
 // A glyph badge in a swatch-sized box (so badges line up with the icon rows).
@@ -32,6 +31,7 @@ function sectionLabel(text: string): string {
 
 export class Legend {
   private readonly panel: HTMLDivElement;
+  private readonly body: HTMLDivElement;
   private visible = true;
 
   constructor() {
@@ -40,17 +40,25 @@ export class Legend {
       style: { position: 'fixed', left: '12px', top: '40px', width: '186px' },
     });
     this.panel = panel;
-
+    this.body = body;
     // Scrollable, so the list can grow as more icons/badges are added.
     Object.assign(body.style, { maxHeight: '70vh', overflowY: 'auto', overflowX: 'hidden', paddingRight: '4px' } as Partial<CSSStyleDeclaration>);
+    this.build();
+    document.body.appendChild(this.panel);
+  }
 
+  // Rebuild the key in the active skin — called once at startup and whenever the skin changes (M34).
+  refresh(): void { this.build(); }
+
+  private build(): void {
     const folk = CATEGORY_COLOR.folk;
     const mapRows = LEGEND_ENTRIES.map(({ key, label, desc }) =>
-      entryRow(swatch(iconSvgInner(key, CATEGORY_COLOR[key as keyof typeof CATEGORY_COLOR])), label, desc)).join('');
+      entryRow(swatch(key, CATEGORY_COLOR[key as keyof typeof CATEGORY_COLOR]), label, desc)).join('');
 
-    // Folk badges + the day/night phase, each a row like the map symbols (vertical).
-    const badgeRows =
-      entryRow(swatch(iconSvgInner('folk', folk), 0.6), 'Child', 'too young to work, court, or bear children') +
+    // Folk badges + the day/night phase. The badges are lo-fi state overlays; under the emoji skin
+    // the map shows the bare emoji, so we note that and skip the badge list there.
+    const badgeRows = isEmoji() ? '' :
+      entryRow(swatch('folk', folk, 0.6), 'Child', 'too young to work, court, or bear children') +
       entryRow(glyphCell('✦', '#c79bf0'), 'Magic spark', 'born with a rare magic aptitude') +
       entryRow(glyphCell('✚', '#e06666'), 'Ill', 'sick — at higher risk of death') +
       entryRow(glyphCell('|||', '#ffd24a'), 'Seeking food', 'hungry — off to forage or hunt') +
@@ -62,13 +70,10 @@ export class Legend {
       entryRow(glyphCell('⚖', '#ff7a7a'), 'Outlaw', 'a known criminal — theft, assault, or worse') +
       entryRow(glyphCell('☀', '#ffe08a'), 'Day / night', '☀ daytime · ☾ night');
 
-    body.innerHTML =
+    this.body.innerHTML =
       mapRows +
-      sectionLabel('Folk badges') +
-      badgeRows +
+      (badgeRows ? sectionLabel('Folk badges') + badgeRows : '') +
       `<div style="margin-top:9px;color:#667;font-size:10px">L hide · H happenings · Esc menu</div>`;
-
-    document.body.appendChild(this.panel);
   }
 
   toggle(): void {

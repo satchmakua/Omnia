@@ -4,6 +4,7 @@
 
 import type { SaveMeta } from '../sim/saveStore.ts';
 import { defaultConfig } from '../sim/config.ts';
+import type { Skin } from './skin.ts';
 
 export interface PauseActions {
   onResume: () => void;
@@ -51,8 +52,14 @@ const CONTROLS: [string, string][] = [
   ['H', 'toggle Town Happenings'],
 ];
 
-// What the start screen collects to begin a run.
-export interface SetupOptions { seed: number; population: number; mapSize: number; }
+// What the start screen collects to begin a run. `skin` is presentation-only (M34).
+export interface SetupOptions { seed: number; population: number; mapSize: number; skin: Skin; }
+
+// The visual skins offered on the start screen (M34).
+export const SKINS: { id: Skin; label: string }[] = [
+  { id: 'lofi', label: '◳ Lo-fi' },
+  { id: 'emoji', label: '😀 Emoji' },
+];
 
 // Map-size presets (square, in tiles). Small is the tuned default; the larger ones
 // reach the M8 10–20× range. Each dim is used for both gridWidth and gridHeight.
@@ -188,11 +195,33 @@ export class Menu {
     sizeLabel.textContent = 'Map size'; Object.assign(sizeLabel.style, { color: '#99a', margin: '2px 0 4px' } as Partial<CSSStyleDeclaration>);
     this.card.append(sizeLabel, sizeRow);
 
+    // Visual skin (M34) — presentation only; Lo-fi (default) or Emoji.
+    let skin: Skin = defaults.skin;
+    const skinRow = document.createElement('div');
+    Object.assign(skinRow.style, { display: 'flex', gap: '6px', margin: '2px 0 12px' } as Partial<CSSStyleDeclaration>);
+    const skinBtns: HTMLButtonElement[] = [];
+    const skinHi = () => skinBtns.forEach((b, i) => {
+      const sel = SKINS[i].id === skin;
+      b.style.background = sel ? '#46467e' : '#23233a';
+      b.style.borderColor = sel ? '#8a8ad0' : 'rgba(255,255,255,0.12)';
+    });
+    SKINS.forEach((s) => {
+      const b = document.createElement('button');
+      b.textContent = s.label;
+      Object.assign(b.style, { flex: '1', padding: '8px 4px', color: '#eee', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '7px', font: '12px monospace', cursor: 'pointer' } as Partial<CSSStyleDeclaration>);
+      b.addEventListener('click', () => { skin = s.id; skinHi(); });
+      skinBtns.push(b); skinRow.append(b);
+    });
+    skinHi();
+    const skinLabel = document.createElement('div');
+    skinLabel.textContent = 'Skin'; Object.assign(skinLabel.style, { color: '#99a', margin: '2px 0 4px' } as Partial<CSSStyleDeclaration>);
+    this.card.append(skinLabel, skinRow);
+
     const start = styledButton('▶  New simulation', true);
     start.addEventListener('click', () => {
       const seed = Math.floor(Number(seedInput.value)) || defaults.seed;
       this.hide();
-      onStart({ seed, population, mapSize });
+      onStart({ seed, population, mapSize, skin });
     });
 
     const help = styledButton('?  How to play');
@@ -304,7 +333,7 @@ export class Menu {
     this.open();
   }
 
-  showSettings(currentSeed: number, currentSpeed: number, liveModel: boolean, godMode: boolean, a: SettingsActions): void {
+  showSettings(currentSeed: number, currentSpeed: number, liveModel: boolean, godMode: boolean, currentSkin: Skin, a: SettingsActions): void {
     this.card.innerHTML = '';
     this.card.appendChild(this.title('Settings', 'tunables for a fresh run'));
 
@@ -321,11 +350,16 @@ export class Menu {
     seedRow.append(seedLabel, seedInput);
 
     const aiToggle = styledButton(`🧠  AI soul: ${liveModel ? 'Live model (Ollama)' : 'Stub (default)'}`);
-    aiToggle.addEventListener('click', () => { a.onToggleLive(); this.showSettings(currentSeed, currentSpeed, !liveModel, godMode, a); });
+    aiToggle.addEventListener('click', () => { a.onToggleLive(); this.showSettings(currentSeed, currentSpeed, !liveModel, godMode, currentSkin, a); });
 
     // God mode (M27): toggles live (no restart) — the observatory is the default; turn it on to act.
     const godToggle = styledButton(`👁  God mode: ${godMode ? 'Active — the world heeds you' : 'Observing (default)'}`);
-    godToggle.addEventListener('click', () => { a.onToggleGod(); this.showSettings(currentSeed, currentSpeed, liveModel, !godMode, a); });
+    godToggle.addEventListener('click', () => { a.onToggleGod(); this.showSettings(currentSeed, currentSpeed, liveModel, !godMode, currentSkin, a); });
+
+    // Skin (M34): toggles live (no restart) — pure presentation.
+    const skinToggle = styledButton(`🎨  Skin: ${currentSkin === 'emoji' ? 'Emoji' : 'Lo-fi (default)'}`);
+    const nextSkin: Skin = currentSkin === 'emoji' ? 'lofi' : 'emoji';
+    skinToggle.addEventListener('click', () => { a.onToggleSkin(); this.showSettings(currentSeed, currentSpeed, liveModel, godMode, nextSkin, a); });
 
     const note = document.createElement('div');
     note.innerHTML = `Starting speed is the bottom slider (now ${currentSpeed}/s). A new seed or AI change needs a restart.` +
@@ -338,7 +372,7 @@ export class Menu {
     apply.addEventListener('click', () => a.onApply(Math.floor(Number(seedInput.value)) || currentSeed));
     back.addEventListener('click', () => a.onBack());
 
-    this.card.append(seedRow, aiToggle, godToggle, note, apply, back);
+    this.card.append(seedRow, aiToggle, godToggle, skinToggle, note, apply, back);
     this.open();
   }
 }
@@ -347,5 +381,6 @@ export interface SettingsActions {
   onApply: (seed: number) => void;
   onToggleLive: () => void;
   onToggleGod: () => void;
+  onToggleSkin: () => void;
   onBack: () => void;
 }

@@ -10,8 +10,9 @@ import { C_AGENT, C_SPECIES, C_FAUNA, C_FISH, C_SPECIAL, C_CLOCK } from '../sim/
 import type { SpeciesComp, Fauna, Special, Clock } from '../sim/components.ts';
 import type { Content } from '../content/loader.ts';
 import { ModalPanel, SECTION } from './modalPanel.ts';
-import { iconSvgInner, CATEGORY_COLOR } from './icons.ts';
+import { CATEGORY_COLOR } from './icons.ts';
 import type { Category } from './icons.ts';
+import { glyphHtml } from './skin.ts';
 import { defaultConfig } from '../sim/config.ts';
 
 type Cat = 'race' | 'animal' | 'monster';
@@ -73,7 +74,7 @@ export class BestiaryDashboard extends ModalPanel {
   }
 
   private iconSvg(key: Category, color: string): string {
-    return `<svg width="24" height="24" viewBox="-13 -14 26 27" style="vertical-align:middle">${iconSvgInner(key, color)}</svg>`;
+    return `<span style="display:inline-block;vertical-align:middle">${glyphHtml(key, color, 24)}</span>`;
   }
 
   // present (by count) → witnessed (by recency) → never seen.

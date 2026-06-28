@@ -15,6 +15,7 @@ import { isWater } from '../world/tilemap.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import { ageInYears, calendarOf } from '../sim/config.ts';
 import { CATEGORY_COLOR, resourceIcon } from './icons.ts';
+import { isEmoji, EMOJI } from './skin.ts';
 
 // Real-world watch time as H:MM:SS (or M:SS under an hour).
 function formatElapsed(ms: number): string {
@@ -253,53 +254,65 @@ export class Renderer {
       }
     }
 
+    const emoji = isEmoji();   // M34: the emoji skin draws each entity as a system emoji glyph
     for (const e of world.query(C_FLORA, C_POSITION)) {
       const f = world.getComponent<Flora>(e, C_FLORA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      this.iconPlant(p.x, p.y, f.color, f.maturity, f.maturity >= f.edibleAt);
+      if (emoji) this.drawEmoji(p.x, p.y, EMOJI[f.maturity >= f.edibleAt ? 'plantRipe' : 'plant']);
+      else this.iconPlant(p.x, p.y, f.color, f.maturity, f.maturity >= f.edibleAt);
     }
     for (const e of world.query(C_RESOURCE, C_POSITION)) {
       const r = world.getComponent<Resource>(e, C_RESOURCE)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      this.iconResource(p.x, p.y, resourceIcon(r.typeId), r.color, r.amount);
+      const kind = resourceIcon(r.typeId);
+      if (emoji) this.drawEmoji(p.x, p.y, EMOJI[kind]);
+      else this.iconResource(p.x, p.y, kind, r.color, r.amount);
     }
     for (const e of world.query(C_BUSINESS, C_POSITION)) {
       const biz = world.getComponent<Business>(e, C_BUSINESS)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      if (biz.fishery) this.iconDock(p.x, p.y); else this.iconBuilding(p.x, p.y, biz.color);
+      if (emoji) this.drawEmoji(p.x, p.y, EMOJI[biz.fishery ? 'dock' : 'building']);
+      else if (biz.fishery) this.iconDock(p.x, p.y); else this.iconBuilding(p.x, p.y, biz.color);
     }
     for (const e of world.query(C_HOME, C_POSITION)) {     // owned homes — the town's growth (M11)
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      this.iconBuilding(p.x, p.y, CATEGORY_COLOR.home);
+      if (emoji) this.drawEmoji(p.x, p.y, EMOJI.home);
+      else this.iconBuilding(p.x, p.y, CATEGORY_COLOR.home);
     }
     for (const e of world.query(C_CIVIC, C_POSITION)) {     // civic buildings — landmarks + functional (M11/M21)
       const p = world.getComponent<Position>(e, C_POSITION)!;
       const civic = world.getComponent<Civic>(e, C_CIVIC)!;
-      this.iconCivicBuilding(p.x, p.y, civic.icon ?? 'civic');
+      if (emoji) this.drawEmoji(p.x, p.y, EMOJI[civic.icon ?? 'civic'] ?? EMOJI.civic);
+      else this.iconCivicBuilding(p.x, p.y, civic.icon ?? 'civic');
     }
     for (const e of world.query(C_RUIN, C_POSITION)) {       // ruins of the past (M20 s2b)
       const p = world.getComponent<Position>(e, C_POSITION)!;
       const ruin = world.getComponent<Ruin>(e, C_RUIN)!;
-      this.iconRuin(p.x, p.y, ruin.discovered);
+      if (emoji) this.drawEmoji(p.x, p.y, EMOJI.ruin);
+      else this.iconRuin(p.x, p.y, ruin.discovered);
     }
     for (const e of world.query(C_WONDERSITE, C_POSITION)) {  // great wonders (M20 s3b)
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      this.iconWonder(p.x, p.y);
+      if (emoji) this.drawEmoji(p.x, p.y, EMOJI.wonder);
+      else this.iconWonder(p.x, p.y);
     }
     for (const e of world.query(C_FISH, C_POSITION)) {        // aquatic life in the water (M24)
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      this.iconFish(drawX(e, p.x), drawY(e, p.y));
+      if (emoji) this.drawEmoji(drawX(e, p.x), drawY(e, p.y), EMOJI.fish);
+      else this.iconFish(drawX(e, p.x), drawY(e, p.y));
     }
     for (const e of world.query(C_FAUNA, C_POSITION)) {
       const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      this.iconAnimal(drawX(e, p.x), drawY(e, p.y), fa.color, fa.size);   // species colour + size
+      if (emoji) this.drawEmoji(drawX(e, p.x), drawY(e, p.y), EMOJI[fa.diet === 'predator' ? 'predator' : 'grazer']);
+      else this.iconAnimal(drawX(e, p.x), drawY(e, p.y), fa.color, fa.size);   // species colour + size
     }
     for (const e of world.query(C_SPECIAL, C_POSITION)) {   // monsters & uncanny visitors (M21)
       const sp = world.getComponent<Special>(e, C_SPECIAL)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
       const h = world.getComponent<Health>(e, C_HEALTH);
-      this.iconSpecial(drawX(e, p.x), drawY(e, p.y), sp.icon, !!h && h.value < 0.55);
+      if (emoji) this.drawEmoji(drawX(e, p.x), drawY(e, p.y), EMOJI[sp.icon] ?? EMOJI.monster);
+      else this.iconSpecial(drawX(e, p.x), drawY(e, p.y), sp.icon, !!h && h.value < 0.55);
     }
     // "In company": folk standing beside another folk are conversing. The chat badge
     // (M10 s4.5) shows this regardless of the socialize *action* (which only fires on a
@@ -321,8 +334,14 @@ export class Renderer {
       const child = ageInYears(agent.ticksAlive, cfg) < cfg.adultAgeYears;
       const health = world.getComponent<Health>(e, C_HEALTH);
       const cmb = world.getComponent<Combat>(e, C_COMBAT);
+      const boat = !!map && isWater(map, p.x, p.y);
+      const mage = world.hasComponent(e, C_MAGIC);
+      if (emoji) {
+        this.drawEmoji(drawX(e, p.x), drawY(e, p.y), boat ? EMOJI.boat : child ? EMOJI.child : mage ? EMOJI.mage : EMOJI.folk, child ? 0.85 : 1);
+        continue;
+      }
       this.iconFolk(drawX(e, p.x), drawY(e, p.y), child, {
-        mage: world.hasComponent(e, C_MAGIC),
+        mage,
         ill: !!health?.ill,
         wounded: !!health && health.value < 0.55,   // visibly hurt (combat or illness)
         action: agent.action,
@@ -331,7 +350,7 @@ export class Renderer {
         quest: world.hasComponent(e, C_QUEST),                       // ⚑ on a quest (M20 s3)
         veteran: !!cmb && (cmb.kills > 0 || cmb.scars > 0),          // ⚔ a fighter (M16)
         outlaw: world.hasComponent(e, C_CRIME),                      // ⚖ an outlaw (M16)
-        boat: !!map && isWater(map, p.x, p.y),                       // ⛵ afloat — a folk on the water rides a boat (M24)
+        boat,                                                        // ⛵ afloat — a folk on the water rides a boat (M24)
       });
     }
 
@@ -358,6 +377,16 @@ export class Renderer {
     if (alpha < 0.004) return;
     this.ctx.fillStyle = `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  // Emoji-skin glyph (M34): draw a system emoji filling the tile, at the (possibly interpolated)
+  // tile coords. Uses the OS emoji font — no assets. `scale` < 1 shrinks it (e.g. a child).
+  private drawEmoji(gx: number, gy: number, char: string, scale = 1): void {
+    const { ctx, cellSize } = this;
+    ctx.font = `${(cellSize * 0.82 * scale).toFixed(1)}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(char, gx * cellSize + cellSize / 2, gy * cellSize + cellSize / 2);
   }
 
   // ── icon primitives (drawn in a ±11 design space, scaled to the cell) ─────────
