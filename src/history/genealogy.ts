@@ -148,3 +148,27 @@ export function buildForest(world: World, cfg: SimConfig): Forest {
 
   return { nodes, byId, couples, generations, width };
 }
+
+// A soul's whole bloodline: their ancestors + descendants + self, plus everyone's partner (so
+// couples stay together). Used by the family-forest "focus this person" filter (M35 s2).
+export function bloodline(f: Forest, id: EntityId): Set<EntityId> {
+  const set = new Set<EntityId>();
+  const up = [id];
+  while (up.length) { const c = up.pop()!; if (set.has(c) || !f.byId.has(c)) continue; set.add(c); for (const p of f.byId.get(c)!.parents) up.push(p); }
+  const down = [id]; const seen = new Set<EntityId>();
+  while (down.length) { const c = down.pop()!; if (seen.has(c) || !f.byId.has(c)) continue; seen.add(c); set.add(c); for (const k of f.byId.get(c)!.children) down.push(k); }
+  for (const nid of [...set]) { const p = f.byId.get(nid)!.partner; if (p !== null && f.byId.has(p)) set.add(p); }
+  return set;
+}
+
+// The souls in a still-living line: every living soul + all their ancestors (+ partners) — i.e.
+// the lines that haven't died out. Used by the "living lines only" filter (M35 s2).
+export function livingLines(f: Forest): Set<EntityId> {
+  const set = new Set<EntityId>();
+  for (const n of f.nodes) if (n.alive) {
+    const up = [n.id];
+    while (up.length) { const c = up.pop()!; if (set.has(c)) continue; set.add(c); for (const p of f.byId.get(c)!.parents) up.push(p); }
+  }
+  for (const nid of [...set]) { const p = f.byId.get(nid)!.partner; if (p !== null && f.byId.has(p)) set.add(p); }
+  return set;
+}
