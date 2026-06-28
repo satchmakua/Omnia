@@ -3,9 +3,10 @@ import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS, C_POSITION, C_FAUNA, C_HEALTH, C_CLOCK, C_COMBAT, C_WARD, C_CURSE, C_SPECIAL, C_FLORA, C_EQUIPMENT, C_ENCHANTMENT,
+  C_AGENT, C_NEEDS, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS, C_POSITION, C_FAUNA, C_HEALTH, C_CLOCK, C_COMBAT, C_WARD, C_CURSE, C_SPECIAL, C_FLORA, C_EQUIPMENT, C_ENCHANTMENT, C_TOMBSTONE,
 } from '../src/sim/components.ts';
 import type { Needs, Magic, Agent, Wallet, Business, Job, Fauna, Health, Clock, Combat, Ward, Curse, Special, Flora, Equipment, Enchantment } from '../src/sim/components.ts';
+import { killAgent } from '../src/sim/death.ts';
 import { runCapabilitySystem } from '../src/sim/systems/CapabilitySystem.ts';
 import { runEconomySystem } from '../src/sim/systems/EconomySystem.ts';
 import { runMagicSystem } from '../src/sim/systems/MagicSystem.ts';
@@ -394,5 +395,16 @@ describe('magic items — enchanting (M26 s3)', () => {
     const bare = plainFolk(w, 7, 7);
     w.addComponent<Enchantment>(bare, C_ENCHANTMENT, { kind: 'weapon', bonus: 4, school: 'Artifice', by: 'X' });
     expect(combatantOf(w, bare).weapon ?? 0).toBe(0);
+  });
+
+  it('death strips a folk\'s ward & enchantment (no magic lingers on a tombstone)', () => {
+    const w = mageWorld();
+    const f = plainFolk(w, 5, 5);
+    w.addComponent<Ward>(f, C_WARD, { soak: 5, expiresTick: 9999 });
+    w.addComponent<Enchantment>(f, C_ENCHANTMENT, { kind: 'weapon', bonus: 4, school: 'Artifice', by: 'X' });
+    killAgent(w, f, 1000, 'old age', 1000);
+    expect(w.hasComponent(f, C_WARD)).toBe(false);
+    expect(w.hasComponent(f, C_ENCHANTMENT)).toBe(false);
+    expect(w.hasComponent(f, C_TOMBSTONE)).toBe(true);
   });
 });

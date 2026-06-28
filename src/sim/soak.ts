@@ -10,8 +10,9 @@ import {
   C_AGENT, C_NEEDS, C_POSITION, C_SPECIES, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS,
   C_HEALTH, C_LINEAGE, C_TOMBSTONE, C_MEMORY, C_FLORA, C_FAUNA, C_RESOURCE, C_TILEMAP, C_CLOCK,
   C_CHRONICLE, C_WORLDSTATS, C_LANGUAGESTORE, C_HOME, C_ORGSTORE, C_MARKET, C_COMBAT, C_CRIME, C_RELIGIONSTORE,
+  C_WARD, C_CURSE, C_ENCHANTMENT,
 } from './components.ts';
-import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock, Market, Combat, Crime } from './components.ts';
+import type { Needs, Position, SpeciesComp, Wallet, Magic, Health, Agent, Clock, Market, Combat, Crime, Ward, Curse } from './components.ts';
 import type { SimConfig } from './config.ts';
 import { ageInYears, calendarOf } from './config.ts';
 import { isPassable, isWater } from '../world/tilemap.ts';
@@ -79,6 +80,14 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       const m = world.getComponent<Magic>(e, C_MAGIC)!;
       if (m.mana < 0 || m.mana > m.maxMana) inv++;
     }
+
+    // M26 invariants: battle-magic enchantments stay bounded and never linger past expiry.
+    // Wards/enchantments only live on folk (stripped on death), so they can't exceed the
+    // population; the MagicSystem must sweep every expired ward/curse each tick.
+    if (world.query(C_WARD).length > agents.length) inv++;
+    if (world.query(C_ENCHANTMENT).length > agents.length) inv++;
+    for (const e of world.query(C_WARD)) if (world.getComponent<Ward>(e, C_WARD)!.expiresTick <= clock.tick) inv++;
+    for (const e of world.query(C_CURSE)) if (world.getComponent<Curse>(e, C_CURSE)!.expiresTick <= clock.tick) inv++;
 
     // M6.5 invariant: no two mobile creatures (folk or fauna) share a tile.
     const occupied = new Set<number>();

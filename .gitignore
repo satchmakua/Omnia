@@ -4,3 +4,4 @@ coverage/
 runs/
 .DS_Store
 *.local
+*.tmp.ts
