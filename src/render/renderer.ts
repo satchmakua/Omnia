@@ -46,6 +46,35 @@ const NEIGH8: readonly [number, number][] = [
 const MIN_SCALE = 1;
 const MAX_SCALE = 9;
 
+// A soft time-of-day wash over the map (D13: pastel, muted, calm). Keyframes are [dayFraction,
+// r, g, b, alpha]; the sim's day runs f∈[0,0.5) (f=0 dawn) and night f∈[0.5,1) (ClockSystem),
+// so this is a warm sunrise at 0, clear day, a warm sunset at 0.5, then a cool blue night.
+const DAY_NIGHT_KF: readonly [number, number, number, number, number][] = [
+  [0.00, 255, 150, 95, 0.16],   // dawn — warm rose (day begins)
+  [0.08, 255, 205, 160, 0.0],   // early morning — clear
+  [0.42, 255, 240, 215, 0.0],   // late day — clear
+  [0.50, 255, 125, 70, 0.18],   // dusk — warm amber (night begins)
+  [0.60, 40, 52, 96, 0.28],     // early night — blue
+  [0.75, 24, 34, 78, 0.34],     // deep night — deepest blue
+  [0.92, 36, 48, 92, 0.25],     // pre-dawn — easing
+  [1.00, 255, 150, 95, 0.16],   // wraps to dawn
+];
+function dayNightTint(f: number): [number, number, number, number] {
+  f = ((f % 1) + 1) % 1;
+  for (let i = 1; i < DAY_NIGHT_KF.length; i++) {
+    const b = DAY_NIGHT_KF[i];
+    if (f <= b[0]) {
+      const a = DAY_NIGHT_KF[i - 1];
+      const t = (f - a[0]) / (b[0] - a[0] || 1);
+      return [
+        Math.round(a[1] + (b[1] - a[1]) * t), Math.round(a[2] + (b[2] - a[2]) * t),
+        Math.round(a[3] + (b[3] - a[3]) * t), a[4] + (b[4] - a[4]) * t,
+      ];
+    }
+  }
+  return [DAY_NIGHT_KF[0][1], DAY_NIGHT_KF[0][2], DAY_NIGHT_KF[0][3], DAY_NIGHT_KF[0][4]];
+}
+
 export class Renderer {
   private readonly ctx: CanvasRenderingContext2D;
   private cellSize: number;
@@ -74,6 +103,7 @@ export class Renderer {
   // their previous and current tiles so motion reads fluidly. Updated on tick boundaries
   // (`syncPositions`) and drawn at an interpolation `alpha`. Pure render — the sim is untouched.
   private interp = new Map<EntityId, { px: number; py: number; cx: number; cy: number }>();
+  private lastTintTick = -1;   // for damping the day/night wash at fast-forward (no strobe)
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -308,7 +338,26 @@ export class Renderer {
     this.drawCombatFx(world, elapsedMs);   // fading clash/death marks (still in world space)
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.drawDayNight(world, clockEntity);   // soft time-of-day wash over the map (D13 aesthetic)
     this.drawHud(world, clockEntity, elapsedMs);
+  }
+
+  // A gentle day→night colour wash (D13). Drawn over the world but under the HUD, so the map
+  // breathes through dawn/day/dusk/night while the banner stays legible. Damped toward nothing at
+  // fast-forward (many ticks/frame) so the cycle doesn't strobe when you skip through time.
+  private drawDayNight(world: World, clockEntity: EntityId): void {
+    const clock = world.getComponent<Clock>(clockEntity, C_CLOCK);
+    if (!clock) return;
+    const dt = this.lastTintTick < 0 ? 0 : Math.abs(clock.tick - this.lastTintTick);
+    this.lastTintTick = clock.tick;
+    const damp = Math.max(0, Math.min(1, 1 - (dt - 4) / 12));   // full ≤4 ticks/frame → 0 by ~16
+    if (damp <= 0) return;
+    const f = (clock.tick % this.cfg.ticksPerDay) / this.cfg.ticksPerDay;
+    const [r, g, b, a] = dayNightTint(f);
+    const alpha = a * damp;
+    if (alpha < 0.004) return;
+    this.ctx.fillStyle = `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
   // ── icon primitives (drawn in a ±11 design space, scaled to the cell) ─────────
