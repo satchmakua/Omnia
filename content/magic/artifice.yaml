@@ -1,0 +1,11 @@
+# A magic school (M26 s3) — see elementalism.yaml for the shape. The artificer imbues a crafted
+# good (a neighbour's equipped weapon or armour) with a lasting enchantment — a magic item that
+# strikes keener or turns blows aside, and is remembered as a legendary artifact (ties M20 + M23).
+id: artifice
+name: Artifice
+blurb: runes & imbuing — the magic of enchanted things
+signature: enchant
+spells:
+  - { name: Imbue, mastery: 1, effect: enchant }
+  - { name: Enchant Arms, mastery: 3, effect: enchant }
+  - { name: Forge Relic, mastery: 5, effect: enchant }

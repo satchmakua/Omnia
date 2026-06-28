@@ -4,8 +4,8 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
-import { C_AGENT, C_CLOCK, C_ARTIFACTS, C_CRAFTING, C_EQUIPMENT, C_COMBAT } from '../src/sim/components.ts';
-import type { Agent, Clock, Crafting, Equipment, Combat, ArtifactsData, Artifact } from '../src/sim/components.ts';
+import { C_AGENT, C_CLOCK, C_ARTIFACTS, C_CRAFTING, C_EQUIPMENT, C_COMBAT, C_ENCHANTMENT } from '../src/sim/components.ts';
+import type { Agent, Clock, Crafting, Equipment, Combat, ArtifactsData, Artifact, Enchantment } from '../src/sim/components.ts';
 import { createArtifacts, bearerArtifact, pruneArtifacts, enshrineArtifact } from '../src/history/artifacts.ts';
 import { runArtifactSystem } from '../src/sim/systems/ArtifactSystem.ts';
 
@@ -80,5 +80,18 @@ describe('ArtifactSystem (M20 s2)', () => {
     w.removeComponent(e, C_AGENT);             // the smith dies
     runArtifactSystem(w, cfg);
     expect(data.artifacts[0].lost).toBe(true);
+  });
+
+  it("an artificer's enchanted gear becomes a named magic artifact, even on a non-smith (M26 s3)", () => {
+    const { w, data } = artWorld();
+    const e = w.createEntity();                // a plain warrior, NOT a master crafter
+    w.addComponent<Agent>(e, C_AGENT, { name: 'Wieldor', action: 'wander', ticksAlive: 50000, wealthGoal: 50, sex: 'male', lifespanTicks: 1e9 });
+    w.addComponent<Equipment>(e, C_EQUIPMENT, { weapon: 2, armour: 0 });
+    w.addComponent<Enchantment>(e, C_ENCHANTMENT, { kind: 'weapon', bonus: 5, school: 'Artifice', by: 'Mage' });
+    runArtifactSystem(w, cfg);
+    expect(data.artifacts.length).toBe(1);
+    expect(data.artifacts[0].enchanted).toBe('Mage');
+    expect(data.artifacts[0].deeds).toMatch(/enchanted by Mage/);
+    expect(data.artifacts[0].power).toBe(2 + 5);   // base weapon + enchantment bonus
   });
 });

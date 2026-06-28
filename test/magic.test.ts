@@ -3,13 +3,14 @@ import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS, C_POSITION, C_FAUNA, C_HEALTH, C_CLOCK, C_COMBAT, C_WARD, C_CURSE,
+  C_AGENT, C_NEEDS, C_WALLET, C_MAGIC, C_JOB, C_BUSINESS, C_POSITION, C_FAUNA, C_HEALTH, C_CLOCK, C_COMBAT, C_WARD, C_CURSE, C_SPECIAL, C_FLORA, C_EQUIPMENT, C_ENCHANTMENT,
 } from '../src/sim/components.ts';
-import type { Needs, Magic, Agent, Wallet, Business, Job, Fauna, Health, Clock, Combat, Ward, Curse } from '../src/sim/components.ts';
+import type { Needs, Magic, Agent, Wallet, Business, Job, Fauna, Health, Clock, Combat, Ward, Curse, Special, Flora, Equipment, Enchantment } from '../src/sim/components.ts';
 import { runCapabilitySystem } from '../src/sim/systems/CapabilitySystem.ts';
 import { runEconomySystem } from '../src/sim/systems/EconomySystem.ts';
 import { runMagicSystem } from '../src/sim/systems/MagicSystem.ts';
 import { runCombatSystem } from '../src/sim/systems/CombatSystem.ts';
+import { runSpecialAgentSystem } from '../src/sim/systems/SpecialAgentSystem.ts';
 import { combatantOf } from '../src/sim/combat.ts';
 import { schoolOf, knownSpells, topSpell, schoolIds } from '../src/magic/schools.ts';
 import { createSimulation } from '../src/sim/world.ts';
@@ -138,13 +139,16 @@ describe('magical-profession hiring', () => {
 describe('magic schools (M17 s3)', () => {
   it('the schools are content and mastery gates spells', () => {
     expect(schoolIds()).toContain('elementalism');
-    expect(schoolIds().length).toBe(6);   // four founding + abjuration/maleficence (M26 s2)
+    expect(schoolIds().length).toBe(9);   // four founding + ward/curse (s2) + summon/weather (s2b) + enchant (s3)
     expect(knownSpells('elementalism', 1).length).toBe(1);   // only Spark at mastery 1
     expect(knownSpells('elementalism', 5).length).toBe(3);   // all three by mastery 5
     expect(topSpell('elementalism', 5)!.name).toBe('Storm Wrath');
     expect(schoolOf('restoration')!.signature).toBe('heal');
     expect(schoolOf('abjuration')!.signature).toBe('ward');
     expect(schoolOf('maleficence')!.signature).toBe('curse');
+    expect(schoolOf('summoning')!.signature).toBe('summon');
+    expect(schoolOf('druidry')!.signature).toBe('weather');
+    expect(schoolOf('artifice')!.signature).toBe('enchant');
   });
 });
 
@@ -245,9 +249,9 @@ describe('battle magic — wards (M26 s2)', () => {
   it('a ward adds armour-soak to the bearer in combat', () => {
     const w = mageWorld();
     const f = plainFolk(w, 5, 5);
-    const before = combatantOf(w, f).armour;
+    const before = combatantOf(w, f).armour ?? 0;
     w.addComponent<Ward>(f, C_WARD, { soak: 5, expiresTick: 200 });
-    expect(combatantOf(w, f).armour).toBe(before + 5);
+    expect(combatantOf(w, f).armour ?? 0).toBe(before + 5);
   });
 
   it('an expired ward is swept even with no mages present', () => {
@@ -286,5 +290,109 @@ describe('battle magic — curses (M26 s2)', () => {
     const hexed = setup(true);
     expect(plain).toBeLessThan(1);          // the beast did wound the folk
     expect(hexed).toBeGreaterThan(plain);   // …but a cursed beast wounds less
+  });
+});
+
+// ── Summoning & weather (M26 s2b) ─────────────────────────────────────────────────────
+function guardian(w: World, x: number, y: number, owner: number): EntityId {
+  const e = w.createEntity();
+  w.addComponent(e, C_POSITION, { x, y });
+  w.addComponent<Health>(e, C_HEALTH, { value: 1, ill: false });
+  w.addComponent<Special>(e, C_SPECIAL, {
+    kind: 'guardian', name: 'a guardian', icon: 'guardian', behavior: 'guardian', owner,
+    str: 12, dex: 12, con: 12, ferocity: 1.2, spawnTick: 0, despawnTick: 1e9,
+  });
+  return e;
+}
+
+describe('battle magic — summoning (M26 s2b)', () => {
+  it('a summoning mage conjures one guardian, owned by the mage, for mana', () => {
+    const w = mageWorld();
+    const m = castMage(w, 5, 5, 'summoning', 3);
+    runMagicSystem(w, cfg, noRng);
+    const owned = () => w.query(C_SPECIAL).filter(g => w.getComponent<Special>(g, C_SPECIAL)!.owner === m);
+    expect(owned().length).toBe(1);
+    expect(w.getComponent<Special>(owned()[0], C_SPECIAL)!.behavior).toBe('guardian');
+    expect(w.getComponent<Magic>(m, C_MAGIC)!.mana).toBeLessThan(80);
+    // Casting again does not raise a second — one guardian per summoner at a time.
+    w.getComponent<Magic>(m, C_MAGIC)!.mana = 80;
+    runMagicSystem(w, cfg, noRng);
+    expect(owned().length).toBe(1);
+  });
+
+  it('a summoned guardian smites an adjacent beast', () => {
+    const w = mageWorld();
+    guardian(w, 5, 5, 999);
+    const b = predator(w, 6, 5);
+    runSpecialAgentSystem(w, cfg, () => 0, content);
+    expect(w.isAlive(b)).toBe(false);
+  });
+
+  it('a guardian fades when its time is up', () => {
+    const w = mageWorld(500);
+    const g = guardian(w, 5, 5, 999);
+    w.getComponent<Special>(g, C_SPECIAL)!.despawnTick = 400;   // already past
+    runSpecialAgentSystem(w, cfg, () => 0, content);
+    expect(w.isAlive(g)).toBe(false);
+  });
+});
+
+describe('battle magic — weather (M26 s2b)', () => {
+  it('a druid calls weather that ripens nearby flora', () => {
+    const w = mageWorld();
+    castMage(w, 5, 5, 'druidry', 3);
+    const fe = w.createEntity();
+    w.addComponent<Flora>(fe, C_FLORA, { speciesId: 'g', name: 'Grass', color: '#0a0', maturity: 0.1, growthPerTick: 0, edibleAt: 0.5, foodYield: 1, spreadChancePerTick: 0 });
+    w.addComponent(fe, C_POSITION, { x: 6, y: 5 });    // within the druid's reach
+    runMagicSystem(w, cfg, noRng);
+    expect(w.getComponent<Flora>(fe, C_FLORA)!.maturity).toBeGreaterThan(0.1);
+  });
+
+  it('weather does not reach distant flora', () => {
+    const w = mageWorld();
+    castMage(w, 5, 5, 'druidry', 3);
+    const fe = w.createEntity();
+    w.addComponent<Flora>(fe, C_FLORA, { speciesId: 'g', name: 'Grass', color: '#0a0', maturity: 0.1, growthPerTick: 0, edibleAt: 0.5, foodYield: 1, spreadChancePerTick: 0 });
+    w.addComponent(fe, C_POSITION, { x: 15, y: 15 });  // far out of reach
+    runMagicSystem(w, cfg, noRng);
+    expect(w.getComponent<Flora>(fe, C_FLORA)!.maturity).toBe(0.1);
+  });
+});
+
+// ── Magic items: enchanting (M26 s3) ──────────────────────────────────────────────────
+describe('magic items — enchanting (M26 s3)', () => {
+  it("an artificer imbues a neighbour's equipped weapon with a lasting enchantment", () => {
+    const w = mageWorld();
+    const m = castMage(w, 5, 5, 'artifice', 3);
+    const f = plainFolk(w, 6, 5);
+    w.addComponent<Equipment>(f, C_EQUIPMENT, { weapon: 3, armour: 0 });
+    runMagicSystem(w, cfg, noRng);
+    const ench = w.getComponent<Enchantment>(f, C_ENCHANTMENT);
+    expect(ench).toBeDefined();
+    expect(ench!.kind).toBe('weapon');
+    expect(ench!.bonus).toBeGreaterThan(0);
+    expect(ench!.by).toBe('Mage');
+    expect(w.getComponent<Magic>(m, C_MAGIC)!.mana).toBeLessThan(80);
+  });
+
+  it('an artificer leaves an unarmed neighbour be (nothing to enchant)', () => {
+    const w = mageWorld();
+    castMage(w, 5, 5, 'artifice', 3);
+    const f = plainFolk(w, 6, 5);            // no Equipment
+    runMagicSystem(w, cfg, noRng);
+    expect(w.hasComponent(f, C_ENCHANTMENT)).toBe(false);
+  });
+
+  it('an enchantment boosts the borne weapon in combat — but lends nothing if the item is gone', () => {
+    const w = mageWorld();
+    const armed = plainFolk(w, 5, 5);
+    w.addComponent<Equipment>(armed, C_EQUIPMENT, { weapon: 3, armour: 0 });
+    const before = combatantOf(w, armed).weapon ?? 0;
+    w.addComponent<Enchantment>(armed, C_ENCHANTMENT, { kind: 'weapon', bonus: 4, school: 'Artifice', by: 'X' });
+    expect(combatantOf(w, armed).weapon ?? 0).toBe(before + 4);
+    // a bearer who carries no weapon gains no phantom keenness from the same enchantment
+    const bare = plainFolk(w, 7, 7);
+    w.addComponent<Enchantment>(bare, C_ENCHANTMENT, { kind: 'weapon', bonus: 4, school: 'Artifice', by: 'X' });
+    expect(combatantOf(w, bare).weapon ?? 0).toBe(0);
   });
 });

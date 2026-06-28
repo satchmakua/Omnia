@@ -48,6 +48,7 @@ export const C_FISH         = 'Fish';         // aquatic life — swims in water
 export const C_VOYAGE       = 'Voyage';       // a seafaring merchant on a trade voyage to an overseas settlement (M25 s3)
 export const C_WARD         = 'Ward';         // a protective enchantment on a folk — temporary combat soak (M26 s2)
 export const C_CURSE        = 'Curse';        // a debilitating hex on a foe — temporary combat weakening (M26 s2)
+export const C_ENCHANTMENT  = 'Enchantment';  // a lasting magic imbued into a folk's equipped gear — a magic item (M26 s3)
 
 export interface Position {
   x: number;
@@ -212,6 +213,16 @@ export interface Curse {
   expiresTick: number; // tick at which the hex lifts
 }
 
+// A magic item (M26 s3): a lasting enchantment an artificer-mage imbues into a folk's equipped
+// weapon or armour — a permanent combat bonus read by the combat path, and named as a legendary
+// magic artifact by the ArtifactSystem (ties M20 artifacts + M23 equipment).
+export interface Enchantment {
+  kind: 'weapon' | 'armour';  // which equipped item is enchanted
+  bonus: number;              // power added to that item (only applies while the item is borne)
+  school: string;             // the enchanter's discipline (for flavour/legend)
+  by: string;                 // the enchanting mage's name
+}
+
 // An agent's occupation. `employer` points at a Business entity; `wagePerTick`
 // is baked from the profession's daily wage so the EconomySystem needs no registry.
 export interface Job {
@@ -297,6 +308,7 @@ export interface Artifact {
   lostTick?: number;
   ruined?: boolean;        // a cairn has been placed for this lost relic (M20 s2b) — placed once
   rediscoveredTick?: number; // a folk unearthed it again (archaeology)
+  enchanted?: string;      // the enchanter's name if this is a magic item (M26 s3)
 }
 export interface ArtifactsData {
   artifacts: Artifact[];
@@ -336,8 +348,9 @@ export interface Special {
   kind: string;          // the monster's content id (e.g. "dragon", "vampire")
   name: string;          // display name ("a dragon")
   icon: string;          // which creature glyph to draw
-  behavior: 'predator' | 'haunt';
+  behavior: 'predator' | 'haunt' | 'guardian';  // guardian: a friendly summon that smites beasts (M26 s2b)
   aquatic?: boolean;     // a sea-beast (M24): lives in the water, menacing the coast
+  owner?: number;        // a guardian's summoner (EntityId) — for the one-per-mage cap & flavour (M26 s2b)
   str: number;
   dex: number;
   con: number;

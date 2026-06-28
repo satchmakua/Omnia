@@ -8,9 +8,9 @@
 // enchantments — it sweeps expired wards/curses each tick (even when no mages remain).
 import type { World, EntityId } from '../ecs.ts';
 import {
-  C_MAGIC, C_POSITION, C_AGENT, C_FAUNA, C_HEALTH, C_NEEDS, C_CLOCK, C_WARD, C_CURSE,
+  C_MAGIC, C_POSITION, C_AGENT, C_FAUNA, C_HEALTH, C_NEEDS, C_CLOCK, C_WARD, C_CURSE, C_FLORA, C_SPECIAL, C_EQUIPMENT, C_ENCHANTMENT,
 } from '../components.ts';
-import type { Magic, Position, Agent, Fauna, Health, Needs, Clock, Ward, Curse } from '../components.ts';
+import type { Magic, Position, Agent, Fauna, Health, Needs, Clock, Ward, Curse, Flora, Special, Equipment, Enchantment } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { schoolOf, topSpell } from '../../magic/schools.ts';
 import { markCombat } from '../combat.ts';
@@ -21,6 +21,8 @@ const MASTERY_GROWTH_PER_DAY = 0.03;
 const SPELL_COST = 22;
 const WARD_DURATION = 80;     // ticks a ward shields its bearer (~1/3 day at 240/day)
 const CURSE_DURATION = 80;    // ticks a curse saps its victim
+const SUMMON_DURATION = 240;  // ticks a conjured guardian endures before fading (~a day)
+const WEATHER_RADIUS = 2;     // tiles a druid's quickening rain reaches
 const OFF = [-1, 0, 1];
 
 export function runMagicSystem(world: World, cfg: SimConfig, _rng: unknown): void {
@@ -65,6 +67,19 @@ export function runMagicSystem(world: World, cfg: SimConfig, _rng: unknown): voi
     if (!p) return false;
     for (const k of neighbourKeys(p)) if (predatorAt.has(k)) return true;
     return false;
+  };
+  // Flora indexed by tile, built lazily on the first weather cast (druids are ultra-rare, so this
+  // query is skipped entirely in the common case).
+  let floraAt: Map<number, EntityId> | null = null;
+  const getFloraAt = (): Map<number, EntityId> => {
+    if (!floraAt) {
+      floraAt = new Map();
+      for (const fe of world.query(C_FLORA, C_POSITION)) {
+        const p = world.getComponent<Position>(fe, C_POSITION)!;
+        floraAt.set(p.y * cfg.gridWidth + p.x, fe);
+      }
+    }
+    return floraAt;
   };
 
   for (const e of mages) {
@@ -162,6 +177,52 @@ export function runMagicSystem(world: World, cfg: SimConfig, _rng: unknown): voi
           emitEvent(world, 'magic', `${name} hexed a ${bn} with ${spell.name}, sapping its strength.`, pos);
           break;
         }
+      }
+    } else if (school.signature === 'summon') {
+      // Conjure a guardian spirit beside the mage — a friendly Special that hunts & smites the
+      // beasts (SpecialAgentSystem), then fades. At most one per summoner at a time.
+      const already = world.query(C_SPECIAL).some(g => world.getComponent<Special>(g, C_SPECIAL)!.owner === e);
+      if (!already) {
+        magic.mana -= SPELL_COST;
+        const g = world.createEntity();
+        world.addComponent<Position>(g, C_POSITION, { x: pos.x, y: pos.y });
+        world.addComponent<Health>(g, C_HEALTH, { value: 1, ill: false });
+        world.addComponent<Special>(g, C_SPECIAL, {
+          kind: 'guardian', name: `${name}'s guardian`, icon: 'guardian', behavior: 'guardian', owner: e,
+          str: 12 + Math.round(mastery), dex: 12, con: 12 + Math.round(mastery), ferocity: 1.2,
+          spawnTick: tick, despawnTick: tick + SUMMON_DURATION,
+        });
+        emitEvent(world, 'magic', `${name} summoned a guardian spirit with ${spell.name}.`, pos);
+      }
+    } else if (school.signature === 'weather') {
+      // Call a quickening rain that ripens the flora around the mage — eases the food supply.
+      const fa = getFloraAt();
+      let ripened = 0;
+      for (let dy = -WEATHER_RADIUS; dy <= WEATHER_RADIUS; dy++) {
+        for (let dx = -WEATHER_RADIUS; dx <= WEATHER_RADIUS; dx++) {
+          const fe = fa.get((pos.y + dy) * cfg.gridWidth + (pos.x + dx));
+          if (fe === undefined) continue;
+          const fl = world.getComponent<Flora>(fe, C_FLORA);
+          if (fl && fl.maturity < 1) { fl.maturity = Math.min(1, fl.maturity + 0.15 * m); ripened++; }
+        }
+      }
+      if (ripened > 0) {
+        magic.mana -= SPELL_COST;
+        emitEvent(world, 'magic', `${name} called a quickening rain with ${spell.name}.`, pos);
+      }
+    } else if (school.signature === 'enchant') {
+      // Imbue a neighbour's equipped weapon or armour with a lasting enchantment — a magic item
+      // (the ArtifactSystem then names & remembers it as a legendary relic).
+      for (const k of neighbourKeys(pos)) {
+        const f = folkAt.get(k);
+        if (f === undefined || f === e || world.hasComponent(f, C_ENCHANTMENT)) continue;
+        const eq = world.getComponent<Equipment>(f, C_EQUIPMENT);
+        if (!eq || (eq.weapon <= 0 && eq.armour <= 0)) continue;
+        const kind: 'weapon' | 'armour' = eq.weapon > 0 ? 'weapon' : 'armour';
+        magic.mana -= SPELL_COST;
+        world.addComponent<Enchantment>(f, C_ENCHANTMENT, { kind, bonus: 2 + Math.round(mastery), school: school.name, by: name });
+        emitEvent(world, 'magic', `${name} enchanted ${world.getComponent<Agent>(f, C_AGENT)!.name}'s ${kind === 'weapon' ? 'blade' : 'armour'} with ${spell.name}.`, pos);
+        break;
       }
     }
   }

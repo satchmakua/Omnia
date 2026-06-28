@@ -14,7 +14,7 @@ import type { World, EntityId } from '../ecs.ts';
 import {
   C_AGENT, C_FAUNA, C_SPECIAL, C_POSITION, C_HEALTH, C_TILEMAP, C_CLOCK, C_CHRONICLE,
 } from '../components.ts';
-import type { Special, Agent, Health, Position, Clock } from '../components.ts';
+import type { Special, Agent, Health, Position, Clock, Fauna } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
@@ -117,6 +117,21 @@ export function runSpecialAgentSystem(world: World, cfg: SimConfig, rng: RNG, co
   const occ = buildOccupancy(world, cfg.gridWidth, [C_AGENT, C_FAUNA, C_SPECIAL]);
   const OFF = [-1, 0, 1];
 
+  // Predators indexed for a summoned guardian to hunt (M26 s2b) — built lazily, since guardians
+  // are rare (only the ultra-rare summoner conjures one).
+  let predatorGrid: SpatialGrid | null = null;
+  const getPredatorGrid = (): SpatialGrid => {
+    if (!predatorGrid) {
+      predatorGrid = new SpatialGrid(cfg.gridWidth, cfg.gridHeight);
+      for (const fe of world.query(C_FAUNA, C_POSITION)) {
+        if (world.getComponent<Fauna>(fe, C_FAUNA)!.diet !== 'predator') continue;
+        const p = world.getComponent<Position>(fe, C_POSITION)!;
+        predatorGrid.insert(p.x, p.y, fe);
+      }
+    }
+    return predatorGrid;
+  };
+
   for (const se of specials) {
     const s = world.getComponent<Special>(se, C_SPECIAL)!;
     const health = world.getComponent<Health>(se, C_HEALTH)!;
@@ -126,11 +141,28 @@ export function runSpecialAgentSystem(world: World, cfg: SimConfig, rng: RNG, co
     if (health.value <= 0) { world.destroyEntity(se); continue; }
     if (tick >= s.despawnTick) {
       world.destroyEntity(se);
-      emitEvent(world, 'paranormal', `${capitalize(s.name)} melted back into the wilds.`, pos);
+      if (s.behavior === 'guardian') emitEvent(world, 'magic', `${capitalize(s.name)} faded back into the aether.`, pos);
+      else emitEvent(world, 'paranormal', `${capitalize(s.name)} melted back into the wilds.`, pos);
       continue;
     }
 
     const ent = s.aquatic ? waterEnterable : enterable;   // a sea-beast moves only through water (M24)
+
+    if (s.behavior === 'guardian') {
+      // A summoned guardian (M26 s2b): hunt the nearest beast and smite it; the folk it defends
+      // never fight it (it isn't C_AGENT), and nothing strikes it — it simply guards until it fades.
+      const prey = getPredatorGrid().nearest(pos.x, pos.y);
+      if (!prey) { wanderStep(pos, rng, ent, occ); continue; }
+      const dist = Math.abs(prey.x - pos.x) + Math.abs(prey.y - pos.y);
+      if (dist > 1) { stepToward(pos, prey.x, prey.y, rng, ent, occ); continue; }
+      const beast = prey.id as EntityId;
+      if (world.hasComponent(beast, C_FAUNA)) {
+        const bn = world.getComponent<Fauna>(beast, C_FAUNA)!.name.toLowerCase();
+        world.destroyEntity(beast);
+        emitEvent(world, 'magic', `${capitalize(s.name)} smote a ${bn}.`, pos);
+      }
+      continue;
+    }
 
     if (s.behavior === 'haunt') {
       runHaunt(world, s, pos, folkGrid, tick, cfg);
