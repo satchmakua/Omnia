@@ -483,6 +483,31 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 ---
 
+# Interleaved (user-requested 2026-06-27) — agreed build order: **M35 → M34 → finish M27 (slices 2–3)**, then resume the M28+ arc.
+
+## Milestone 34 — Emoji Skin  *(user-requested; scoped down from a fuller "skins" idea)*
+
+**Goal:** an alternate **emoji-based** visual set, selectable from the start menu — the first swappable skin. Deliberately scoped to **just the emoji glyph set**: in a design review the palette-only recolours (gothic/neon/cotton-candy over the same shapes) read too samey without bespoke art, so they're **shelved to the backlog**; the emoji set was the clear win.
+
+- [ ] **Glyph-mode in the renderer:** the map can draw each entity as an **emoji** (system `ctx.fillText` — zero assets) instead of the geometric shape, via a content/data `category → emoji` map (folk 🧝 · animal 🐺 · fish 🐟 · plant 🌲 · ore ⛏ · crystal 💎 · home 🏠 · dragon 🐉 · vampire 🧛 · undead 💀 · dire-beast 👹 · ghost 👻 · visitor 👽 · kraken 🦑 · …). Pure render (sim/render separation holds).
+- [ ] **Start-menu skin selector** (`SetupOptions.skin`, default Lo-fi) **+ a live toggle** in Settings (it's pure render, no restart needed); choice persists in `localStorage`.
+- [ ] **Legend + Bestiary reflect the active skin** — they show the emoji too, so every symbol stays self-explanatory (D35 legibility gate).
+
+**DoD:** the player can switch to the emoji skin from the start menu (and live); every category renders a clear emoji on the map and in the legend/bestiary; Lo-fi stays the default; pure render (sim untouched, soak byte-identical). *(Deferred to backlog: bundling OpenMoji/Twemoji for a consistent cross-OS look; the shelved palette/post-process themes.)*
+
+## Milestone 35 — The Family Forest  *(user-requested; **build next** — the high-delight one)*
+
+**Goal:** a single visual **genealogy of every soul who ever lived** — the deep-generational simulation made visible (the Dwarf Fortress / "history matters" pillar, D4/VISION). Lives under the **Heritage** tab.
+
+- [x] **Build the pedigree graph** as a pure read over living `Lineage` ∪ every `Tombstone` (parents/children/partner, entity-id-keyed so the dead resolve) → nodes (name, sex, clan colour, alive/dead, birth/death year) + descent edges + marriage pairs. No sim changes. *(S114: `src/history/genealogy.ts` `buildForest(world,cfg)` — pure, tested; +4 `test/genealogy.test.ts`: a 3-gen pedigree spanning living + dead, family colouring, a dangling parent ref dropped, empty-safe.)*
+- [x] **Generational-layered layout:** founders at the top, a child's generation = max(parent generation)+1, time flows down; marriage links between partners, descent links to children; clans **colour-coded**; living vs dead distinguished. *(S114: gen via memoised, cycle-guarded depth; per-generation ordering clusters families, keeps couples adjacent, and barycentres children under their parents to reduce crossings.)*
+- [x] **An SVG pan/zoom view with clickable nodes** (click a soul → inspect / focus their branch, reusing the inspector + family-focus), as a mode under **Heritage (K)**. *(S114: `src/render/familyForest.ts` — wheel-zoom (cursor-anchored) + drag-pan SVG, dots coloured by family with the living ringed, hover tooltips, a click → detail bar (+ `focusOn` for the living); opens from a "🌳 The Family Forest" button in Heritage, a stable snapshot. Browser-verified: 62 souls over 2 generations / 6 families render with links + summary; click selects & focuses. **Remaining: the whole-town ⇄ this-person toggle** (with the next item).)*
+- [ ] **Filters for scale** *(slice 2)* (deep-time, since graves grow O(deaths)): by clan, "living lines only," search-and-highlight a name; the whole-town ⇄ this-person toggle; leans on the planned tombstone-compression for very long runs.
+
+**DoD:** the Heritage tab shows the whole-town family forest — every living + dead soul, generations laid out, marriages & descent drawn, clans coloured, the living highlighted; nodes are clickable (inspect/focus); pan/zoom + ≥1 filter; legible at normal run sizes (~100–200 souls); pure render (sim/render separation holds); soak unaffected.
+
+---
+
 ## Backlog (unsorted — promote into a milestone before building)
 
 *(Append new ideas here with a date. Do not build directly from this list.)*
@@ -511,4 +536,5 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 - **Tombstone bloat — lingering components** (stress campaign, 2026-06-27): `killAgent` strips a whitelist (`LIVING_COMPONENTS`), but several agent components still ride on the tombstone entity forever — `Equipment`, `Inventory`, `Crafting`, `Quest`, `Memory` (M26's `Ward`/`Enchantment` were added to the strip list S108). Harmless (nothing queries them without `C_AGENT`) but it compounds the known **graves grow O(deaths)** unboundedness — fold into the deep-time **tombstone compression** pass when that lands.
 - **Note (whole-sim audit, 2026-06-27):** weakest/thinnest systems ranked — (1) trade & goods economy [→ M25], (2) tech effects [→ M25], (3) magic depth [→ M26], (4) water [→ M24], (5) inter-org diplomacy [→ M31], (6) rare-creature visibility [S95 rate bump + M22 bestiary]. M24→M25→M26 done.
 - **D13 aesthetic polish — remaining (optional)** (M22 closeout, 2026-06-27): the day/night colour wash landed (S111); remaining optional touches — a subtle **vignette / biome texture**, a **weather tint** (tie to the M19 disaster/season events), and the **lo-fi ambient audio** layer. Low priority; doesn't gate M22 (DoD met). Promote into a small polish slice if/when wanted.
-- **More inner-life needs & husbandry/farming/construction** (gap analysis, 2026-06-27): beyond M28's fun/leisure need — **domestication & livestock** (cow/chicken husbandry), **agriculture depth** (planted/tended crops vs. wild forage), and **agents building structures from gathered resources** over time (homes/civic are currently raised, not resource-gated). A Kenshi/RimWorld/DF "colony economy" theme; candidate for an M34 if the economy is to deepen further.
+- **More inner-life needs & husbandry/farming/construction** (gap analysis, 2026-06-27): beyond M28's fun/leisure need — **domestication & livestock** (cow/chicken husbandry), **agriculture depth** (planted/tended crops vs. wild forage), and **agents building structures from gathered resources** over time (homes/civic are currently raised, not resource-gated). A Kenshi/RimWorld/DF "colony economy" theme; candidate for a future milestone if the economy is to deepen further.
+- **Palette / post-process skins** (shelved from M34, 2026-06-27): the non-emoji skins from the skins brainstorm — **Brutalist Gothic, Cyberpunk Neon, Cotton Candy, Parchment Codex, Bioluminescent**, etc. — as palette recolours of `CATEGORY_COLOR` + biome + day/night + UI chrome (CSS variables), optionally with a per-skin canvas **post-process** (gothic duotone / neon bloom). Shelved because palette-only recolours over the same geometric shapes read too samey without bespoke per-skin icon art; the **emoji** skin (M34) was the clear win. Revisit if we want bespoke-art skins or the cheap post-process route. (The theme engine M34 builds — a `skin` setting + glyph-mode — is the hook these would slot into.)
