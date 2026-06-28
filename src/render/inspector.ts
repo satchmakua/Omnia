@@ -2,11 +2,11 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE, C_ENCHANTMENT,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE, C_ENCHANTMENT, C_VOYAGE,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse, Enchantment,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse, Enchantment, Voyage,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
 import { socialClassOf } from '../sim/society.ts';
@@ -27,6 +27,9 @@ function bar(v: number): string {
 
 const SECTION = 'color:#aac;font-size:11px;text-transform:uppercase;letter-spacing:1px';
 const RULE = 'border-color:rgba(255,255,255,0.1);margin:8px 0';
+
+// Tech-tier → era label (M17), mirroring the Knowledge tab — so a clan's tech age reads on its folk.
+const ERA_NAMES = ['Tribal Age', 'Tribal Age', 'Bronze Age', 'Iron Age', 'Medieval Age', 'Industrial Age', 'Modern Age', 'Sci-Fi Age'];
 
 export class Inspector {
   private readonly panel: HTMLDivElement;
@@ -272,6 +275,13 @@ export class Inspector {
     // A magic item: enchanted gear imbued by an artificer (M26 s3).
     const ench = world.getComponent<Enchantment>(e, C_ENCHANTMENT);
     const enchLine = ench ? `<div style="color:#e6c0ff">✨ bears an enchanted ${ench.kind} — imbued by ${ench.by} (${ench.school})</div>` : '';
+    // A merchant away at sea on a trade voyage (M25 s3).
+    const voyage = world.getComponent<Voyage>(e, C_VOYAGE);
+    const voyageLine = voyage ? (() => {
+      const ostore = getOrgStore(world);
+      const dest = ostore ? getOrg(ostore, voyage.orgId) : undefined;
+      return `<div style="color:#7fb8cf">⛵ away on a trade voyage${dest ? ` to the ${dest.name}` : ' across the sea'}</div>`;
+    })() : '';
 
     // Carried materials & goods + craft skill (M23): what the gatherer/crafter holds & can make.
     const inv = world.getComponent<Inventory>(e, C_INVENTORY);
@@ -330,6 +340,7 @@ export class Inspector {
       ${questLine}
       ${wardLine}
       ${enchLine}
+      ${voyageLine}
       ${livelihoodBlock}
       ${carryingBlock}
       ${family}
@@ -380,10 +391,15 @@ export class Inspector {
     const role = org.leader === e ? ' <span style="color:#ffd27a">· leads it</span>' : '';
     const seafaring = (org.effects?.seafaring ?? 0) > 0
       ? '<div style="color:#7fb8cf">⛵ seafaring — they cross the water by boat</div>' : '';
+    // The clan's tech age (M17) — surfaces the tech system on the folk who live it.
+    const tier = Math.max(1, Math.min(7, org.tier ?? 1));
+    const arts = org.techs?.length ?? 0;
+    const eraLine = `<div style="color:#c9b27a">⚒ ${ERA_NAMES[tier]}${arts > 0 ? ` · ${arts} ${arts === 1 ? 'art' : 'arts'} mastered` : ''}</div>`;
     return `<hr style="${RULE}">
       <div style="${SECTION}">Clan</div>
       <div><span style="color:${org.color}">${org.name}</span>${role}</div>
       <div style="color:#9ab">${org.government} · kin &amp; faction</div>
+      ${eraLine}
       ${seafaring}`;
   }
 
