@@ -9,8 +9,8 @@ import { createSimulation } from './world.ts';
 import type { Simulation } from './world.ts';
 import { runTicks } from './loop.ts';
 import { createRNG } from './rng.ts';
-import { C_CLOCK, C_AIRECORD, C_AIRUNNER } from './components.ts';
-import type { Clock, AIRecord, AIRecordEntry } from './components.ts';
+import { C_CLOCK, C_AIRECORD, C_AIRUNNER, C_INTERVENTIONS } from './components.ts';
+import type { Clock, AIRecord, AIRecordEntry, InterventionsData, Intervention } from './components.ts';
 import type { SimConfig } from './config.ts';
 import type { Content } from '../content/loader.ts';
 import { RecordedProvider } from '../ai/recording.ts';
@@ -27,6 +27,7 @@ export interface SaveGame {
   savedAtTick: number;      // ticks to replay if loading via the replay fallback
   config: SimConfig;        // includes the seed — reproduces the run
   ai: AIRecordEntry[];      // recorded LLM responses (replay fallback; also in the snapshot)
+  interventions: Intervention[]; // recorded god-mode acts (M27) — replay fallback; also in the snapshot
   snapshot?: WorldSnapshot; // v2: the world + RNG, for an instant load
 }
 
@@ -35,10 +36,12 @@ export function buildSave(sim: Simulation, cfg: SimConfig): SaveGame {
   const tick = sim.world.getComponent<Clock>(sim.clockEntity, C_CLOCK)!.tick;
   const recEnts = sim.world.query(C_AIRECORD);
   const ai = recEnts.length ? [...sim.world.getComponent<AIRecord>(recEnts[0], C_AIRECORD)!.entries] : [];
+  const ivEnts = sim.world.query(C_INTERVENTIONS);
+  const interventions = ivEnts.length ? sim.world.getComponent<InterventionsData>(ivEnts[0], C_INTERVENTIONS)!.log.map(iv => ({ ...iv })) : [];
   // The AIRunner is a live-model runtime object (promises/queue) — not snapshottable; it is
   // recreated on demand after load. Everything else is plain data.
   const snapshot: WorldSnapshot = { ...sim.world.snapshot([C_AIRUNNER]), rngState: sim.rng.getState!() };
-  return { version: SAVE_VERSION, savedAtTick: tick, config: cfg, ai, snapshot };
+  return { version: SAVE_VERSION, savedAtTick: tick, config: cfg, ai, interventions, snapshot };
 }
 
 // Restore a saved run. With a snapshot (v2) it's instant — rebuild the world + RNG directly.
@@ -56,6 +59,12 @@ export function loadSave(save: SaveGame, content: Content): Simulation {
   }
   // Replay fallback (the correctness baseline): recreate from config, run to the saved tick.
   const sim = createSimulation(save.config, content);
+  // Re-arm the recorded god-mode acts so the InterventionSystem re-fires them at their ticks (M27):
+  // reset `applied` so the replay re-applies them exactly as the original run did.
+  const ivEnts = sim.world.query(C_INTERVENTIONS);
+  if (ivEnts.length && save.interventions.length) {
+    sim.world.getComponent<InterventionsData>(ivEnts[0], C_INTERVENTIONS)!.log = save.interventions.map(iv => ({ ...iv, applied: false }));
+  }
   const provider = new RecordedProvider({ entries: save.ai });
   runTicks(sim.world, sim.rng, save.config, sim.clockEntity, content, save.savedAtTick, provider);
   return sim;
@@ -89,11 +98,12 @@ export function parseSave(json: string): SaveGame {
   if (typeof s.savedAtTick !== 'number' || s.savedAtTick < 0) throw new Error('save: missing/invalid "savedAtTick"');
   if (!s.config || typeof (s.config as SimConfig).seed !== 'number') throw new Error('save: missing config / seed');
   if (!Array.isArray(s.ai)) throw new Error('save: missing "ai" record');
+  if (s.interventions !== undefined && !Array.isArray(s.interventions)) throw new Error('save: malformed "interventions"');
   if (s.snapshot !== undefined) {
     const snap = s.snapshot as Partial<WorldSnapshot>;
     if (typeof snap.nextId !== 'number' || !Array.isArray(snap.alive) || !snap.components || typeof snap.rngState !== 'number') {
       throw new Error('save: malformed snapshot');
     }
   }
-  return { version: s.version, savedAtTick: s.savedAtTick, config: s.config as SimConfig, ai: s.ai, snapshot: s.snapshot };
+  return { version: s.version, savedAtTick: s.savedAtTick, config: s.config as SimConfig, ai: s.ai, interventions: s.interventions ?? [], snapshot: s.snapshot };
 }

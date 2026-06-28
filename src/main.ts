@@ -1,6 +1,7 @@
 import { createSimulation } from './sim/world.ts';
 import type { Simulation } from './sim/world.ts';
 import { tick } from './sim/loop.ts';
+import { enqueueIntervention } from './sim/interventions.ts';
 import { buildSave, loadSave, serializeSave, parseSave } from './sim/saveload.ts';
 import { listSaves, putSave, getSaveJson, deleteSave } from './sim/saveStore.ts';
 import { loadSimConfig } from './sim/configLoader.ts';
@@ -111,6 +112,11 @@ let liveModel = false;
 let activeProvider: AIProvider = stubProvider;
 const OLLAMA = { baseUrl: 'http://localhost:11434', model: 'llama3.2' };
 
+// God mode (M27): off by default — the observatory is the default experience. When on, the player
+// can enqueue interventions (recorded events, replay-exact, D54). The full click-a-target UI is a
+// later slice; for now the toggle + the dev `god` API (below) exercise the seam.
+let godMode = false;
+
 renderer.setClickHandler((entity) => { if (active) inspector.inspect(entity, active.world); });
 renderer.onTileClick = (x, y) => { if (active) inspector.inspectTile(x, y, active.world); };   // inspect bare terrain/water (M24)
 
@@ -193,9 +199,10 @@ function showPauseMenu(): void {
     onResume: () => { state = 'running'; },
     onRestart: () => newSimulation(lastSetup),
     onManageSaves: () => showSavesMenu(),
-    onSettings: () => menu.showSettings(lastSeed, speed, liveModel, {
+    onSettings: () => menu.showSettings(lastSeed, speed, liveModel, godMode, {
       onApply: (seed) => { menu.hide(); newSimulation({ ...lastSetup, seed }); },
       onToggleLive: () => { liveModel = !liveModel; },
+      onToggleGod: () => { godMode = !godMode; },
       onBack: () => showPauseMenu(),
     }),
     onControls: () => menu.showControls(() => showPauseMenu()),
@@ -223,6 +230,16 @@ if (import.meta.env.DEV) {
     setLiveModel: (v: boolean) => { liveModel = v; },
     get provider() { return activeProvider; },
     step: (n = 1) => { if (active) for (let i = 0; i < n; i++) tick(active.world, active.rng, activeCfg, active.clockEntity, content, activeProvider); },
+    // God mode (M27 s1): the intervention seam, exercised here until the full UI lands (slice 3).
+    god: {
+      get on() { return godMode; },
+      enable() { godMode = true; },
+      disable() { godMode = false; },
+      act(kind: string, target: number | null, amount?: number) {
+        if (godMode && active) return enqueueIntervention(active.world, kind, target, amount);
+        return null;
+      },
+    },
   };
 }
 

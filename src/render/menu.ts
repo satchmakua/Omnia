@@ -304,7 +304,7 @@ export class Menu {
     this.open();
   }
 
-  showSettings(currentSeed: number, currentSpeed: number, liveModel: boolean, a: SettingsActions): void {
+  showSettings(currentSeed: number, currentSpeed: number, liveModel: boolean, godMode: boolean, a: SettingsActions): void {
     this.card.innerHTML = '';
     this.card.appendChild(this.title('Settings', 'tunables for a fresh run'));
 
@@ -321,11 +321,16 @@ export class Menu {
     seedRow.append(seedLabel, seedInput);
 
     const aiToggle = styledButton(`🧠  AI soul: ${liveModel ? 'Live model (Ollama)' : 'Stub (default)'}`);
-    aiToggle.addEventListener('click', () => { a.onToggleLive(); this.showSettings(currentSeed, currentSpeed, !liveModel, a); });
+    aiToggle.addEventListener('click', () => { a.onToggleLive(); this.showSettings(currentSeed, currentSpeed, !liveModel, godMode, a); });
+
+    // God mode (M27): toggles live (no restart) — the observatory is the default; turn it on to act.
+    const godToggle = styledButton(`👁  God mode: ${godMode ? 'Active — the world heeds you' : 'Observing (default)'}`);
+    godToggle.addEventListener('click', () => { a.onToggleGod(); this.showSettings(currentSeed, currentSpeed, liveModel, !godMode, a); });
 
     const note = document.createElement('div');
     note.innerHTML = `Starting speed is the bottom slider (now ${currentSpeed}/s). A new seed or AI change needs a restart.` +
-      (liveModel ? '<br><span style="color:#c9a">Live mode needs a local Ollama server running.</span>' : '');
+      (liveModel ? '<br><span style="color:#c9a">Live mode needs a local Ollama server running.</span>' : '') +
+      (godMode ? '<br><span style="color:#c9a">God mode on — your acts are recorded, so saves &amp; replays stay exact.</span>' : '');
     Object.assign(note.style, { color: '#9ab', fontSize: '12px', margin: '10px 2px 14px', lineHeight: '1.6' });
 
     const apply = styledButton('↻  Apply & restart', true);
@@ -333,7 +338,7 @@ export class Menu {
     apply.addEventListener('click', () => a.onApply(Math.floor(Number(seedInput.value)) || currentSeed));
     back.addEventListener('click', () => a.onBack());
 
-    this.card.append(seedRow, aiToggle, note, apply, back);
+    this.card.append(seedRow, aiToggle, godToggle, note, apply, back);
     this.open();
   }
 }
@@ -341,5 +346,6 @@ export class Menu {
 export interface SettingsActions {
   onApply: (seed: number) => void;
   onToggleLive: () => void;
+  onToggleGod: () => void;
   onBack: () => void;
 }
