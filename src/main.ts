@@ -25,6 +25,7 @@ import { FaithsDashboard } from './render/faithsDashboard.ts';
 import { SocietyDashboard } from './render/societyDashboard.ts';
 import { EventsDashboard } from './render/eventsDashboard.ts';
 import { KnowledgeDashboard } from './render/knowledgeDashboard.ts';
+import { BestiaryDashboard } from './render/bestiaryDashboard.ts';
 import { SpeedControl } from './render/controls.ts';
 import { EventFeed } from './render/eventFeed.ts';
 import { C_AGENT, C_POSITION } from './sim/components.ts';
@@ -74,6 +75,7 @@ const faiths       = new FaithsDashboard();
 const society      = new SocietyDashboard();
 const events       = new EventsDashboard();
 const knowledge    = new KnowledgeDashboard(content.tech);
+const bestiary     = new BestiaryDashboard(content);
 
 // One master tabbed view holds every global view (M10 slice 1). Per-view hotkeys jump
 // straight to a tab; Tab opens it on the current one. The inspector stays the entity
@@ -91,6 +93,7 @@ master.register({ id: 'faiths',    label: 'Faiths',    hotkey: 'r', el: faiths.c
 master.register({ id: 'society',   label: 'Society',   hotkey: 's', el: society.content,   update: (w) => society.update(w) });
 master.register({ id: 'events',    label: 'Events',    hotkey: 'm', el: events.content,     update: (w) => events.update(w) });
 master.register({ id: 'knowledge', label: 'Knowledge', hotkey: 'j', el: knowledge.content,  update: (w) => knowledge.update(w) });
+master.register({ id: 'bestiary',  label: 'Bestiary',  hotkey: 'b', el: bestiary.content,   update: (w) => bestiary.update(w) });
 
 // The currently running simulation (null while the start menu is up).
 let active: Simulation | null = null;
@@ -254,6 +257,7 @@ function loop(now: number) {
     renderer.consumeClick(active.world);
     inspector.update(active.world);
     eventFeed.render(active.world);
+    bestiary.observe(active.world);   // track "last seen" every frame, even with the tab closed (M22)
     // Keep the open master tab's figures live (cheap; throttled).
     if (frame++ % 20 === 0) master.refresh(active.world);
   }
