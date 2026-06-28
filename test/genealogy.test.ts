@@ -7,7 +7,7 @@ import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import { C_AGENT, C_LINEAGE, C_TOMBSTONE, C_CLOCK } from '../src/sim/components.ts';
 import type { Agent, Lineage, Tombstone, Clock } from '../src/sim/components.ts';
-import { buildForest } from '../src/history/genealogy.ts';
+import { buildForest, bloodline, livingLines } from '../src/history/genealogy.ts';
 
 const cfg = defaultConfig;
 
@@ -85,5 +85,45 @@ describe('family forest — buildForest (M35)', () => {
     expect(f.nodes.length).toBe(0);
     expect(f.generations).toBe(0);
     expect(f.width).toBe(0);
+  });
+});
+
+describe('family forest — filters (M35 s2)', () => {
+  // A living line (Foss -> Dax, living) and an extinct dead-end line (Rok+Vyn -> Cy -> Gel, all dead).
+  function townWorld() {
+    const w = world();
+    const rok = buried(w, 'Rok Vant', 'male', [], [], null);
+    const vyn = buried(w, 'Vyn Vant', 'female', [], [], null);
+    const cy = buried(w, 'Cy Vant', 'male', [rok, vyn], [], null);
+    const gel = buried(w, 'Gel Vant', 'female', [cy], [], null);   // extinct: all dead, no living below
+    (w.getComponent<Tombstone>(rok, C_TOMBSTONE)!).children = [cy]; (w.getComponent<Tombstone>(rok, C_TOMBSTONE)!).partner = vyn;
+    (w.getComponent<Tombstone>(vyn, C_TOMBSTONE)!).children = [cy]; (w.getComponent<Tombstone>(vyn, C_TOMBSTONE)!).partner = rok;
+    (w.getComponent<Tombstone>(cy, C_TOMBSTONE)!).children = [gel];
+    const foss = buried(w, 'Foss Drak', 'male', [], [], null);
+    const dax = living(w, 'Dax Drak', 'male', [foss], [], null);   // living → keeps the Drak line alive
+    (w.getComponent<Tombstone>(foss, C_TOMBSTONE)!).children = [dax];
+    return { w, rok, vyn, cy, gel, foss, dax };
+  }
+
+  it('bloodline(focus) = ancestors + descendants + self (+ partners)', () => {
+    const { w, rok, vyn, cy, gel } = townWorld();
+    const f = buildForest(w, cfg);
+    const line = bloodline(f, cy);
+    expect(line.has(cy)).toBe(true);          // self
+    expect(line.has(rok)).toBe(true);         // ancestor
+    expect(line.has(vyn)).toBe(true);         // ancestor (+ partner of rok)
+    expect(line.has(gel)).toBe(true);         // descendant
+    expect(line.has(f.byId.get(cy)!.id)).toBe(true);
+  });
+
+  it('livingLines = the living + their ancestors; extinct dead-end lines are excluded', () => {
+    const { w, rok, vyn, cy, gel, foss, dax } = townWorld();
+    const f = buildForest(w, cfg);
+    const alive = livingLines(f);
+    expect(alive.has(dax)).toBe(true);        // living
+    expect(alive.has(foss)).toBe(true);       // ancestor of the living
+    expect(alive.has(rok)).toBe(false);       // extinct line — pruned
+    expect(alive.has(cy)).toBe(false);
+    expect(alive.has(gel)).toBe(false);
   });
 });
