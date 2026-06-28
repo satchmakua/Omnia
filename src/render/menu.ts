@@ -46,6 +46,7 @@ const CONTROLS: [string, string][] = [
   ['S', 'Society — alignment, character &amp; the criminal class'],
   ['M', 'Events — harvests, disasters &amp; the uncanny'],
   ['J', 'Knowledge — the tech tree &amp; lost arts'],
+  ['B', 'Bestiary — races, beasts &amp; monsters (with last-seen)'],
   ['L', 'toggle the Legend key'],
   ['H', 'toggle Town Happenings'],
 ];
