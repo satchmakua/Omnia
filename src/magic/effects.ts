@@ -14,6 +14,9 @@ export const SPELL_EFFECTS = [
   'sustain',  // conjure a meal for a hungry neighbour
   'ward',     // shield an endangered ally with temporary combat soak (M26 s2)
   'curse',    // hex a marauding beast, sapping its blows (M26 s2)
+  'summon',   // conjure a temporary guardian creature that smites beasts (M26 s2b)
+  'weather',  // call a quickening rain that ripens nearby flora (M26 s2b)
+  'enchant',  // imbue a neighbour's equipped weapon/armour — a lasting magic item (M26 s3)
 ] as const;
 
 export type SpellEffect = (typeof SPELL_EFFECTS)[number];

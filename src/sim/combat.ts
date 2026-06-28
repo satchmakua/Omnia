@@ -5,8 +5,8 @@
 // the existing health/mortality machinery. Used by hunting, crime (M16 s2), and war (M16 s3).
 import type { RNG } from './rng.ts';
 import type { World, EntityId } from './ecs.ts';
-import { C_BODY, C_COMBAT, C_AGENT, C_EQUIPMENT, C_QUEST, C_WARD } from './components.ts';
-import type { Body, Combat, Agent, Equipment, Quest, Ward } from './components.ts';
+import { C_BODY, C_COMBAT, C_AGENT, C_EQUIPMENT, C_QUEST, C_WARD, C_ENCHANTMENT } from './components.ts';
+import type { Body, Combat, Agent, Equipment, Quest, Ward, Enchantment } from './components.ts';
 import { getCultureStore, getCulture } from '../culture/cultureStore.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 
@@ -78,6 +78,11 @@ export function combatantOf(world: World, e: EntityId): Combatant {
   // A ward (M26 s2) lends temporary armour-soak; expiry is swept by the MagicSystem, so a present
   // ward is live (at worst one tick stale, harmlessly — combat runs just before that sweep).
   const ward = world.getComponent<Ward>(e, C_WARD);
+  // A magic item (M26 s3): an enchantment boosts the equipped weapon/armour it imbues — but only
+  // while that item is actually borne (so a traded-away blade lends no phantom keenness).
+  const ench = world.getComponent<Enchantment>(e, C_ENCHANTMENT);
+  const weapon = eq?.weapon ?? 0;
+  const armour = eq?.armour ?? 0;
   return {
     str: body?.str ?? 10,
     dex: body?.dex ?? 10,
@@ -86,8 +91,8 @@ export function combatantOf(world: World, e: EntityId): Combatant {
     ferocity: ferocityOf(trait) * questZeal,
     prowess: combat ? combat.scars + combat.kills * 2 : 0,
     arms,
-    weapon: eq?.weapon ?? 0,
-    armour: (eq?.armour ?? 0) + (ward?.soak ?? 0),
+    weapon: weapon + (ench?.kind === 'weapon' && weapon > 0 ? ench.bonus : 0),
+    armour: armour + (ward?.soak ?? 0) + (ench?.kind === 'armour' && armour > 0 ? ench.bonus : 0),
   };
 }
 

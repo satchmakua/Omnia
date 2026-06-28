@@ -1,0 +1,11 @@
+# A magic school (M26 s2b) — see elementalism.yaml for the shape. The druid calls weather — a
+# quickening rain that ripens the flora around them, easing the food supply (ties to the growing
+# season). A boon-magic distinct from the conjurer's single conjured meal.
+id: druidry
+name: Druidry
+blurb: rain, growth & the turning seasons — the magic of the green
+signature: weather
+spells:
+  - { name: Verdant Touch, mastery: 1, effect: weather }
+  - { name: Rains of Plenty, mastery: 3, effect: weather }
+  - { name: Bloom, mastery: 5, effect: weather }

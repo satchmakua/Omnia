@@ -661,10 +661,26 @@ export class Renderer {
         case 'ghost':   this.drawGhost(); break;
         case 'alien':   this.drawAlien(); break;
         case 'kraken':  this.drawKraken(); break;
+        case 'guardian': this.drawGuardian(); break;   // a friendly summon (M26 s2b)
         default:        this.drawMonster(); break;   // 'monster' — a dire beast
       }
       if (wounded) { ctx.strokeStyle = '#ff5050'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-4, 11.5); ctx.lineTo(4, 11.5); ctx.stroke(); }
     });
+  }
+
+  // A conjured guardian spirit (M26 s2b): a radiant wisp with a soft aura, bright core and halo —
+  // benevolent, distinct from the hollow-eyed ghost.
+  private drawGuardian(): void {
+    const ctx = this.ctx;
+    ctx.globalAlpha = 0.28; ctx.fillStyle = '#9fe0ff';
+    ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.95; ctx.fillStyle = '#cfeeff';
+    ctx.beginPath(); ctx.moveTo(0, -9); ctx.quadraticCurveTo(6, -2, 4.5, 4); ctx.quadraticCurveTo(2.5, 8, 0, 8.5); ctx.quadraticCurveTo(-2.5, 8, -4.5, 4); ctx.quadraticCurveTo(-6, -2, 0, -9); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff4cf';
+    ctx.beginPath(); ctx.ellipse(0, 0, 2.2, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.9; ctx.strokeStyle = '#ffe9a8'; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.ellipse(0, -7.5, 3.2, 1.2, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   // A heraldic wyvern: spread membranous wings, a horned head, glowing eyes, a curling tail.

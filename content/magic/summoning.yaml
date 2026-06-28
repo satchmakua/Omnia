@@ -1,0 +1,11 @@
+# A magic school (M26 s2b) — see elementalism.yaml for the shape. The summoner calls a temporary
+# guardian creature (via the monster/special-agent system) that hunts & smites the beasts menacing
+# the folk, then fades back into the aether. One guardian per summoner at a time.
+id: summoning
+name: Summoning
+blurb: calling guardians from beyond — the magic of the conjured
+signature: summon
+spells:
+  - { name: Call Familiar, mastery: 1, effect: summon }
+  - { name: Summon Guardian, mastery: 3, effect: summon }
+  - { name: Bind Sentinel, mastery: 5, effect: summon }

@@ -2,11 +2,11 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE, C_ENCHANTMENT,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse, Enchantment,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
 import { socialClassOf } from '../sim/society.ts';
@@ -269,6 +269,9 @@ export class Inspector {
     // A protective ward laid by an abjurer (M26 s2).
     const ward = world.getComponent<Ward>(e, C_WARD);
     const wardLine = ward ? `<div style="color:#8fd8ff">🛡 warded — shielded against harm</div>` : '';
+    // A magic item: enchanted gear imbued by an artificer (M26 s3).
+    const ench = world.getComponent<Enchantment>(e, C_ENCHANTMENT);
+    const enchLine = ench ? `<div style="color:#e6c0ff">✨ bears an enchanted ${ench.kind} — imbued by ${ench.by} (${ench.school})</div>` : '';
 
     // Carried materials & goods + craft skill (M23): what the gatherer/crafter holds & can make.
     const inv = world.getComponent<Inventory>(e, C_INVENTORY);
@@ -326,6 +329,7 @@ export class Inspector {
       ${healthBlock}
       ${questLine}
       ${wardLine}
+      ${enchLine}
       ${livelihoodBlock}
       ${carryingBlock}
       ${family}
@@ -520,22 +524,25 @@ export class Inspector {
     const clockEnts = world.query(C_CLOCK);
     const tick = clockEnts.length ? world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick : 0;
     const daysLeft = Math.max(0, (s.despawnTick - tick) / defaultConfig.ticksPerDay);
-    const menace = s.behavior === 'predator'
+    const guardian = s.behavior === 'guardian';
+    const menace = guardian
+      ? '<div style="color:#8fd8ff">A summoned guardian — it hunts and smites the beasts that menace its summoner\'s folk.</div>'
+      : s.behavior === 'predator'
       ? '<div style="color:#ff8a8a">A predator — it hunts the folk, and a brave band must bring it down.</div>'
       : '<div style="color:#bcd">A haunt — it draws no blood, but its passing unsettles all who feel it near.</div>';
     const name = s.name.charAt(0).toUpperCase() + s.name.slice(1);
     return `
-      ${this.title(name, 'a special agent · monster')}
+      ${this.title(name, guardian ? 'a conjured guardian · summon' : 'a special agent · monster')}
       ${this.terrainLine(world, pos)}
       <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
       <hr style="${RULE}">
-      <div style="${SECTION}">Menace</div>
+      <div style="${SECTION}">${guardian ? 'Nature' : 'Menace'}</div>
       ${menace}
       ${health ? `<div>Vigour ${bar(health.value)}</div>` : ''}
       <hr style="${RULE}">
       <div style="${SECTION}">Nature</div>
       <div style="line-height:1.9"><span style="display:inline-block;min-width:60px">STR <b style="color:#dde">${s.str}</b></span><span style="display:inline-block;min-width:60px">DEX <b style="color:#dde">${s.dex}</b></span><span style="display:inline-block;min-width:60px">CON <b style="color:#dde">${s.con}</b></span></div>
-      <div style="color:#889">It will haunt the land for about ${daysLeft.toFixed(1)} more days.</div>`;
+      <div style="color:#889">It will ${guardian ? 'endure' : 'haunt the land'} for about ${daysLeft.toFixed(1)} more days.</div>`;
   }
 
   private _fauna(world: World, e: EntityId, pos: Position): string {
