@@ -68,7 +68,7 @@ function focusOn(e: EntityId): void {
 const economy   = new EconomyDashboard();
 const directory = new DirectoryDashboard(focusOn);
 const family    = new FamilyDashboard(focusOn);
-const heritage  = new HeritageDashboard();
+const heritage  = new HeritageDashboard(focusOn);
 const ecology   = new EcologyDashboard();
 const conversation = new ConversationDashboard();
 const conflict     = new ConflictDashboard();
