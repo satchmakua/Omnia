@@ -1,0 +1,9 @@
+# A gift of gold from the heavens. `amount` is the default; an act may override it.
+id: "bestow"
+name: "Bestow Riches"
+blurb: "Rain gold from the heavens upon a chosen soul."
+effect: "bestow"
+target: "agent"
+amount: 50
+cost: 30
+cooldownDays: 5

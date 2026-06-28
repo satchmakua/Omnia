@@ -60,7 +60,7 @@ export function tick(
   provider: AIProvider = stubProvider,
 ): void {
   runClockSystem(world, cfg, clockEntity);
-  runInterventionSystem(world, cfg);     // god mode: apply the player's recorded acts first (M27) — no-op if none
+  runInterventionSystem(world, cfg, rng, content); // god mode: apply the player's recorded acts first (M27) — no-op if none
   runFloraSystem(world, cfg, rng);       // flora grow/spread (no brain)
   runResourceSystem(world);              // resources regrow (no brain)
   runHungerSystem(world, cfg);           // sapient needs decay / starvation

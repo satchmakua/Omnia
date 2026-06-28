@@ -1,0 +1,10 @@
+# Loose a sickness upon the town (fires the M19 `plague` event — a brush with mortality,
+# survivable for the hale).
+id: "summon_plague"
+name: "Send a Plague"
+blurb: "Loose a sickness upon the town — a brush with mortality."
+effect: "summon"
+target: "world"
+event: "plague"
+cost: 80
+cooldownDays: 30

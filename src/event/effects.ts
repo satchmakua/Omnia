@@ -11,14 +11,19 @@
 // effects; slice 2 (disasters) adds real negative — but survivable — consequences.
 import type { World, EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
-import { C_AGENT, C_FLORA, C_HEALTH, C_POSITION, C_TILEMAP, C_HOME, C_MEMORY, C_MAGIC } from '../sim/components.ts';
+import { C_AGENT, C_FLORA, C_HEALTH, C_POSITION, C_TILEMAP, C_HOME, C_MEMORY, C_MAGIC, C_CHRONICLE } from '../sim/components.ts';
 import type { Agent, Flora, Health, Position, Magic } from '../sim/components.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import type { RNG } from '../sim/rng.ts';
+import type { WorldEvent } from '../content/schema.ts';
 import { ageInYears } from '../sim/config.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import { getCultureStore } from '../culture/cultureStore.ts';
 import { remember } from '../ai/memory.ts';
+import { emitEvent } from '../history/eventlog.ts';
+import type { EventKind } from '../history/eventlog.ts';
+import { chronicleAdd } from '../history/chronicle.ts';
+import type { ChronicleData } from '../history/chronicle.ts';
 
 export interface EventEffectContext {
   world: World;
@@ -155,4 +160,27 @@ export const EVENT_EFFECTS: Record<string, EventEffectFn> = {
 
 export function isKnownEventEffect(tag: string): boolean {
   return Object.prototype.hasOwnProperty.call(EVENT_EFFECTS, tag);
+}
+
+/**
+ * Fire one world event: run its code-side effect, write the feed line, and (if notable enough)
+ * record a Chronicle legend. The shared "what happens when an event fires" step, called by the
+ * scheduled EventSystem (M19) AND by a god-summoned event (M27 s2 — the roadmap's "summon an event
+ * via the M19 pipeline"). Deterministic: effects draw only from the supplied seeded `rng`.
+ */
+export function fireWorldEvent(world: World, cfg: SimConfig, rng: RNG, ev: WorldEvent, tick: number): void {
+  const effect = EVENT_EFFECTS[ev.effect];
+  if (effect) effect({ world, cfg, rng, tick });
+
+  // Disasters and the paranormal get their own feed kinds; fortune/seasonal read as ✷ events.
+  const kind: EventKind = ev.category === 'disaster' ? 'disaster'
+    : ev.category === 'paranormal' ? 'paranormal' : 'event';
+  emitEvent(world, kind, ev.message);
+
+  const chEnts = world.query(C_CHRONICLE);
+  const ch = chEnts.length ? world.getComponent<ChronicleData>(chEnts[0], C_CHRONICLE) : undefined;
+  if (ch) {
+    chronicleAdd(ch, { tick, importance: ev.importance, text: ev.message, kind: 'event' },
+      cfg.chronicleImportanceThreshold);
+  }
 }

@@ -1,0 +1,8 @@
+# Divine wrath, short of death — sap a soul's health and mood.
+id: "curse"
+name: "Curse"
+blurb: "Lay a soul low — sap their health and spirit, short of death."
+effect: "curse"
+target: "agent"
+cost: 40
+cooldownDays: 7
