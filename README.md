@@ -199,26 +199,6 @@ finite ore veins are mined out.
 
 ---
 
-# For the AI agent building this
-
-This repository is built to be developed **incrementally by an AI agent over many
-sessions.** A human checks in occasionally; most of the time the instruction is
-simply "keep going," and the agent should know what to do.
-
-**If you are that agent picking this up, read these in order before doing anything:**
-
-1. `CLAUDE.md` — your operating manual. The "continue" loop, the definition of done, and the guardrails that stop you wandering off. **Start here.**
-2. `docs/VISION.md` — what we're building, the setting, and what we are **not** building.
-3. `docs/ARCHITECTURE.md` — the technical constitution: stack, ECS, determinism, the agent brain, the content layer.
-4. `docs/SIMULATION_MODEL.md` — how agents think and how history is compressed across generations.
-5. `docs/CONTENT_AND_DATA.md` — the data-driven content system (validated YAML). How flavor is added without revamps.
-6. `docs/WORLD_AND_ENVIRONMENT.md` — biomes, flora, fauna, resources, world-gen, and the entity/brain tiers.
-7. `docs/MAGIC_AND_TECHNOLOGY.md` — the unified capability system; magic and technology as traditions.
-8. `docs/CULTURE_AND_LANGUAGE.md` — evolving cultures, languages, and the naming system.
-9. `docs/ROADMAP.md` — the ordered, bounded backlog. "Keep going" means: do the next unchecked item here.
-10. `docs/PROGRESS.md` — the session log. Read the top entry to see exactly where the last session left off.
-11. `docs/DECISIONS.md` — settled decisions and their rationale. Do not relitigate these; flag them if you disagree.
-
 ## Tunable knobs
 
 `config/simulation.yaml` is the **authoritative** runtime config (world size, tick rate, need-decay, economy, life cycle, ecology, capability rarity, LLM/reflection settings) — loaded at startup (M9); edit a value and restart. It may be partial: anything omitted falls back to the typed defaults in `src/sim/config.ts` (`defaultConfig`), which documents every tunable and supplies the schema the loader validates against (unknown keys / non-numbers abort with a clear error).
