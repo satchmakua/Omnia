@@ -325,6 +325,28 @@ export const BuildingSchema = z.object({
 
 export type Building = z.infer<typeof BuildingSchema>;
 
+// ── God-mode power (M27 s2) ───────────────────────────────────────────────────
+// A divine power the player may invoke (God Mode, D30/D54). Content declares the roster
+// (name, the code-side `effect` tag, what it targets, its default magnitude, and cost/cooldown
+// limits); src/sim/powers.ts implements what each `effect` tag does to the world, and the loader
+// boundary-checks every `effect` against it (the data/behaviour boundary, D9) — so adding a power
+// is data-only as long as its effect already has an implementation. A power is applied as a
+// recorded `Intervention`, so the run still replays exactly (slice 1). The cost/cooldown limits
+// are declarative here; the god UI (slice 3) enforces them so a power is a nudge, not a cheat.
+export const PowerSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  blurb: z.string().default(''),                          // one-line description for the god UI
+  effect: z.string().min(1),                              // code-side tag (src/sim/powers.ts) — boundary-checked
+  target: z.enum(['agent', 'world']).default('agent'),    // 'agent' needs a clicked soul; 'world' is town-wide (no target)
+  amount: z.number().default(0),                          // default magnitude (e.g. gold bestowed); an Intervention may override
+  event: z.string().optional(),                           // for 'summon' effects: the world-event id to fire (M19 pipeline) — ref-checked
+  cost: z.number().min(0).default(0),                     // divine-favour cost (UI-enforced, slice 3)
+  cooldownDays: z.number().min(0).default(0),             // recharge before it may be used again (UI-enforced, slice 3)
+}).strict();
+
+export type Power = z.infer<typeof PowerSchema>;
+
 // Maps a top-level content folder to its schema. The loader uses this to pick
 // the right validator for each file by its path.
 export const FOLDER_SCHEMAS = {
@@ -345,6 +367,7 @@ export const FOLDER_SCHEMAS = {
   monsters: MonsterSchema,
   buildings: BuildingSchema,
   magic: MagicSchoolSchema,
+  powers: PowerSchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

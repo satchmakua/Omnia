@@ -1,0 +1,9 @@
+# A bolt from on high — the heaviest divine act. Strikes a chosen soul dead and is
+# remembered in the Chronicle as a legend.
+id: "smite"
+name: "Smite"
+blurb: "A bolt from on high strikes a chosen soul dead."
+effect: "smite"
+target: "agent"
+cost: 100
+cooldownDays: 30

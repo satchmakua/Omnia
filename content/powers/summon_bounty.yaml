@@ -1,0 +1,9 @@
+# Ripen the land (fires the M19 `bountiful_harvest` event).
+id: "summon_bounty"
+name: "Summon a Bounty"
+blurb: "Ripen the land — every plant surges toward harvest."
+effect: "summon"
+target: "world"
+event: "bountiful_harvest"
+cost: 45
+cooldownDays: 14

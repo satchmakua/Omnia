@@ -1,0 +1,9 @@
+# Stir a day of gladness across the town (fires the M19 `festival` event).
+id: "summon_festival"
+name: "Summon a Festival"
+blurb: "Stir a day of gladness — the whole town's spirits lift."
+effect: "summon"
+target: "world"
+event: "festival"
+cost: 35
+cooldownDays: 10

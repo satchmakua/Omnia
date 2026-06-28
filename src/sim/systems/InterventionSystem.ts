@@ -7,13 +7,15 @@ import type { World } from '../ecs.ts';
 import { C_INTERVENTIONS, C_CLOCK } from '../components.ts';
 import type { InterventionsData, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
+import type { RNG } from '../rng.ts';
+import type { Content } from '../../content/loader.ts';
 import { applyIntervention } from '../interventions.ts';
 
-export function runInterventionSystem(world: World, cfg: SimConfig): void {
+export function runInterventionSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const ents = world.query(C_INTERVENTIONS);
   if (!ents.length) return;
   const data = world.getComponent<InterventionsData>(ents[0], C_INTERVENTIONS)!;
-  if (data.log.length === 0) return;
+  if (data.log.length === 0) return;   // empty (observe-only default) → no-op, no RNG drawn → trajectory unchanged
 
   const clockEnts = world.query(C_CLOCK);
   const tick = clockEnts.length ? world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick : 0;
@@ -22,7 +24,7 @@ export function runInterventionSystem(world: World, cfg: SimConfig): void {
   // means a snapshot-restored act (already in the world's state) never fires twice.
   for (const iv of data.log) {
     if (!iv.applied && iv.tick <= tick) {
-      applyIntervention(world, cfg, iv);
+      applyIntervention(world, cfg, iv, content, rng);
       iv.applied = true;
     }
   }

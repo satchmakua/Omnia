@@ -248,11 +248,13 @@ if (import.meta.env.DEV) {
     setLiveModel: (v: boolean) => { liveModel = v; },
     get provider() { return activeProvider; },
     step: (n = 1) => { if (active) for (let i = 0; i < n; i++) tick(active.world, active.rng, activeCfg, active.clockEntity, content, activeProvider); },
-    // God mode (M27 s1): the intervention seam, exercised here until the full UI lands (slice 3).
+    // God mode (M27): the intervention seam, exercised here until the full UI lands (slice 3). The
+    // powers are content now (s2) — `kind` is a power id from content/powers/*.yaml (see `powers`).
     god: {
       get on() { return godMode; },
       enable() { godMode = true; },
       disable() { godMode = false; },
+      powers: () => content.powers.all().map(p => ({ id: p.id, name: p.name, target: p.target, blurb: p.blurb })),
       act(kind: string, target: number | null, amount?: number) {
         if (godMode && active) return enqueueIntervention(active.world, kind, target, amount);
         return null;

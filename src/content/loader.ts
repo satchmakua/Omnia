@@ -6,12 +6,13 @@ import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { FOLDER_SCHEMAS } from './schema.ts';
 import type {
-  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, Good, Recipe, Wonder, Monster, Building, MagicSchool, ContentFolder,
+  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, Good, Recipe, Wonder, Monster, Building, MagicSchool, Power, ContentFolder,
 } from './schema.ts';
 import { Registry } from './registry.ts';
 import { isKnownEffectTag } from '../capability/effects.ts';
 import { isKnownEventEffect } from '../event/effects.ts';
 import { isKnownSpellEffect } from '../magic/effects.ts';
+import { isKnownPowerEffect } from '../sim/powers.ts';
 import { setMagicSchools } from '../magic/schools.ts';
 
 export interface Content {
@@ -32,6 +33,7 @@ export interface Content {
   monsters: Registry<Monster>;
   buildings: Registry<Building>;
   magic: Registry<MagicSchool>;
+  powers: Registry<Power>;
 }
 
 // Relative path like "species/human.yaml" -> "species".
@@ -55,7 +57,7 @@ function formatZodError(relPath: string, err: z.ZodError): string {
  */
 export function loadContent(files: Map<string, string>): Content {
   const buckets: Record<ContentFolder, unknown[]> = {
-    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [], goods: [], recipes: [], wonders: [], monsters: [], buildings: [], magic: [],
+    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [], goods: [], recipes: [], wonders: [], monsters: [], buildings: [], magic: [], powers: [],
   };
   const errors: string[] = [];
 
@@ -119,6 +121,14 @@ export function loadContent(files: Map<string, string>): Content {
       }
     }
   }
+  // Same boundary for god-mode powers (M27 s2): a power's `effect` must have a code implementation
+  // in the power roster (src/sim/powers.ts). (The `event` reference is checked below, once the
+  // events registry exists.)
+  for (const p of buckets.powers as Power[]) {
+    if (!isKnownPowerEffect(p.effect)) {
+      errors.push(`powers/${p.id}: effect '${p.effect}' has no implementation in src/sim/powers.ts`);
+    }
+  }
 
   if (errors.length > 0) {
     throw new Error(
@@ -144,6 +154,7 @@ export function loadContent(files: Map<string, string>): Content {
   let monsters: Registry<Monster>;
   let buildings: Registry<Building>;
   let magic: Registry<MagicSchool>;
+  let powers: Registry<Power>;
   try {
     species = new Registry(buckets.species as Species[]);
     capabilities = new Registry(buckets.capabilities as Capability[]);
@@ -162,6 +173,7 @@ export function loadContent(files: Map<string, string>): Content {
     monsters = new Registry(buckets.monsters as Monster[]);
     buildings = new Registry(buckets.buildings as Building[]);
     magic = new Registry(buckets.magic as MagicSchool[]);
+    powers = new Registry(buckets.powers as Power[]);
   } catch (e) {
     throw new Error(`Content failed to load: ${(e as Error).message}`);
   }
@@ -213,6 +225,10 @@ export function loadContent(files: Map<string, string>): Content {
       if (!resources.has(id) && !goods.has(id)) refErrors.push(`recipes/${r.id}: input '${id}' is neither a resource nor a good`);
     }
   }
+  // A power that summons must name a real world event (M27 s2 — the M19 event it fires).
+  for (const p of powers.all()) {
+    if (p.event !== undefined && !events.has(p.event)) refErrors.push(`powers/${p.id}: summons unknown event '${p.event}'`);
+  }
   if (refErrors.length > 0) {
     throw new Error(
       `Content failed to load (${refErrors.length} problem${refErrors.length > 1 ? 's' : ''}):\n` +
@@ -227,5 +243,5 @@ export function loadContent(files: Map<string, string>): Content {
   // inspector + four systems (D9 boundary; see DECISIONS).
   setMagicSchools(magic);
 
-  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events, goods, recipes, wonders, monsters, buildings, magic };
+  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events, goods, recipes, wonders, monsters, buildings, magic, powers };
 }

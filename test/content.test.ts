@@ -32,6 +32,31 @@ spells:
   - { name: "Cinder", mastery: 1, effect: "bolt" }
 `;
 
+// A minimal valid god-mode power (M27 s2), mutated in the boundary failure cases.
+const VALID_POWER = `
+id: "smite"
+name: "Smite"
+effect: "smite"
+target: "agent"
+`;
+// A summon power needs the event it fires to exist (referential integrity).
+const VALID_FESTIVAL = `
+id: "festival"
+name: "A Festival"
+category: "fortune"
+chancePerDay: 0
+importance: 0.5
+effect: "festival"
+message: "a festival"
+`;
+const VALID_SUMMON = `
+id: "summon_festival"
+name: "Summon a Festival"
+effect: "summon"
+target: "world"
+event: "festival"
+`;
+
 function files(map: Record<string, string>): Map<string, string> {
   return new Map(Object.entries(map));
 }
@@ -168,6 +193,36 @@ describe('effect-tag boundary', () => {
       'magic/bad.yaml': badSchool,
     }))).toThrowError(/polymorph_unimplemented.*no implementation|no implementation.*polymorph_unimplemented/);
   });
+
+  it('loads a god-mode power and rejects one whose effect is unimplemented (M27 s2)', () => {
+    // happy path: a valid power loads.
+    const ok = loadContent(files({
+      'species/elf.yaml': VALID_SPECIES,
+      'powers/smite.yaml': VALID_POWER,
+    }));
+    expect(ok.powers.require('smite').effect).toBe('smite');
+    // boundary: an unknown effect tag fails loud.
+    const badPower = VALID_POWER.replace('effect: "smite"', 'effect: "rapture_unimplemented"');
+    expect(() => loadContent(files({
+      'species/elf.yaml': VALID_SPECIES,
+      'powers/bad.yaml': badPower,
+    }))).toThrowError(/rapture_unimplemented.*no implementation|no implementation.*rapture_unimplemented/);
+  });
+
+  it('rejects a summon power that names an event which does not exist (M27 s2)', () => {
+    // happy path: a summon power resolves its event.
+    const ok = loadContent(files({
+      'species/elf.yaml': VALID_SPECIES,
+      'events/festival.yaml': VALID_FESTIVAL,
+      'powers/summon.yaml': VALID_SUMMON,
+    }));
+    expect(ok.powers.require('summon_festival').event).toBe('festival');
+    // referential integrity: a dangling event ref fails loud.
+    expect(() => loadContent(files({
+      'species/elf.yaml': VALID_SPECIES,
+      'powers/summon.yaml': VALID_SUMMON,   // festival is never defined
+    }))).toThrowError(/summons unknown event 'festival'/);
+  });
 });
 
 // ── Registry semantics ────────────────────────────────────────────────────────
@@ -245,6 +300,18 @@ describe('authored /content', () => {
     expect(content.magic.require('summoning').signature).toBe('summon');
     expect(content.magic.require('druidry').signature).toBe('weather');
     expect(content.magic.require('artifice').signature).toBe('enchant');
+  });
+
+  it('defines the god-mode powers as content, each with a valid effect (M27 s2)', () => {
+    const content = loadContentFromDisk('./content');
+    expect(content.powers.size).toBe(7);   // smite/bless/curse/bestow + 3 summons
+    for (const id of ['smite', 'bless', 'curse', 'bestow', 'summon_festival', 'summon_bounty', 'summon_plague']) {
+      expect(content.powers.has(id)).toBe(true);
+    }
+    // every summon power's event resolves to a real world event.
+    for (const p of content.powers.all()) {
+      if (p.event !== undefined) expect(content.events.has(p.event)).toBe(true);
+    }
   });
 
   it('the hedge-witch profession requires aptitude', () => {

@@ -8,17 +8,13 @@
 // so a given seed replays identically. This is the spine seasons, disasters, and the
 // paranormal (later M19 slices) all hang off — they're just more event content.
 import type { World } from '../ecs.ts';
-import { C_CLOCK, C_AGENT, C_CHRONICLE } from '../components.ts';
+import { C_CLOCK, C_AGENT } from '../components.ts';
 import type { Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { calendarOf } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
-import { EVENT_EFFECTS } from '../../event/effects.ts';
-import { emitEvent } from '../../history/eventlog.ts';
-import type { EventKind } from '../../history/eventlog.ts';
-import { chronicleAdd } from '../../history/chronicle.ts';
-import type { ChronicleData } from '../../history/chronicle.ts';
+import { fireWorldEvent } from '../../event/effects.ts';
 
 export function runEventSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const clockEnts = world.query(C_CLOCK);
@@ -32,11 +28,6 @@ export function runEventSystem(world: World, cfg: SimConfig, rng: RNG, content: 
   const population = world.query(C_AGENT).length;
   const season = calendarOf(clock.tick, cfg).season;
 
-  const chronicleEnts = world.query(C_CHRONICLE);
-  const chronicle = chronicleEnts.length
-    ? world.getComponent<ChronicleData>(chronicleEnts[0], C_CHRONICLE)
-    : undefined;
-
   for (const ev of events) {
     // Trigger guards (the "triggered" half of scheduled+triggered): a population floor,
     // and an optional season restriction. Roll AFTER the guards so a gated-out event
@@ -45,16 +36,6 @@ export function runEventSystem(world: World, cfg: SimConfig, rng: RNG, content: 
     if (ev.season && ev.season !== season) continue;
     if (rng() >= ev.chancePerDay) continue;
 
-    const effect = EVENT_EFFECTS[ev.effect];
-    if (effect) effect({ world, cfg, rng, tick: clock.tick });
-
-    // Disasters and the paranormal get their own feed kinds; fortune/seasonal read as ✷ events.
-    const kind: EventKind = ev.category === 'disaster' ? 'disaster'
-      : ev.category === 'paranormal' ? 'paranormal' : 'event';
-    emitEvent(world, kind, ev.message);
-    if (chronicle) {
-      chronicleAdd(chronicle, { tick: clock.tick, importance: ev.importance, text: ev.message, kind: 'event' },
-        cfg.chronicleImportanceThreshold);
-    }
+    fireWorldEvent(world, cfg, rng, ev, clock.tick);   // run effect → feed → Chronicle (shared with god-summon, M27)
   }
 }

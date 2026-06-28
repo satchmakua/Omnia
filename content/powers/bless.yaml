@@ -1,0 +1,8 @@
+# Divine favour — restore a soul's needs, health, and spirits.
+id: "bless"
+name: "Bless"
+blurb: "Touch a soul with divine favour — restored in body and spirit."
+effect: "bless"
+target: "agent"
+cost: 25
+cooldownDays: 3
