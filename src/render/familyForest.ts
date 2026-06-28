@@ -136,9 +136,9 @@ export class FamilyForestView {
 
     let visible: Set<EntityId> | null = null;     // null = show everyone
     let label = '';
-    if (this.focusId !== null && f.byId.has(this.focusId)) { visible = this.bloodline(f, this.focusId); label = `the bloodline of ${esc(f.byId.get(this.focusId)!.name)}`; }
+    if (this.focusId !== null && f.byId.has(this.focusId)) { visible = bloodline(f, this.focusId); label = `the bloodline of ${esc(f.byId.get(this.focusId)!.name)}`; }
     else if (this.clan) { visible = new Set(f.nodes.filter(n => n.surname === this.clan).map(n => n.id)); label = `the ${esc(this.clan)} family`; }
-    else if (this.livingOnly) { visible = this.livingLines(f); label = 'living lines only'; }
+    else if (this.livingOnly) { visible = livingLines(f); label = 'living lines only'; }
     const vis = (id: EntityId) => visible === null || visible.has(id);
     const q = this.q.trim().toLowerCase();
     const match = (n: ForestNode) => q !== '' && n.name.toLowerCase().includes(q);
