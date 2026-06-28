@@ -27,6 +27,8 @@ import { SocietyDashboard } from './render/societyDashboard.ts';
 import { EventsDashboard } from './render/eventsDashboard.ts';
 import { KnowledgeDashboard } from './render/knowledgeDashboard.ts';
 import { BestiaryDashboard } from './render/bestiaryDashboard.ts';
+import { setSkin } from './render/skin.ts';
+import type { Skin } from './render/skin.ts';
 import { SpeedControl } from './render/controls.ts';
 import { EventFeed } from './render/eventFeed.ts';
 import { C_AGENT, C_POSITION } from './sim/components.ts';
@@ -50,10 +52,24 @@ const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 // then overrides seed / population / map size per run.
 const baseCfg = loadSimConfig(simulationYaml);
 
+// Visual skin (M34): a persisted choice the renderer / legend / bestiary read from the skin module.
+// Set before the Legend is built so it draws in the right skin. (Lo-fi default; Emoji is the alt.)
+let skin: Skin = localStorage.getItem('omnia.skin') === 'emoji' ? 'emoji' : 'lofi';
+setSkin(skin);
+
 const renderer  = new Renderer(canvas, baseCfg);
 const inspector = new Inspector();
 const legends   = new LegendsPanel();
 const legend    = new Legend();
+
+// Apply a skin live: update the shared skin state, persist it, and rebuild the (built-once) legend.
+// The renderer + bestiary read the skin each frame/render, so they update on their own.
+function applySkin(s: Skin): void {
+  skin = s;
+  setSkin(s);
+  localStorage.setItem('omnia.skin', s);
+  legend.refresh();
+}
 const eventFeed = new EventFeed();
 const menu      = new Menu();
 
@@ -101,7 +117,7 @@ let active: Simulation | null = null;
 let activeCfg: SimConfig = baseCfg;
 let lastSeed = baseCfg.seed;
 // The last chosen setup (seed / starting population / map size), reused by restart.
-let lastSetup: SetupOptions = { seed: baseCfg.seed, population: baseCfg.initialPopulation, mapSize: baseCfg.gridWidth };
+let lastSetup: SetupOptions = { seed: baseCfg.seed, population: baseCfg.initialPopulation, mapSize: baseCfg.gridWidth, skin };
 let state: 'menu' | 'running' | 'paused' = 'menu';
 let realElapsedMs = 0;   // real-world time spent watching this run (excludes paused/menu)
 
@@ -125,6 +141,7 @@ const controls = new SpeedControl(speed, (v) => { speed = v; });
 
 function newSimulation(opts: SetupOptions): void {
   lastSetup = opts;
+  applySkin(opts.skin);                            // apply the chosen visual skin (M34)
   activeCfg = {
     ...baseCfg, seed: opts.seed, initialPopulation: opts.population,
     gridWidth: opts.mapSize, gridHeight: opts.mapSize,
@@ -148,7 +165,7 @@ function loadFromJson(json: string): void {
     renderer.configure(activeCfg);
     activeProvider = liveModel ? new OllamaProvider(OLLAMA) : stubProvider;
     lastSeed = save.config.seed;
-    lastSetup = { seed: save.config.seed, population: save.config.initialPopulation, mapSize: save.config.gridWidth };
+    lastSetup = { seed: save.config.seed, population: save.config.initialPopulation, mapSize: save.config.gridWidth, skin };
     realElapsedMs = 0;
     inspector.close();
     menu.hide();
@@ -199,10 +216,11 @@ function showPauseMenu(): void {
     onResume: () => { state = 'running'; },
     onRestart: () => newSimulation(lastSetup),
     onManageSaves: () => showSavesMenu(),
-    onSettings: () => menu.showSettings(lastSeed, speed, liveModel, godMode, {
+    onSettings: () => menu.showSettings(lastSeed, speed, liveModel, godMode, skin, {
       onApply: (seed) => { menu.hide(); newSimulation({ ...lastSetup, seed }); },
       onToggleLive: () => { liveModel = !liveModel; },
       onToggleGod: () => { godMode = !godMode; },
+      onToggleSkin: () => applySkin(skin === 'emoji' ? 'lofi' : 'emoji'),   // live skin swap (M34)
       onBack: () => showPauseMenu(),
     }),
     onControls: () => menu.showControls(() => showPauseMenu()),

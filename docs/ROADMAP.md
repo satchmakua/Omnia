@@ -485,15 +485,15 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 # Interleaved (user-requested 2026-06-27) — agreed build order: **M35 → M34 → finish M27 (slices 2–3)**, then resume the M28+ arc.
 
-## Milestone 34 — Emoji Skin  *(user-requested; scoped down from a fuller "skins" idea)*
+## ✅ Milestone 34 — Emoji Skin  *(DoD met — 2026-06-28; user-requested)*
 
 **Goal:** an alternate **emoji-based** visual set, selectable from the start menu — the first swappable skin. Deliberately scoped to **just the emoji glyph set**: in a design review the palette-only recolours (gothic/neon/cotton-candy over the same shapes) read too samey without bespoke art, so they're **shelved to the backlog**; the emoji set was the clear win.
 
-- [ ] **Glyph-mode in the renderer:** the map can draw each entity as an **emoji** (system `ctx.fillText` — zero assets) instead of the geometric shape, via a content/data `category → emoji` map (folk 🧝 · animal 🐺 · fish 🐟 · plant 🌲 · ore ⛏ · crystal 💎 · home 🏠 · dragon 🐉 · vampire 🧛 · undead 💀 · dire-beast 👹 · ghost 👻 · visitor 👽 · kraken 🦑 · …). Pure render (sim/render separation holds).
-- [ ] **Start-menu skin selector** (`SetupOptions.skin`, default Lo-fi) **+ a live toggle** in Settings (it's pure render, no restart needed); choice persists in `localStorage`.
-- [ ] **Legend + Bestiary reflect the active skin** — they show the emoji too, so every symbol stays self-explanatory (D35 legibility gate).
+- [x] **Glyph-mode in the renderer:** the map draws each entity as a **system emoji** (`ctx.fillText`, zero assets) instead of the geometric shape. *(S116: central `src/render/skin.ts` (`getSkin`/`setSkin`/`isEmoji`/`EMOJI`/`glyphHtml`) holds the skin state + the `category → emoji` map; the renderer branches each entity loop (folk 🧑 · child 🧒 · mage 🧙 · grazer 🐇 · predator 🐺 · fish 🐟 · plant 🌿/🌳 · ore 🪨 · timber 🪵 · crystal 💎 · workplace 🏭 · home 🏠 · civic 🏛️ + functional · dragon 🐉 · vampire 🧛 · …) via a `drawEmoji` glyph. Pure render — sim untouched.)*
+- [x] **Start-menu skin selector** (`SetupOptions.skin`, default Lo-fi) **+ a live toggle** in Settings (pure render, no restart); choice persists in `localStorage`. *(S116: a Lo-fi/Emoji selector on the start screen + a 🎨 Skin toggle in pause→Settings that flips live via `applySkin` (set + persist + rebuild the legend); the renderer/bestiary read the skin each frame.)*
+- [x] **Legend + Bestiary reflect the active skin** — they show the emoji too (D35 legibility). *(S116: the Legend (rebuilt on skin change) + the Bestiary route their icons through `glyphHtml`, so both show emoji under the emoji skin; the lo-fi folk-badge list is hidden in emoji mode.)*
 
-**DoD:** the player can switch to the emoji skin from the start menu (and live); every category renders a clear emoji on the map and in the legend/bestiary; Lo-fi stays the default; pure render (sim untouched, soak byte-identical). *(Deferred to backlog: bundling OpenMoji/Twemoji for a consistent cross-OS look; the shelved palette/post-process themes.)*
+**DoD:** the player can switch to the emoji skin from the start menu (and live); every category renders a clear emoji on the map and in the legend/bestiary; Lo-fi stays the default; pure render (sim untouched, soak byte-identical). **Met (S116):** verified live — start-menu selector + persisted `omnia.skin`; the map drew 16 distinct emoji; the legend + bestiary (40 emoji) reflect it; the Settings toggle flips Emoji⇄Lo-fi live; 637 tests + soak byte-identical (render-only). *(Deferred to backlog: bundling OpenMoji/Twemoji for a consistent cross-OS look; the shelved palette/post-process themes; emoji-mode state badges.)*
 
 ## ✅ Milestone 35 — The Family Forest  *(DoD met — 2026-06-28; user-requested)*
 
