@@ -15,7 +15,7 @@ import { isWater } from '../world/tilemap.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import { ageInYears, calendarOf } from '../sim/config.ts';
 import { CATEGORY_COLOR, resourceIcon } from './icons.ts';
-import { isEmoji, EMOJI, faunaEmoji } from './skin.ts';
+import { isEmoji, EMOJI, faunaEmoji, floraEmoji } from './skin.ts';
 
 // Real-world watch time as H:MM:SS (or M:SS under an hour).
 function formatElapsed(ms: number): string {
@@ -259,7 +259,7 @@ export class Renderer {
     for (const e of world.query(C_FLORA, C_POSITION)) {
       const f = world.getComponent<Flora>(e, C_FLORA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      if (emoji) this.drawEmoji(p.x, p.y, EMOJI[f.maturity >= f.edibleAt ? 'plantRipe' : 'plant']);
+      if (emoji) this.drawEmoji(p.x, p.y, floraEmoji(f.speciesId, f.maturity >= f.edibleAt));
       else this.iconPlant(p.x, p.y, f.color, f.maturity, f.maturity >= f.edibleAt);
     }
     for (const e of world.query(C_RESOURCE, C_POSITION)) {

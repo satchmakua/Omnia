@@ -46,6 +46,17 @@ export function faunaEmoji(speciesId: string | undefined, diet: 'grazer' | 'pred
   return (speciesId && FAUNA_EMOJI[speciesId]) || EMOJI[diet];
 }
 
+// A distinct emoji per FLORA species too — a glowcap mushroom isn't emberwheat isn't a prism lily.
+// Young plants all read as a sprout (🌱); once grown (ripe) each shows its own kind.
+export const FLORA_EMOJI: Record<string, string> = {
+  ash_grass: '🌾', glowcap: '🍄', spore_fern: '🌿', crystal_bloom: '🌸', emberwheat: '🌾',
+  bruisewort: '☘️', lantern_moss: '🍀', saltvine: '🌵', cinderbud: '🌹', prism_lily: '🌷',
+};
+export function floraEmoji(speciesId: string | undefined, ripe: boolean): string {
+  if (!ripe) return '🌱';   // a sprout until it matures, whatever it'll grow into
+  return (speciesId && FLORA_EMOJI[speciesId]) || EMOJI.plantRipe;
+}
+
 export function emojiFor(key: string): string | undefined {
   return FAUNA_EMOJI[key] ?? EMOJI[key];
 }
