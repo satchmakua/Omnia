@@ -13,6 +13,7 @@ import type {
 import {
   rollBody, inheritBody, rollAlignment, inheritAlignment, rollPersonality, inheritPersonality, expandPersonality, traitsOf,
 } from './heredity.ts';
+import { opine } from './relationships.ts';
 import type { SimConfig } from './config.ts';
 import { ticksPerYear } from './config.ts';
 import { rngFloat } from './rng.ts';
@@ -123,6 +124,26 @@ export function spawnAgent(
   const base = ma && mb ? inheritPersonality(rng, ma, mb) : rollPersonality(rng);
   const pool = ma && mb ? [...traitsOf(ma), ...traitsOf(mb)] : undefined;
   world.addComponent<Personality>(e, C_PERSONALITY, expandPersonality(e, base.trait, pool));
+
+  // Hereditary feuds (M29 s2): a child is born into their parents' *deep* grudges against the living,
+  // so a blood feud can outlast its original parties and span generations (DF-style). Inherited
+  // weaker than a first-hand wrong. Pure copy — draws no RNG.
+  if (parents.length > 0) {
+    const childRel = world.getComponent<Relationships>(e, C_RELATIONSHIPS)!;
+    for (const parent of parents) {
+      const pRel = world.getComponent<Relationships>(parent, C_RELATIONSHIPS);
+      if (!pRel) continue;
+      const pName = world.getComponent<Agent>(parent, C_AGENT)?.name ?? 'their kin';
+      for (const k in pRel.edges) {
+        const ed = pRel.edges[k];
+        const foe = Number(k);
+        if (ed.type !== 'rival' || ed.sentiment > -0.5) continue;       // only deep grudges pass down
+        if (foe === e || !world.hasComponent(foe, C_AGENT)) continue;   // against someone still living
+        const foeName = world.getComponent<Agent>(foe, C_AGENT)!.name;
+        opine(childRel, foe, 'rival', ed.sentiment * 0.6, `inherited ${pName}'s feud with ${foeName}`);
+      }
+    }
+  }
 
   // Rare innate magic aptitude — scarce by construction, but heritable: children
   // of a mage get a much higher chance (lineage weighting from the design docs).

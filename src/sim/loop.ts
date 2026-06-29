@@ -49,6 +49,7 @@ import { runFaunaSystem }    from './systems/FaunaSystem.ts';
 import { runFishSystem }     from './systems/FishSystem.ts';
 import { runCombatSystem }   from './systems/CombatSystem.ts';
 import { runCrimeSystem }    from './systems/CrimeSystem.ts';
+import { runFeudSystem }     from './systems/FeudSystem.ts';
 import { runMagicSystem }    from './systems/MagicSystem.ts';
 import type { AIProvider } from '../ai/provider.ts';
 import { stubProvider } from '../ai/stubProvider.ts';
@@ -105,6 +106,7 @@ export function tick(
   runFishSystem(world, cfg, rng);        // aquatic life: fish swim & breed in the water (M24)
   runCombatSystem(world, cfg, rng);      // predators threaten folk; folk fight back (M16)
   runCrimeSystem(world, cfg, rng);       // crime & vice: theft / assault / murder + rough justice (M16)
+  runFeudSystem(world, cfg, rng);        // rivalries erupt into feuds; grudges cool over time (M29 s2)
   runMagicSystem(world, cfg, rng);       // mages cast their school's spells on neighbours (M17)
   runSpecialAgentSystem(world, cfg, rng, content); // monsters roam, menace, & are slain (M21)
 }

@@ -211,7 +211,10 @@ function matchmake(
       if (suitor === m || taken.has(suitor)) continue;
       const srel = world.getComponent<Relationships>(suitor, C_RELATIONSHIPS);
       const fancy = srel?.edges[f];
-      if (fancy && fancy.sentiment >= cfg.friendSentiment) opine(srel!, m, 'rival', -0.4, `vied for ${fn}'s hand`);
+      // Jealousy cuts deep — any suitor who'd grown *fond* of the bride bears a **blood** grudge
+      // against the groom (a living target, unlike a usually-executed murderer), so love triangles are
+      // a real, recurring feud source (M29 s2). The bar is "fond", not "best friend" — jealousy is common.
+      if (fancy && fancy.sentiment >= 0.15) opine(srel!, m, 'rival', -0.65, `vied for ${fn}'s hand`);
     }
     emitEvent(world, 'marriage', `${mn} and ${fn} were wed.`);
     remember(world, m, tick, `wed ${fn}`, 0.7);

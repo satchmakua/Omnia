@@ -14,7 +14,7 @@ import type { SimConfig } from '../config.ts';
 import { ageInYears, ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { earn } from '../economy.ts';
-import { opine } from '../relationships.ts';
+import { opine, kinGrudge, isRivalOf } from '../relationships.ts';
 import { lawCrimeFactor } from '../heredity.ts';
 import { combatantOf, rollAttack, markCombat } from '../combat.ts';
 import { killAgent } from '../death.ts';
@@ -67,26 +67,12 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
     return null;
   };
   const goodOf = (id: EntityId): number => world.getComponent<Alignment>(id, C_ALIGNMENT)?.good ?? 0;
-  // The wronged turn on the wrongdoer — a rival edge with the reason why (M29 s1).
-  const rivalrise = (victim: EntityId, criminal: EntityId, reason: string): void => {
+  // The wronged turn on the wrongdoer — a rival edge with the reason why (M29 s1). `depth` sets how
+  // bitter: a theft is a minor rivalry that cools over time; being beaten is grounds for a feud (s2).
+  const rivalrise = (victim: EntityId, criminal: EntityId, reason: string, depth: number): void => {
     const rel = world.getComponent<Relationships>(victim, C_RELATIONSHIPS);
-    if (rel) opine(rel, criminal, 'rival', -0.5, reason);
+    if (rel) opine(rel, criminal, 'rival', depth, reason);
   };
-  // A murder makes a feud: the victim's living kin loathe the killer (the seed of M29 s2 vendettas).
-  const kinGrudge = (vlin: Lineage | undefined, victimName: string, killer: EntityId): void => {
-    if (!vlin) return;
-    // Label the bond from the GRIEVING kin's side: the victim is their partner / child / parent.
-    const kin: [EntityId, string][] = [];
-    if (vlin.partner != null) kin.push([vlin.partner, 'partner']);
-    for (const p of vlin.parents) kin.push([p, 'child']);    // a bereaved parent lost their child
-    for (const c of vlin.children) kin.push([c, 'parent']);  // a bereaved child lost their parent
-    for (const [k, rel] of kin) {
-      if (k === killer) continue;
-      const krel = world.getComponent<Relationships>(k, C_RELATIONSHIPS);
-      if (krel && world.hasComponent(k, C_AGENT)) opine(krel, killer, 'rival', -0.7, `murdered their ${rel} ${victimName}`);
-    }
-  };
-
   for (const e of world.query(C_AGENT, C_ALIGNMENT, C_WALLET, C_POSITION)) {
     if (!world.hasComponent(e, C_AGENT)) continue;   // may have been killed earlier this pass
     const agent = world.getComponent<Agent>(e, C_AGENT)!;
@@ -103,7 +89,9 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const p0 = world.getComponent<Position>(e, C_POSITION)!;
     if (rng() >= cfg.crimeChancePerDay * (wicked ? 2 : 1) * (enraged ? 3 : 1) * lawCrimeFactor(al.law) * wardFactor(world, p0.x, p0.y)) continue;
 
-    const victim = nearby(e, 3, () => true);   // a mark somewhere in the vicinity
+    // A grudge directs the violence (M29 s2): settle it with a nearby rival if one's about, else any
+    // mark of opportunity. So crime preferentially falls on enemies — feuds escalate into real harm.
+    const victim = nearby(e, 3, (id) => isRivalOf(world, e, id)) ?? nearby(e, 3, () => true);
     if (victim === null) continue;
     const vName = world.getComponent<Agent>(victim, C_AGENT)!.name;
     const trait = world.getComponent<Personality>(e, C_PERSONALITY)?.trait;
@@ -119,7 +107,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
       const vh = world.getComponent<Health>(victim, C_HEALTH)!;
       const ah = world.getComponent<Health>(e, C_HEALTH)!;
       let outcome: 'assault' | 'murder' | 'felled' = 'assault';
-      rivalrise(victim, e, 'assaulted them');
+      rivalrise(victim, e, 'assaulted them', -0.6);   // a beating is grounds for a blood feud (M29 s2)
       const vlin = world.getComponent<Lineage>(victim, C_LINEAGE);   // captured before any killAgent strips it
       for (let round = 0; round < 3; round++) {
         const dmg = rollAttack(combatantOf(world, e), combatantOf(world, victim), rng);
@@ -136,7 +124,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
         const tomb = killAgent(world, victim, tick, 'murdered', tpy, agent.name);
         markCrime(world, e, 'murder');
         harden(al, 0.08);
-        kinGrudge(vlin, tomb.name, e);   // the victim's kin now loathe the killer (M29 s1 — a feud is born)
+        kinGrudge(world, vlin, tomb.name, e);   // the victim's kin now loathe the killer (M29 — a feud is born)
         emitEvent(world, 'crime', `${agent.name} murdered ${tomb.name}.`, vpos);
         const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
         if (ch) chronicleAdd(ch, { tick, importance: 0.82, kind: 'death', text: `${agent.name} murdered ${tomb.name}.` }, cfg.chronicleImportanceThreshold);
@@ -159,7 +147,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
       earn(wallet, loot);
       markCrime(world, e, 'theft');
       harden(al, 0.02);
-      rivalrise(victim, e, 'robbed them');
+      rivalrise(victim, e, 'robbed them', -0.4);   // a theft is a grievance, but it cools (a minor rivalry)
       emitEvent(world, 'crime', `${agent.name} robbed ${vName} of ${loot.toFixed(0)} gold.`, vpos);
     }
 

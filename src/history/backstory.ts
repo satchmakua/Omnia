@@ -12,15 +12,19 @@ const CATACLYSMS = ['the Sundering', 'the Long Static', 'the Ashfall', 'the Glas
 const LOST_ARTS  = ['the singing engines', 'the sky-roads', 'the deep forges', 'the memory-wells', 'the tide-lamps'];
 const OMENS       = ['a sky the colour of bruised fruit', 'a wind that tasted of metal', 'stars that fell upward', 'a silence that lasted a year'];
 
-// Which biome covers the most tiles — the world's defining landscape.
+// Which LAND biome covers the most tiles — the world's defining landscape (the folk live ashore,
+// so the sea, however broad, isn't "the land they dwell in").
 function dominantBiomeName(map: TileMapData): string {
   const counts = new Array(map.biomeNames.length).fill(0);
   for (let y = 0; y < map.height; y++)
     for (let x = 0; x < map.width; x++)
       counts[biomeIndexAt(map, x, y)]++;
-  let best = 0;
-  for (let i = 1; i < counts.length; i++) if (counts[i] > counts[best]) best = i;
-  return map.biomeNames[best];
+  let best = -1;
+  for (let i = 0; i < counts.length; i++) {
+    if (!map.passableByBiome[i]) continue;                 // skip the sea/water biomes
+    if (best < 0 || counts[i] > counts[best]) best = i;
+  }
+  return map.biomeNames[best < 0 ? 0 : best];
 }
 
 export function generateBackstory(rng: RNG, map: TileMapData): ChronicleEntry[] {
