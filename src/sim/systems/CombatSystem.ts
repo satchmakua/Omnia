@@ -10,6 +10,7 @@ import type { SimConfig } from '../config.ts';
 import { ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { combatantOf, beastCombatant, rollAttack, markCombat } from '../combat.ts';
+import { inflictWound, labelOf } from '../afflictions.ts';
 import { killAgent } from '../death.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
@@ -75,6 +76,8 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
         continue;
       }
       emitEvent(world, 'illness', `${agent.name} was mauled by a ${beast.name.toLowerCase()}.`, fpos);
+      const injury = inflictWound(world, folk, tick, health.value, cfg.maimGrievousHealth, cfg.maimChance);   // surviving a mauling can cripple (M30)
+      if (injury) emitEvent(world, 'illness', `${agent.name} survived, but was left with ${labelOf(injury)}.`, fpos);
     }
 
     // The folk fights back; a telling blow drives off (slays) the beast.
@@ -119,11 +122,13 @@ export function runCombatSystem(world: World, cfg: SimConfig, rng: RNG): void {
       ho.value = Math.max(0, ho.value - d1);
       if (d1 >= cfg.combatScarThreshold) markCombat(world, o, 1, 0);
       if (ho.value <= 0) { fellInBattle(o, e); continue; }
+      inflictWound(world, o, tick, ho.value, cfg.maimGrievousHealth, cfg.maimChance);   // a war wound can maim the survivor (M30)
       const he = world.getComponent<Health>(e, C_HEALTH)!;
       const d2 = rollAttack(co, ce, rng);
       he.value = Math.max(0, he.value - d2);
       if (d2 >= cfg.combatScarThreshold) markCombat(world, e, 1, 0);
       if (he.value <= 0) { fellInBattle(e, o); break; }   // e is gone — stop scanning its neighbours
+      inflictWound(world, e, tick, he.value, cfg.maimGrievousHealth, cfg.maimChance);
     }
   }
 }

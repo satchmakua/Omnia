@@ -15,6 +15,7 @@ import { ageInYears, ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { earn } from '../economy.ts';
 import { opine, kinGrudge, isRivalOf } from '../relationships.ts';
+import { inflictWound } from '../afflictions.ts';
 import { lawCrimeFactor } from '../heredity.ts';
 import { combatantOf, rollAttack, markCombat } from '../combat.ts';
 import { killAgent } from '../death.ts';
@@ -114,6 +115,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
         vh.value = Math.max(0, vh.value - dmg);
         if (dmg >= cfg.combatScarThreshold) markCombat(world, victim, 1, 0);
         if (vh.value <= 0) { outcome = 'murder'; break; }
+        inflictWound(world, victim, tick, vh.value, cfg.maimGrievousHealth, cfg.maimChance);   // a brutal beating can cripple (M30)
         const back = rollAttack(combatantOf(world, victim), combatantOf(world, e), rng);
         ah.value = Math.max(0, ah.value - back);
         if (ah.value <= 0) { outcome = 'felled'; break; }

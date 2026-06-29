@@ -47,6 +47,8 @@ bankruptcyGraceDays: 14
 maxFarms: 8
 predatorAggressionChance: 0.012
 combatScarThreshold: 0.3
+maimGrievousHealth: 0.4
+maimChance: 0.35
 combatKillBlow: 0.18
 crimeChancePerDay: 0.03
 crimeAlignmentThreshold: 0.05

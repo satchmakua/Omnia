@@ -23,6 +23,7 @@ export const C_COMBAT        = 'Combat';        // combat record: scars + kills 
 export const C_CRIME         = 'Crime';         // rap sheet: thefts + assaults + murders (attached on first crime) (M16)
 export const C_INVENTORY     = 'Inventory';     // carried materials & goods (attached on first gather) (M23)
 export const C_CRAFTING      = 'Crafting';      // a crafter's accumulated skill (attached on first craft) (M23)
+export const C_AFFLICTIONS   = 'Afflictions';   // specific injuries / chronic conditions a body carries (M30)
 export const C_EQUIPMENT     = 'Equipment';     // denormalised best carried weapon/armour bonus, for combat (M23 s3)
 export const C_AIRECORD      = 'AIRecord';      // singleton: recorded LLM responses for replay (M5)
 export const C_AIRUNNER      = 'AIRunner';      // singleton: async live-model queue + pending jobs (M7.5)
@@ -31,6 +32,7 @@ export const C_CLOCK     = 'Clock';
 export const C_TILEMAP   = 'TileMap';   // singleton: the terrain grid (src/world/tilemap.ts)
 export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/history/chronicle.ts)
 export const C_EVENTLOG  = 'EventLog';  // singleton: live activity feed (src/history/eventlog.ts)
+export const C_CONVOLOG  = 'ConvoLog';  // singleton: recent back-and-forth conversations (src/history/conversation.ts)
 export const C_WORLDSTATS = 'WorldStats'; // singleton: statistical strata (src/history/stats.ts)
 export const C_CULTURESTORE = 'CultureStore'; // singleton: live cultures (src/culture/cultureStore.ts)
 export const C_ORGSTORE   = 'OrgStore';   // singleton: live organizations / tribes (src/org/orgStore.ts) (M14)
@@ -491,6 +493,16 @@ export interface Health {
   value: number;  // 0..1; low health raises mortality
   ill: boolean;
   grave?: boolean;  // was this a *grave* illness? (gates the "survived" life event, M10 slice 3)
+}
+
+// Specific afflictions (M30): discrete, **mechanically-real** injuries & conditions a body carries —
+// not just a Health number. A maimed leg slows movement; a lost eye / maimed arm sap DEX / STR (so a
+// veteran of many fights is a diminished combatant); the infirmity of age makes the old frail; a
+// chronic illness lingers, slowing recovery. Injuries are permanent (until treated, M30 s2); the
+// component is attached lazily on the first affliction. See src/sim/afflictions.ts for the effects.
+export type AfflictionKind = 'maimed_leg' | 'lost_eye' | 'maimed_arm' | 'infirmity' | 'chronic_illness';
+export interface Afflictions {
+  list: { kind: AfflictionKind; sinceTick: number }[];
 }
 
 export type RelationType = 'friend' | 'rival' | 'partner';

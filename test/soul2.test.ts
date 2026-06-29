@@ -3,7 +3,7 @@ import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_MEMORY, C_POSITION, C_RELATIONSHIPS, C_CLOCK, C_AIRECORD, C_EVENTLOG,
+  C_AGENT, C_MEMORY, C_POSITION, C_RELATIONSHIPS, C_CLOCK, C_AIRECORD, C_EVENTLOG, C_CONVOLOG,
 } from '../src/sim/components.ts';
 import type {
   Agent, Memory, MemoryEntry, Position, Relationships, RelationEdge, Clock, AIRecord, AgentAction, Sex,
@@ -15,6 +15,8 @@ import {
 } from '../src/ai/memory.ts';
 import { createEventLog } from '../src/history/eventlog.ts';
 import type { EventLogData } from '../src/history/eventlog.ts';
+import { createConversationLog } from '../src/history/conversation.ts';
+import type { ConversationLogData } from '../src/history/conversation.ts';
 
 const cfg = defaultConfig;
 const NOW = 100_000;
@@ -39,6 +41,7 @@ function scaffold(tick = NOW, isDay = true) {
   w.addComponent<AIRecord>(rec, C_AIRECORD, { entries: [] });
   const log = w.createEntity();
   w.addComponent<EventLogData>(log, C_EVENTLOG, createEventLog());
+  w.addComponent<ConversationLogData>(w.createEntity(), C_CONVOLOG, createConversationLog());
   return { w, rec };
 }
 
@@ -143,9 +146,9 @@ describe('AISystem decisions', () => {
 // ── dialogue ─────────────────────────────────────────────────────────────────────
 
 describe('AISystem dialogue', () => {
-  it('co-located bonded agents exchange a line (spoken by the first)', () => {
+  it('co-located bonded agents hold a back-and-forth conversation', () => {
     const { w, rec } = scaffold();
-    // Mara is created first → lower id → the speaker.
+    // Mara is created first → lower id → opens the exchange.
     const mara = addAgent(w, { name: 'Mara', events: quietEvents(), pos: { x: 5, y: 5 } });
     const tovic = addAgent(w, { name: 'Tovic', sex: 'male', events: quietEvents(), pos: { x: 5, y: 5 } });
     w.addComponent<Relationships>(mara, C_RELATIONSHIPS, { edges: { [tovic]: { type: 'partner', sentiment: 0.8 } } });
@@ -153,12 +156,19 @@ describe('AISystem dialogue', () => {
 
     runAISystem(w, cfg, stubProvider);
 
-    const sm = mem(w, mara);
-    expect(sm.utterances.length).toBe(1);
+    // the speaker opens and the listener REPLIES — both now carry a 'say' utterance
+    const sm = mem(w, mara), tm = mem(w, tovic);
     expect(sm.utterances[0].kind).toBe('say');
     expect(sm.utterances[0].text).toContain('to Tovic');
-    expect(mem(w, tovic).utterances.length).toBe(0); // listener doesn't also speak
-    expect(records(w, rec)).toBe(1);
+    expect(tm.utterances.length).toBe(1);
+    expect(tm.utterances[0].text).toContain('to Mara');
+    // the whole exchange is logged for the Conversation tab
+    const clog = w.getComponent<ConversationLogData>(w.query(C_CONVOLOG)[0], C_CONVOLOG)!;
+    expect(clog.records.length).toBe(1);
+    expect(clog.records[0].lines.length).toBeGreaterThanOrEqual(2);
+    expect(clog.records[0].rel).toBe('partner');
+    // dialogue is generated deterministically now — not a recorded provider/LLM call
+    expect(records(w, rec)).toBe(0);
   });
 
   it('strangers on the same tile do not converse', () => {

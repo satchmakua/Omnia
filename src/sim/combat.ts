@@ -5,10 +5,11 @@
 // the existing health/mortality machinery. Used by hunting, crime (M16 s2), and war (M16 s3).
 import type { RNG } from './rng.ts';
 import type { World, EntityId } from './ecs.ts';
-import { C_BODY, C_COMBAT, C_AGENT, C_EQUIPMENT, C_QUEST, C_WARD, C_ENCHANTMENT } from './components.ts';
-import type { Body, Combat, Agent, Equipment, Quest, Ward, Enchantment } from './components.ts';
+import { C_BODY, C_COMBAT, C_AGENT, C_EQUIPMENT, C_QUEST, C_WARD, C_ENCHANTMENT, C_AFFLICTIONS } from './components.ts';
+import type { Body, Combat, Agent, Equipment, Quest, Ward, Enchantment, Afflictions } from './components.ts';
 import { getCultureStore, getCulture } from '../culture/cultureStore.ts';
 import { getOrgStore } from '../org/orgStore.ts';
+import { abilityMod } from './afflictions.ts';
 
 const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
 
@@ -83,9 +84,11 @@ export function combatantOf(world: World, e: EntityId): Combatant {
   const ench = world.getComponent<Enchantment>(e, C_ENCHANTMENT);
   const weapon = eq?.weapon ?? 0;
   const armour = eq?.armour ?? 0;
+  // Old wounds tell (M30): a crippled arm saps STR, a lost eye DEX — a battered veteran fights worse.
+  const af = world.getComponent<Afflictions>(e, C_AFFLICTIONS);
   return {
-    str: body?.str ?? 10,
-    dex: body?.dex ?? 10,
+    str: Math.max(1, (body?.str ?? 10) + abilityMod(af, 'str')),
+    dex: Math.max(1, (body?.dex ?? 10) + abilityMod(af, 'dex')),
     con: body?.con ?? 10,
     martial,
     ferocity: ferocityOf(trait) * questZeal,

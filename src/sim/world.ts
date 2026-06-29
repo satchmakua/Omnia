@@ -1,7 +1,7 @@
 import { World } from './ecs.ts';
 import { createRNG, rngFloat } from './rng.ts';
 import {
-  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_WORLDSTATS, C_CULTURESTORE, C_LANGUAGESTORE,
+  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_CONVOLOG, C_WORLDSTATS, C_CULTURESTORE, C_LANGUAGESTORE,
   C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_ORGSTORE, C_MARKET, C_ACHIEVEMENTS,
   C_RELIGIONSTORE, C_FIGURES, C_ARTIFACTS, C_WONDERS, C_INTERVENTIONS,
 } from './components.ts';
@@ -25,6 +25,8 @@ import type { ChronicleData } from '../history/chronicle.ts';
 import { generateBackstory } from '../history/backstory.ts';
 import { createEventLog } from '../history/eventlog.ts';
 import type { EventLogData } from '../history/eventlog.ts';
+import { createConversationLog } from '../history/conversation.ts';
+import type { ConversationLogData } from '../history/conversation.ts';
 import { createWorldStats } from '../history/stats.ts';
 import type { WorldStatsData } from '../history/stats.ts';
 import { createCultureStore, getCultureStore, getCulture, cultureForLanguage } from '../culture/cultureStore.ts';
@@ -248,6 +250,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // Live activity feed (the day-to-day ticker, distinct from the Chronicle).
   const eventEntity = world.createEntity();
   world.addComponent<EventLogData>(eventEntity, C_EVENTLOG, createEventLog());
+  world.addComponent<ConversationLogData>(world.createEntity(), C_CONVOLOG, createConversationLog());
 
   // Statistical strata (world-health running aggregates, sampled on a schedule).
   const statsEntity = world.createEntity();
