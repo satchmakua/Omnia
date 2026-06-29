@@ -3,13 +3,15 @@
 // with extra risk while in poor health. The dead become tombstones; notable
 // deaths are written to the Chronicle.
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_HEALTH, C_LINEAGE, C_CLOCK, C_CHRONICLE, C_WALLET, C_AFFLICTIONS } from '../components.ts';
-import type { Agent, Health, Lineage, Clock, Wallet, Afflictions } from '../components.ts';
+import { C_AGENT, C_HEALTH, C_LINEAGE, C_CLOCK, C_CHRONICLE, C_WALLET, C_AFFLICTIONS, C_COMBAT } from '../components.ts';
+import type { Agent, Health, Lineage, Clock, Wallet, Afflictions, Combat } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { killAgent } from '../death.ts';
-import { addAffliction, recoveryFactor, hasAffliction, chronicOnset } from '../afflictions.ts';
+import { addAffliction, recoveryFactor, hasAffliction, chronicOnset, oldWoundDisables, afflictionMortality, afflictionDeathCause, labelOf } from '../afflictions.ts';
+
+const SCAR_DISABILITY_MIN = 2;   // a veteran is "battle-worn" — and at risk of an old-wound disability — at this many scars
 import { getOrgStore } from '../../org/orgStore.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
@@ -40,6 +42,14 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
     // The frailty of age (M30): deep into their years, the body fails — a permanent infirmity that
     // slows & weakens them (afflictions.ts). Added once, deterministically.
     if (ageRatio >= 0.82 && !hasAffliction(af, 'infirmity')) addAffliction(world, e, 'infirmity', tick);
+
+    // Old wounds catch up with the battle-scarred (M30 s3 — scars become real disabilities). A
+    // veteran of many fights may, on a given day, find an old wound has left a lasting injury.
+    const combat = world.getComponent<Combat>(e, C_COMBAT);
+    if (combat && combat.scars >= SCAR_DISABILITY_MIN) {
+      const injury = oldWoundDisables(world, e, tick, combat.scars, cfg.scarDisabilityChance);
+      if (injury) emitEvent(world, 'illness', `${agent.name}'s old wounds left them with ${labelOf(injury)}.`);
+    }
 
     // Illness strikes occasionally; otherwise health recovers. Pulling through a *grave*
     // illness is itself a remembered turning point (M10 slice 3) — a brush with mortality
@@ -81,10 +91,12 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
       }
     }
 
-    // Mortality: flat base + steep age ramp + poor-health penalty.
+    // Mortality: flat base + steep age ramp + poor-health penalty + the toll of one's afflictions
+    // (M30 s3 — a chronic illness can prove fatal if never treated; old wounds make a body frailer).
     const ageMort = Math.pow(ageRatio, 10) * (cfg.ageMortalityScale / cfg.ticksPerDay);
     const sick = health.value < 0.3 ? sickMort : 0;
-    const pTick = baseMort + ageMort + sick;
+    const afMort = afflictionMortality(af) / cfg.ticksPerDay;
+    const pTick = baseMort + ageMort + sick + afMort;
 
     if (rng() < pTick) {
       // Attribute the death to whichever hazard most likely caused it, so the cause is
@@ -92,8 +104,11 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
       // background risk (i.e. they're in their declining years) died of old age; anyone
       // else simply had an accident. (The old code only said "old age" past 90% of
       // lifespan, so the many age-ramp deaths at 70–90% were mislabelled "misfortune".)
+      // An affliction that dominates the risk gives its own honest cause (a long illness / old wounds).
       let cause: string;
-      if (health.ill || sick > 0) cause = 'illness';
+      const afCause = afMort > baseMort + ageMort + sick ? afflictionDeathCause(af) : null;
+      if (afCause) cause = afCause;
+      else if (health.ill || sick > 0) cause = 'illness';
       else if (ageMort > baseMort && ageRatio >= 0.6) cause = 'old age';
       else cause = 'an accident';
       deaths.push({ e, cause });

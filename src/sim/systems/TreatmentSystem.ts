@@ -13,6 +13,7 @@ import type { Civic, Agent, Position, Afflictions, Clock, Flora, AfflictionKind 
 import type { SimConfig } from '../config.ts';
 import type { Content } from '../../content/loader.ts';
 import { isTreatableKind, cureAffliction, recoversUnderCare, labelOf } from '../afflictions.ts';
+import { getOrgStore } from '../../org/orgStore.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 
 export function runTreatmentSystem(world: World, cfg: SimConfig, content: Content): void {
@@ -45,19 +46,25 @@ export function runTreatmentSystem(world: World, cfg: SimConfig, content: Conten
   }
   if (bestPotency.size === 0) return;   // the town has no growing remedy — chronic ills must run their course
 
+  const orgStore = getOrgStore(world);   // a tribe's medicine knowledge makes its healers surer (M30 s3)
+
   for (const e of world.query(C_AGENT, C_AFFLICTIONS, C_POSITION)) {
     const fp = world.getComponent<Position>(e, C_POSITION)!;
     const tended = infirmaries.some(inf => Math.max(Math.abs(fp.x - inf.x), Math.abs(fp.y - inf.y)) <= care);
     if (!tended) continue;
+    const agent = world.getComponent<Agent>(e, C_AGENT)!;
     const af = world.getComponent<Afflictions>(e, C_AFFLICTIONS)!;
+    // Healer's teeth (M30 s3): a tribe that has studied medicine cures surer & faster (+25%/level),
+    // the same knowledge that speeds its members' recovery in the HealthSystem.
+    const medicine = orgStore && agent.orgId ? (orgStore.byId[agent.orgId]?.effects?.medicine ?? 0) : 0;
+    const skill = 1 + medicine * 0.25;
     // Snapshot the treatable kinds first — cureAffliction mutates (and may shed) the list.
     const treatable = af.list.map(a => a.kind).filter(isTreatableKind);
     for (const kind of treatable) {
       const potency = bestPotency.get(kind);
       if (potency === undefined) continue;   // no remedy for this one is growing
-      if (recoversUnderCare(e, kind, day, potency) && cureAffliction(world, e, kind)) {
-        const name = world.getComponent<Agent>(e, C_AGENT)!.name;
-        emitEvent(world, 'illness', `${name} was nursed back from ${labelOf(kind)} at the infirmary.`, fp);
+      if (recoversUnderCare(e, kind, day, Math.min(1, potency * skill)) && cureAffliction(world, e, kind)) {
+        emitEvent(world, 'illness', `${agent.name} was nursed back from ${labelOf(kind)} at the infirmary.`, fp);
       }
     }
   }
