@@ -1,0 +1,8 @@
+# A pale, earthy tea steeped from spore-fern fronds. Slower to work than the poultice, but it
+# grows where bruisewort will not — so a town without the damp fungal groves still has a cure.
+id: "spore_fern_tea"
+name: "Spore-Fern Tea"
+blurb: "An earthy tisane that settles a chronic sickness, slow but sure."
+herb: "spore_fern"
+treats: "chronic_illness"
+potency: 0.16

@@ -325,6 +325,23 @@ export const BuildingSchema = z.object({
 
 export type Building = z.infer<typeof BuildingSchema>;
 
+// ── Herbal remedy (M30 s2) ────────────────────────────────────────────────────
+// A treatment a healer applies to ease an affliction. Content declares *what cures what*: the
+// medicinal herb it's brewed from (a flora id), the affliction kind it treats, and how potent it
+// is. The TreatmentSystem implements the cure (the data/behaviour boundary, D9); the loader checks
+// the herb is a real flora and that the named affliction is actually *treatable* (not a permanent
+// disability). A remedy works only where its herb grows — so healing is tied to the world's ecology.
+export const RemedySchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  blurb: z.string().default(''),
+  herb: z.string().min(1),                            // the flora (by id) it is brewed / poulticed from
+  treats: z.string().min(1),                          // the affliction kind it cures (checked treatable in the loader)
+  potency: z.number().min(0).max(1).default(0.15),    // per-day chance it contributes toward a cure when the afflicted is tended
+}).strict();
+
+export type Remedy = z.infer<typeof RemedySchema>;
+
 // ── God-mode power (M27 s2) ───────────────────────────────────────────────────
 // A divine power the player may invoke (God Mode, D30/D54). Content declares the roster
 // (name, the code-side `effect` tag, what it targets, its default magnitude, and cost/cooldown
@@ -368,6 +385,7 @@ export const FOLDER_SCHEMAS = {
   buildings: BuildingSchema,
   magic: MagicSchoolSchema,
   powers: PowerSchema,
+  remedies: RemedySchema,
 } as const;
 
 export type ContentFolder = keyof typeof FOLDER_SCHEMAS;

@@ -82,6 +82,8 @@ marrySentiment: 0.5
 marryChancePerDay: 0.5
 illnessChancePerDay: 0.03
 illnessHealthLoss: 0.4
+chronicIllnessChance: 0.3
+infirmaryCareRadius: 18
 healthRecoveryPerDay: 0.25
 baseMortalityPerDay: 0.0003
 ageMortalityScale: 0.5

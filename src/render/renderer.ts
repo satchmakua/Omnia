@@ -40,6 +40,12 @@ const BADGE = {
   relax:     '#7fd6b0',
 };
 
+// A folk's on-map state, dual-coded as small badges around the icon/emoji (mage, ill, action, …).
+interface FolkState {
+  mage: boolean; ill: boolean; wounded: boolean; action: string; chatting: boolean;
+  bodyColor?: string; quest?: boolean; veteran?: boolean; outlaw?: boolean; mentalState?: string; boat?: boolean;
+}
+
 // The 8-neighbourhood, for the "in company" chat badge (M10 slice 4.5).
 const NEIGH8: readonly [number, number][] = [
   [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1],
@@ -337,11 +343,8 @@ export class Renderer {
       const cmb = world.getComponent<Combat>(e, C_COMBAT);
       const boat = !!map && isWater(map, p.x, p.y);
       const mage = world.hasComponent(e, C_MAGIC);
-      if (emoji) {
-        this.drawEmoji(drawX(e, p.x), drawY(e, p.y), boat ? EMOJI.boat : child ? EMOJI.child : mage ? EMOJI.mage : EMOJI.folk, child ? 0.85 : 1);
-        continue;
-      }
-      this.iconFolk(drawX(e, p.x), drawY(e, p.y), child, {
+      const gx = drawX(e, p.x), gy = drawY(e, p.y);
+      const st: FolkState = {
         mage,
         ill: !!health?.ill,
         wounded: !!health && health.value < 0.55,   // visibly hurt (combat or illness)
@@ -353,7 +356,15 @@ export class Renderer {
         outlaw: world.hasComponent(e, C_CRIME),                      // ⚖ an outlaw (M16)
         mentalState: agent.mentalState,                              // a mental break mark (M28 s2)
         boat,                                                        // ⛵ afloat — a folk on the water rides a boat (M24)
-      });
+      };
+      if (emoji) {
+        // The emoji skin shows the same state badges as the icon skin (M34 parity): the bare glyph
+        // alone hides who's ill, on an errand, a veteran, an outlaw… so we frame the badges around it.
+        this.drawEmoji(gx, gy, boat ? EMOJI.boat : child ? EMOJI.child : mage ? EMOJI.mage : EMOJI.folk, child ? 0.85 : 1);
+        this.folkBadges(gx, gy, child ? 0.85 : 1, st, true);
+        continue;
+      }
+      this.iconFolk(gx, gy, child, st);
     }
 
     this.drawCombatFx(world, elapsedMs);   // fading clash/death marks (still in world space)
@@ -401,7 +412,7 @@ export class Renderer {
     ctx.restore();
   }
 
-  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; wounded: boolean; action: string; chatting: boolean; bodyColor?: string; quest?: boolean; veteran?: boolean; outlaw?: boolean; mentalState?: string; boat?: boolean }): void {
+  private iconFolk(gx: number, gy: number, child: boolean, st: FolkState): void {
     const ctx = this.ctx;
     // A folk on the water rides a boat (M24): a wooden hull beneath them, with a little wake.
     if (st.boat) {
@@ -419,6 +430,17 @@ export class Renderer {
       ctx.beginPath();
       ctx.moveTo(-6, 9); ctx.quadraticCurveTo(-6, -1, 0, -1); ctx.quadraticCurveTo(6, -1, 6, 9); ctx.closePath();
       ctx.fill();
+    });
+    this.folkBadges(gx, gy, child ? 0.72 : 1, st);
+  }
+
+  // The small state badges that frame a folk (icon or emoji). Shared by both skins so the emoji
+  // map reads as richly as the icon map (M34 parity). `overEmoji` lifts the badges off the busy
+  // glyph with a faint dark halo. Drawn in the same ±11 design space as the body.
+  private folkBadges(gx: number, gy: number, fs: number, st: FolkState, overEmoji = false): void {
+    const ctx = this.ctx;
+    this.at(gx, gy, fs, () => {
+      if (overEmoji) { ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 2; }   // contrast over the glyph
       const ac = BADGE[st.action as keyof typeof BADGE];
       if (ac) this.badge(st.action, ac, 6, 8);
       // Chat badge: two small "speech" dots at the upper-left when standing beside another
