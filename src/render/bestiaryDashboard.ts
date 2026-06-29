@@ -16,7 +16,7 @@ import { glyphHtml } from './skin.ts';
 import { defaultConfig } from '../sim/config.ts';
 
 type Cat = 'race' | 'animal' | 'monster';
-interface Entry { cat: Cat; key: string; name: string; iconKey: Category; color: string; desc?: string; }
+interface Entry { cat: Cat; key: string; name: string; iconKey: Category; color: string; desc?: string; emojiKey?: string; }
 
 export class BestiaryDashboard extends ModalPanel {
   private readonly catalog: Entry[] = [];
@@ -30,7 +30,7 @@ export class BestiaryDashboard extends ModalPanel {
       this.catalog.push({ cat: 'race', key: 'r:' + s.id, name: s.name, iconKey: 'folk', color: s.color, desc: `${s.size} folk` });
     }
     for (const f of content.fauna.all()) {
-      this.catalog.push({ cat: 'animal', key: 'a:' + f.id, name: f.name, iconKey: 'animal', color: f.color, desc: f.diet === 'predator' ? 'a predator' : 'a grazer' });
+      this.catalog.push({ cat: 'animal', key: 'a:' + f.id, name: f.name, iconKey: 'animal', color: f.color, desc: f.diet === 'predator' ? 'a predator' : 'a grazer', emojiKey: f.id });
     }
     this.catalog.push({ cat: 'animal', key: 'fish', name: 'Fish', iconKey: 'fish', color: CATEGORY_COLOR.fish, desc: 'aquatic — netted for food' });
     for (const m of content.monsters.all()) {
@@ -73,8 +73,8 @@ export class BestiaryDashboard extends ModalPanel {
     return Math.floor(tick / (defaultConfig.ticksPerDay * defaultConfig.daysPerYear));
   }
 
-  private iconSvg(key: Category, color: string): string {
-    return `<span style="display:inline-block;vertical-align:middle">${glyphHtml(key, color, 24)}</span>`;
+  private iconSvg(key: Category, color: string, emojiKey?: string): string {
+    return `<span style="display:inline-block;vertical-align:middle">${glyphHtml(key, color, 24, 1, emojiKey)}</span>`;
   }
 
   // present (by count) → witnessed (by recency) → never seen.
@@ -94,7 +94,7 @@ export class BestiaryDashboard extends ModalPanel {
     else if (last !== undefined) status = `<span style="color:#c9b27a">last seen yr ${this.yearOf(last)}</span>${peak > 1 ? `<span style="color:#778"> · peak ×${peak}</span>` : ''}`;
     else status = `<span style="color:#667">not yet witnessed</span>`;
     return `<div style="display:flex;align-items:center;gap:9px;margin:2px 0;padding:1px 0">
-      <span style="width:24px;height:24px;flex:0 0 auto">${this.iconSvg(e.iconKey, e.color)}</span>
+      <span style="width:24px;height:24px;flex:0 0 auto">${this.iconSvg(e.iconKey, e.color, e.emojiKey)}</span>
       <span style="flex:1;color:${live > 0 ? '#cdd' : '#99a'}">${e.name}${e.desc ? ` <span style="color:#778;font-size:10.5px">— ${e.desc}</span>` : ''}</span>
       <span style="text-align:right;white-space:nowrap">${status}</span></div>`;
   }
