@@ -31,6 +31,7 @@ import { setSkin } from './render/skin.ts';
 import type { Skin } from './render/skin.ts';
 import { SpeedControl } from './render/controls.ts';
 import { EventFeed } from './render/eventFeed.ts';
+import { GodPanel } from './render/godPanel.ts';
 import { C_AGENT, C_POSITION } from './sim/components.ts';
 import type { Position } from './sim/components.ts';
 import type { EntityId } from './sim/ecs.ts';
@@ -129,15 +130,38 @@ let activeProvider: AIProvider = stubProvider;
 const OLLAMA = { baseUrl: 'http://localhost:11434', model: 'llama3.2' };
 
 // God mode (M27): off by default — the observatory is the default experience. When on, the player
-// can enqueue interventions (recorded events, replay-exact, D54). The full click-a-target UI is a
-// later slice; for now the toggle + the dev `god` API (below) exercise the seam.
+// wields the content-driven powers through the GodPanel (slice 3). Every act is a recorded
+// `Intervention` (replay-exact, D54); the panel's favour/cooldown limits are pure render-state.
 let godMode = false;
-
-renderer.setClickHandler((entity) => { if (active) inspector.inspect(entity, active.world); });
-renderer.onTileClick = (x, y) => { if (active) inspector.inspectTile(x, y, active.world); };   // inspect bare terrain/water (M24)
 
 let speed = baseCfg.simSpeedTicksPerSecond;
 const controls = new SpeedControl(speed, (v) => { speed = v; });
+
+// Apply a god-act immediately so the player sees it: enqueue the recorded intervention, then run a
+// single tick (it applies on the next tick boundary — M27 s1). One extra tick is harmless and keeps
+// determinism (it's a normal recorded tick).
+function stepOnce(): void {
+  if (active) tick(active.world, active.rng, activeCfg, active.clockEntity, content, activeProvider);
+}
+const godPanel = new GodPanel(content.powers.all(), baseCfg.ticksPerDay, (power, target) => {
+  if (!active) return;
+  enqueueIntervention(active.world, power.id, target);
+  stepOnce();
+});
+// Show the panel only while god mode is on and a world is running.
+function refreshGodPanel(): void { godPanel.setActive(godMode && state === 'running' && !!active); }
+
+// Map clicks: while a targeted power is armed they cast it (on a soul); otherwise they inspect.
+renderer.setClickHandler((entity) => {
+  if (!active) return;
+  if (godPanel.isActive && godPanel.armed) { godPanel.castAt(entity, active.world); return; }
+  inspector.inspect(entity, active.world);
+});
+renderer.onTileClick = (x, y) => {
+  if (!active) return;
+  if (godPanel.isActive && godPanel.armed) { godPanel.cancelArm(); return; }   // click away to cancel
+  inspector.inspectTile(x, y, active.world);   // inspect bare terrain/water (M24)
+};
 
 function newSimulation(opts: SetupOptions): void {
   lastSetup = opts;
@@ -153,6 +177,8 @@ function newSimulation(opts: SetupOptions): void {
   realElapsedMs = 0;
   inspector.close();
   state = 'running';
+  godPanel.reset();          // a fresh world → the god starts at full favour
+  refreshGodPanel();
 }
 
 // Load a serialized save (a named world, or an imported file). Snapshot-fast when the save
@@ -170,6 +196,8 @@ function loadFromJson(json: string): void {
     inspector.close();
     menu.hide();
     state = 'running';
+    godPanel.reset();
+    refreshGodPanel();
   } catch (e) {
     console.error('Failed to load save:', e);
   }
@@ -213,24 +241,25 @@ function showSavesMenu(): void {
 
 function showPauseMenu(): void {
   menu.showPause({
-    onResume: () => { state = 'running'; },
+    onResume: () => { state = 'running'; refreshGodPanel(); },
     onRestart: () => newSimulation(lastSetup),
     onManageSaves: () => showSavesMenu(),
     onSettings: () => menu.showSettings(lastSeed, speed, liveModel, godMode, skin, {
       onApply: (seed) => { menu.hide(); newSimulation({ ...lastSetup, seed }); },
       onToggleLive: () => { liveModel = !liveModel; },
-      onToggleGod: () => { godMode = !godMode; },
+      onToggleGod: () => { godMode = !godMode; refreshGodPanel(); },
       onToggleSkin: () => applySkin(skin === 'emoji' ? 'lofi' : 'emoji'),   // live skin swap (M34)
       onBack: () => showPauseMenu(),
     }),
     onControls: () => menu.showControls(() => showPauseMenu()),
-    onQuit: () => { active = null; state = 'menu'; openStart(); },
+    onQuit: () => { active = null; state = 'menu'; refreshGodPanel(); openStart(); },
   });
 }
 
 function pause(): void {
   if (state !== 'running') return;
   state = 'paused';
+  refreshGodPanel();   // tuck the god panel away behind the pause menu
   showPauseMenu();
 }
 
@@ -244,16 +273,16 @@ if (import.meta.env.DEV) {
   (window as unknown as { __omnia: unknown }).__omnia = {
     get sim() { return active; },
     get world() { return active?.world; },
-    content, renderer, inspector, controls, eventFeed, legend, menu, master, newSimulation,
+    content, renderer, inspector, controls, eventFeed, legend, menu, master, godPanel, newSimulation,
     setLiveModel: (v: boolean) => { liveModel = v; },
     get provider() { return activeProvider; },
     step: (n = 1) => { if (active) for (let i = 0; i < n; i++) tick(active.world, active.rng, activeCfg, active.clockEntity, content, activeProvider); },
-    // God mode (M27): the intervention seam, exercised here until the full UI lands (slice 3). The
-    // powers are content now (s2) — `kind` is a power id from content/powers/*.yaml (see `powers`).
+    // God mode (M27): the GodPanel UI drives this in normal play (s3); this dev handle pokes the
+    // same seam. `kind` is a power id from content/powers/*.yaml (s2 — see `powers`).
     god: {
       get on() { return godMode; },
-      enable() { godMode = true; },
-      disable() { godMode = false; },
+      enable() { godMode = true; refreshGodPanel(); },
+      disable() { godMode = false; refreshGodPanel(); },
       powers: () => content.powers.all().map(p => ({ id: p.id, name: p.name, target: p.target, blurb: p.blurb })),
       act(kind: string, target: number | null, amount?: number) {
         if (godMode && active) return enqueueIntervention(active.world, kind, target, amount);
@@ -294,6 +323,7 @@ function loop(now: number) {
     renderer.consumeClick(active.world);
     inspector.update(active.world);
     eventFeed.render(active.world);
+    godPanel.update(active.world);    // god mode: regen favour + refresh power states (no-op when inactive)
     bestiary.observe(active.world);   // track "last seen" every frame, even with the tab closed (M22)
     // Keep the open master tab's figures live (cheap; throttled).
     if (frame++ % 20 === 0) master.refresh(active.world);
@@ -303,10 +333,11 @@ function loop(now: number) {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (master.visible) master.hide();             // close the master view first
+    if (godPanel.armed) godPanel.cancelArm();      // disarm a primed power first
+    else if (master.visible) master.hide();        // then close the master view
     else if (inspector.isOpen) inspector.close();  // then close an open inspector card
     else if (state === 'running') pause();
-    else if (state === 'paused') { menu.hide(); state = 'running'; }
+    else if (state === 'paused') { menu.hide(); state = 'running'; refreshGodPanel(); }
     return;
   }
   // Don't fire hotkeys while typing in a field (directory search, seed input).
