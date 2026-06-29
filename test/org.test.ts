@@ -10,7 +10,7 @@ import { createRNG } from '../src/sim/rng.ts';
 import {
   createOrgStore, createOrg, forkOrg, getOrg, getOrgStore, orgHue, governmentOf, pruneOrgs,
   pairKey, adjustStanding, standingBetween, relationKind, areAllied, areRivals,
-  submitAsVassal, isVassal, vassalsOf, inSameRealm, releaseVassals,
+  submitAsVassal, isVassal, vassalsOf, inSameRealm, releaseVassals, declareWar,
 } from '../src/org/orgStore.ts';
 import type { OrgStoreData } from '../src/org/orgStore.ts';
 import { runOrgSystem } from '../src/sim/systems/OrgSystem.ts';
@@ -153,6 +153,23 @@ describe('OrgSystem (M14)', () => {
     expect(areAllied(store, a, b)).toBe(false);
     for (let d = 1; d <= 80; d++) { w.getComponent<Clock>(clk, C_CLOCK)!.tick = d * cfg.ticksPerDay; runOrgSystem(w, cfg, createRNG(1)); }
     expect(areAllied(store, a, b)).toBe(true);
+  });
+
+  it('a decisive war ends in conquest — the loser annexed, its folk taken as captives (M31 s3)', () => {
+    const era = cfg.evolutionIntervalDays * cfg.ticksPerDay;
+    const { w, store } = orgWorld(2 * era);   // 2 eras on → the war is exhausted and the era block runs
+    const winner = createOrg(store, 'Victor', { ...VALUES, martial: 0.3 }, 0.95, 0);  // low martial → starts no fresh war
+    const loser = createOrg(store, 'Vanquished', { ...VALUES, martial: 0.3 }, 0.95, 0);
+    const wMem: EntityId[] = [], lMem: EntityId[] = [];
+    for (let i = 0; i < 12; i++) wMem.push(member(w, winner, 30 + i));
+    for (let i = 0; i < 5; i++) lMem.push(member(w, loser, 30 + i));   // 12 vs 5 → decisive (≥ 2×)
+    declareWar(store, winner, loser, 0);
+    runOrgSystem(w, cfg, createRNG(1));
+    expect(isVassal(store, loser)).toBe(true);                          // annexed as a vassal
+    expect(getOrg(store, loser)!.lord).toBe(winner);
+    const inVictor = [...wMem, ...lMem].filter(e => w.getComponent<Agent>(e, C_AGENT)!.orgId === winner).length;
+    expect(inVictor).toBe(13);                                          // 12 + one captive taken from the vanquished
+    expect(getOrg(store, winner)!.lord).toBeUndefined();               // the victor answers to no one
   });
 
   it('a weak clan submits to a dominant one — the seed of a realm (M31)', () => {

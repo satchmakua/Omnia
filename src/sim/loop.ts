@@ -33,6 +33,7 @@ import { runCivicSystem }    from './systems/CivicSystem.ts';
 import { runTreatmentSystem } from './systems/TreatmentSystem.ts';
 import { runCivicBuildSystem } from './systems/CivicBuildSystem.ts';
 import { runOrgSystem }      from './systems/OrgSystem.ts';
+import { runCaravanSystem }  from './systems/CaravanSystem.ts';
 import { runResearchSystem } from './systems/ResearchSystem.ts';
 import { runAchievementSystem } from './systems/AchievementSystem.ts';
 import { runLegendSystem }    from './systems/LegendSystem.ts';
@@ -91,7 +92,8 @@ export function tick(
   runCivicSystem(world, cfg);            // functional buildings: infirmary heals, tavern cheers (M21)
   runTreatmentSystem(world, cfg, content); // the infirmary tends the afflicted: herbal cures for treatable ills (M30 s2)
   runCivicBuildSystem(world, cfg, content); // the town raises new civic buildings as it grows (M21)
-  runOrgSystem(world, cfg, rng);         // tribes: leadership succession, extinction, schism (M14)
+  runOrgSystem(world, cfg, rng);         // tribes: leadership succession, extinction, schism, diplomacy (M14/M31)
+  runCaravanSystem(world, cfg);          // friendly clans trade overland — diplomacy-shaped caravans (M31 s2)
   runResearchSystem(world, cfg, content); // tribes accumulate research & climb the tech ladder (M17)
   runAchievementSystem(world, cfg);      // civ + agent milestones fire once (M17)
   runLegendSystem(world, cfg);           // enshrine notable folk as historical figures (M20)

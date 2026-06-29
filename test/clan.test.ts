@@ -41,6 +41,6 @@ describe('clan = surname (M20 merge)', () => {
     const sim = createSimulation({ ...defaultConfig, seed: 8 }, testContent());
     runTicks(sim.world, sim.rng, defaultConfig, sim.clockEntity, sim.content, 12000);   // breed several generations
     const checked = assertInvariant(sim.world);
-    expect(checked).toBeGreaterThan(20);   // a living town, all clan-named
+    expect(checked).toBeGreaterThan(12);   // a living, multi-generation town — all clan-named (floor kept loose: the exact pop shifts with the event director's drama, M32)
   }, 20_000);
 });

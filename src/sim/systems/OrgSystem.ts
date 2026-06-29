@@ -3,8 +3,8 @@
 // over the eras (new tribes emerge alongside cultures & tongues). Runs daily (succession is
 // cheap and need not be instant); schism evaluates on the culture/language era cadence.
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_CLOCK, C_CHRONICLE, C_WALLET } from '../components.ts';
-import type { Agent, Clock, Wallet, Organization } from '../components.ts';
+import { C_AGENT, C_CLOCK, C_CHRONICLE, C_WALLET, C_POSITION } from '../components.ts';
+import type { Agent, Clock, Wallet, Organization, Position } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import {
@@ -116,6 +116,11 @@ export function runOrgSystem(world: World, cfg: SimConfig, rng: RNG): void {
       org.leader = eldest(world, mem);
       emitEvent(world, 'culture', `${world.getComponent<Agent>(org.leader, C_AGENT)!.name} now leads the ${org.name}.`);
     }
+    // The clan's seat — the centroid of its folk, its hold on the ground (M31 s2 territory). Where
+    // caravans come and go, and how far one clan lies from another.
+    let sx = 0, sy = 0, n = 0;
+    for (const e of mem) { const p = world.getComponent<Position>(e, C_POSITION); if (p) { sx += p.x; sy += p.y; n++; } }
+    if (n > 0) org.seat = { x: Math.round(sx / n), y: Math.round(sy / n) };
   }
 
   // ── Diplomacy drift (M31): the standing between two clans eases toward how alike their values are;
@@ -163,18 +168,43 @@ export function runOrgSystem(world: World, cfg: SimConfig, rng: RNG): void {
       const aN = sizeOf(war.a), bN = sizeOf(war.b);
       const routed = aN === 0 || bN === 0 || Math.min(aN, bN) < Math.max(aN, bN) * 0.4;
       const exhausted = tick - war.since >= cfg.warDurationEras * eraTicks;
+      // A *decisive* war (the victor ends at least twice the loser's strength) ends in conquest,
+      // whether by a clean rout or a lopsided war of attrition; an even war just peters out.
+      const decisive = aN > 0 && bN > 0 && Math.max(aN, bN) >= Math.min(aN, bN) * 2;
       if (!a || !b || a.extinct || b.extinct || routed || exhausted) {
+        const bothAlive = !!a && !!b && !a.extinct && !b.extinct;
+        const conquers = bothAlive && decisive && !(aN >= bN ? a : b)!.lord;
         endWar(store, war.a, war.b);
-        const winnerId = routed ? (aN >= bN ? war.a : war.b) : null;
+        const winnerId = conquers || routed ? (aN >= bN ? war.a : war.b) : null;
         if (!store.warLog) store.warLog = [];
         store.warLog.push({ a: war.a, b: war.b, since: war.since, ended: tick, winner: winnerId });
         if (store.warLog.length > 30) store.warLog.shift();
         if (a && b && !a.extinct && !b.extinct) {
           const winner = aN >= bN ? a : b, loser = aN >= bN ? b : a;
-          adjustStanding(store, war.a, war.b, routed ? -0.2 : 0.3, tick);   // a rout breeds a grudge; a truce thaws the standing (M31)
-          emitEvent(world, 'culture', routed
-            ? `The ${winner.name} broke the ${loser.name} in war.`
-            : `The ${a.name} and the ${b.name} made peace.`);
+          if (conquers) {
+            // ── Conquest (M31 s3): a broken clan is *subjugated*, not merely defeated. The victor
+            //    annexes it as a vassal and takes a share of its folk as captives into its own clan —
+            //    so a war reshapes the map (territory + people), not just the casualty list. Deep time
+            //    lets a martial victor gather realms into a hegemony. Deterministic (no RNG). ──
+            submitAsVassal(store, loser.id, winner.id, tick);   // the conqueror seizes its allegiance (from any prior lord)
+            const loserMem = [...(members.get(loser.id) ?? [])].sort((x, y) => x - y);
+            const take = Math.min(loserMem.length - 1, Math.floor(loserMem.length * cfg.captiveFraction));
+            for (let i = 0; i < take; i++) {
+              const ag = world.getComponent<Agent>(loserMem[i], C_AGENT)!;
+              ag.orgId = winner.id;
+              renameToClan(ag, winner.surname);   // the captives take the conqueror's clan name (M20)
+            }
+            adjustStanding(store, war.a, war.b, 0.3, tick);   // bound under the yoke — subdued, not feuding
+            emitEvent(world, 'culture', `The ${winner.name} conquered the ${loser.name}${take > 0 ? `, taking ${take} of their folk` : ''}.`);
+            const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0] ?? -1, C_CHRONICLE);
+            if (ch) chronicleAdd(ch, { tick, importance: 0.84, kind: 'war',
+              text: `The ${winner.name} conquered the ${loser.name}.` }, cfg.chronicleImportanceThreshold);
+          } else {
+            adjustStanding(store, war.a, war.b, routed ? -0.2 : 0.3, tick);   // a rout breeds a grudge; a truce thaws (M31)
+            emitEvent(world, 'culture', routed
+              ? `The ${winner.name} broke the ${loser.name} in war.`
+              : `The ${a.name} and the ${b.name} made peace.`);
+          }
         }
       }
     }

@@ -34,6 +34,7 @@ export const C_CHRONICLE = 'Chronicle'; // singleton: world legend log (src/hist
 export const C_EVENTLOG  = 'EventLog';  // singleton: live activity feed (src/history/eventlog.ts)
 export const C_CONVOLOG  = 'ConvoLog';  // singleton: recent back-and-forth conversations (src/history/conversation.ts)
 export const C_WORLDSTATS = 'WorldStats'; // singleton: statistical strata (src/history/stats.ts)
+export const C_STORYTELLER = 'Storyteller'; // singleton: the adaptive event director (src/event/director.ts, M32)
 export const C_CULTURESTORE = 'CultureStore'; // singleton: live cultures (src/culture/cultureStore.ts)
 export const C_ORGSTORE   = 'OrgStore';   // singleton: live organizations / tribes (src/org/orgStore.ts) (M14)
 export const C_LANGUAGESTORE = 'LanguageStore'; // singleton: live languages (src/lang/languageStore.ts)
@@ -156,6 +157,7 @@ export interface Organization {
   discovered?: boolean;  // first contact with the rest of the world has been made (M24 s4)
   lord?: string;         // M31: the org this clan is vassal to (pays tribute, will not war its lord/co-vassals)
   vassalSince?: number;  // tick the vassalage began (for the Chronicle / display)
+  seat?: { x: number; y: number };   // M31 s2: the clan's seat — the centroid of its folk, its hold on the ground (a light territory model)
 }
 
 // Body & heredity (M13): six D&D-style ability scores (3..18) plus heritable physical

@@ -1,7 +1,7 @@
 import { World } from './ecs.ts';
 import { createRNG, rngFloat } from './rng.ts';
 import {
-  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_CONVOLOG, C_WORLDSTATS, C_CULTURESTORE, C_LANGUAGESTORE,
+  C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_CONVOLOG, C_WORLDSTATS, C_STORYTELLER, C_CULTURESTORE, C_LANGUAGESTORE,
   C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_ORGSTORE, C_MARKET, C_ACHIEVEMENTS,
   C_RELIGIONSTORE, C_FIGURES, C_ARTIFACTS, C_WONDERS, C_INTERVENTIONS,
 } from './components.ts';
@@ -28,6 +28,7 @@ import type { EventLogData } from '../history/eventlog.ts';
 import { createConversationLog } from '../history/conversation.ts';
 import type { ConversationLogData } from '../history/conversation.ts';
 import { createWorldStats } from '../history/stats.ts';
+import { createStoryteller, asTemperament } from '../event/director.ts';
 import type { WorldStatsData } from '../history/stats.ts';
 import { createCultureStore, getCultureStore, getCulture, cultureForLanguage } from '../culture/cultureStore.ts';
 import type { CultureStoreData } from '../culture/cultureStore.ts';
@@ -255,6 +256,9 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // Statistical strata (world-health running aggregates, sampled on a schedule).
   const statsEntity = world.createEntity();
   world.addComponent<WorldStatsData>(statsEntity, C_WORLDSTATS, createWorldStats());
+  // The Storyteller — the adaptive event director that paces drama to the world's health (M32). Its
+  // temperament (measured/calm/harsh/capricious) is chosen at New Game and carried on the config.
+  world.addComponent(world.createEntity(), C_STORYTELLER, createStoryteller(0, asTemperament(cfg.storytellerTemperament)));
 
   // Live cultures + languages, seeded from authored content (founders reference these;
   // both drift and diverge later). Created before agents so spawning can read them.

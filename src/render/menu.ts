@@ -5,6 +5,7 @@
 import type { SaveMeta } from '../sim/saveStore.ts';
 import { defaultConfig } from '../sim/config.ts';
 import type { Skin } from './skin.ts';
+import type { Temperament } from '../event/director.ts';
 
 export interface PauseActions {
   onResume: () => void;
@@ -53,13 +54,22 @@ const CONTROLS: [string, string][] = [
   ['H', 'toggle Town Happenings'],
 ];
 
-// What the start screen collects to begin a run. `skin` is presentation-only (M34).
-export interface SetupOptions { seed: number; population: number; mapSize: number; skin: Skin; }
+// What the start screen collects to begin a run. `skin` is presentation-only (M34); `temperament` is
+// the Storyteller — how hard the world pushes its drama (M32 s2).
+export interface SetupOptions { seed: number; population: number; mapSize: number; skin: Skin; temperament: Temperament; }
 
 // The visual skins offered on the start screen (M34).
 export const SKINS: { id: Skin; label: string }[] = [
   { id: 'lofi', label: '◳ Lo-fi' },
   { id: 'emoji', label: '😀 Emoji' },
+];
+
+// The Storyteller temperaments offered on the start screen (M32 s2).
+export const TEMPERAMENTS_OFFERED: { id: Temperament; label: string }[] = [
+  { id: 'measured', label: 'Measured' },
+  { id: 'calm', label: 'Calm' },
+  { id: 'harsh', label: 'Hard Times' },
+  { id: 'capricious', label: 'Capricious' },
 ];
 
 // Map-size presets (square, in tiles). Small is the tuned default; the larger ones
@@ -218,11 +228,33 @@ export class Menu {
     skinLabel.textContent = 'Skin'; Object.assign(skinLabel.style, { color: '#99a', margin: '2px 0 4px' } as Partial<CSSStyleDeclaration>);
     this.card.append(skinLabel, skinRow);
 
+    // Storyteller temperament (M32 s2) — how hard the world pushes its drama.
+    let temperament: Temperament = defaults.temperament;
+    const tempRow = document.createElement('div');
+    Object.assign(tempRow.style, { display: 'flex', gap: '6px', margin: '2px 0 12px' } as Partial<CSSStyleDeclaration>);
+    const tempBtns: HTMLButtonElement[] = [];
+    const tempHi = () => tempBtns.forEach((b, i) => {
+      const sel = TEMPERAMENTS_OFFERED[i].id === temperament;
+      b.style.background = sel ? '#46467e' : '#23233a';
+      b.style.borderColor = sel ? '#8a8ad0' : 'rgba(255,255,255,0.12)';
+    });
+    TEMPERAMENTS_OFFERED.forEach((tmp) => {
+      const b = document.createElement('button');
+      b.textContent = tmp.label;
+      Object.assign(b.style, { flex: '1', padding: '8px 4px', color: '#eee', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '7px', font: '11px monospace', cursor: 'pointer' } as Partial<CSSStyleDeclaration>);
+      b.addEventListener('click', () => { temperament = tmp.id; tempHi(); });
+      tempBtns.push(b); tempRow.append(b);
+    });
+    tempHi();
+    const tempLabel = document.createElement('div');
+    tempLabel.textContent = 'Storyteller'; Object.assign(tempLabel.style, { color: '#99a', margin: '2px 0 4px' } as Partial<CSSStyleDeclaration>);
+    this.card.append(tempLabel, tempRow);
+
     const start = styledButton('▶  New simulation', true);
     start.addEventListener('click', () => {
       const seed = Math.floor(Number(seedInput.value)) || defaults.seed;
       this.hide();
-      onStart({ seed, population, mapSize, skin });
+      onStart({ seed, population, mapSize, skin, temperament });
     });
 
     const help = styledButton('?  How to play');

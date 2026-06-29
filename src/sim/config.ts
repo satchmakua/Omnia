@@ -62,7 +62,14 @@ export interface SimConfig {
   warMartialThreshold: number;         // a tribe this martial (or more) may start a war
   minWarMembers: number;               // a tribe needs at least this many to wage / be worth warring
   warDurationEras: number;             // a war lasts at most this many eras before peace
+  captiveFraction: number;             // share of a routed clan's folk taken as captives into the victor's clan (M31 s3 conquest)
   battleChancePerTick: number;         // per-tick chance two adjacent enemies actually come to blows
+  // Caravans & reputation (M31 s2): friendly clans trade overland; deeds ripple to a clan's standing.
+  caravanIntervalDays: number;         // how often (in days) caravan trade is reckoned between clans
+  caravanProfit: number;               // base gold each clan's coffers gain from a caravan run
+  caravanMaxDistance: number;          // Chebyshev distance (tiles) a land route can span between two seats
+  caravanChancePerInterval: number;    // share of intervals a given friendly pair actually runs a caravan (paced, deterministic)
+  reputationCrimeHit: number;          // how much a cross-clan crime sours the two clans' standing (M31 s2 reputation)
   wanderIdleChance: number;            // chance an aimlessly-wandering agent simply stays put a tick (calmer motion)
   // Knowledge (M17): tribes accumulate research points and climb the tech ladder.
   researchBasePerDay: number;          // a tribe's baseline research per day
@@ -143,6 +150,7 @@ export interface SimConfig {
   // Culture & language evolution (M7 slice 3):
   evolutionIntervalDays: number;       // an "era" — how often languages/cultures drift
   valueDriftPerEra: number;            // base magnitude of a culture's value random walk (damped by cohesion)
+  storytellerTemperament: string;      // the adaptive event director's temperament: measured | calm | harsh | capricious (M32 s2)
   // Schism / divergence (M7 slice 4):
   schismChancePerEra: number;          // per-era chance a culture fractures (damped by cohesion)
   minSchismMembers: number;            // a culture needs at least this many living members to schism
@@ -281,7 +289,13 @@ export const defaultConfig: SimConfig = {
   warMartialThreshold: 0.55,       // an above-average-martial tribe can start a war
   minWarMembers: 5,
   warDurationEras: 2,              // wars are short, bloody feuds, then peace
+  captiveFraction: 0.25,           // a quarter of a broken clan's folk are taken into the victor's — the spoils of conquest
   battleChancePerTick: 0.006,      // adjacent enemies seldom actually clash on a given tick (keeps casualties bounded)
+  caravanIntervalDays: 2,          // caravan trade is reckoned every couple of days
+  caravanProfit: 4,                // a modest gain — a living trade route, not a gold fountain
+  caravanMaxDistance: 44,          // most of a 64-wide map: distant clans can still reach one another overland
+  caravanChancePerInterval: 0.4,   // a friendly pair runs a caravan ~⅖ of intervals (paced, so the feed isn't spammy)
+  reputationCrimeHit: 0.08,        // a cross-clan crime sours the clans' standing this much
   wanderIdleChance: 0.6,           // a wanderer pauses ~60% of ticks → folk linger rather than pacing endlessly
   researchBasePerDay: 2,           // tuned so tribes reach ~Industrial Age over a soak, sci-fi over deep time
   researchPerMemberPerDay: 1.0,
@@ -345,6 +359,7 @@ export const defaultConfig: SimConfig = {
   maxStatSamples: 80,             // ~80 years of time-series, then the oldest rolls off
   evolutionIntervalDays: 20,      // an era ≈ 5 sim-years (daysPerYear×5); several eras over a soak
   valueDriftPerEra: 0.05,         // gentle value drift; cohesion damps it further
+  storytellerTemperament: 'measured',  // the paced default keel (Cassandra-like); the menu offers calm/harsh/capricious
   schismChancePerEra: 0.7,        // ×(1−cohesion); self-limited by minSchismMembers → ~1–2 over a deep run (M7 DoD)
   minSchismMembers: 8,            // small cultures don't fracture
   schismValueNudge: 0.2,          // the daughter starts noticeably apart from the parent

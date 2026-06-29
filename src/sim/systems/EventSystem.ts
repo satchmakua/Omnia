@@ -15,6 +15,7 @@ import { calendarOf } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
 import { fireWorldEvent } from '../../event/effects.ts';
+import { getStoryteller, updateDirector, eventChanceMultiplier } from '../../event/director.ts';
 
 export function runEventSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const clockEnts = world.query(C_CLOCK);
@@ -28,14 +29,22 @@ export function runEventSystem(world: World, cfg: SimConfig, rng: RNG, content: 
   const population = world.query(C_AGENT).length;
   const season = calendarOf(clock.tick, cfg).season;
 
+  // The Storyteller (M32): read the world's health into a `calm` signal, then bias each event's
+  // chance by it — a placid world earns calamity, a reeling one earns fortune. Pure-read & no RNG of
+  // its own (it only scales the threshold of the roll the loop already makes), so replay still holds.
+  const story = getStoryteller(world);
+  const calm = story ? updateDirector(world, cfg, story, clock.tick, population) : 0.5;
+
   for (const ev of events) {
     // Trigger guards (the "triggered" half of scheduled+triggered): a population floor,
     // and an optional season restriction. Roll AFTER the guards so a gated-out event
     // consumes no RNG — keeps the trajectory clean when guards exclude it.
     if (population < ev.minPopulation) continue;
     if (ev.season && ev.season !== season) continue;
-    if (rng() >= ev.chancePerDay) continue;
+    const chance = story ? ev.chancePerDay * eventChanceMultiplier(ev.category, calm, story) : ev.chancePerDay;
+    if (rng() >= chance) continue;
 
     fireWorldEvent(world, cfg, rng, ev, clock.tick);   // run effect → feed → Chronicle (shared with god-summon, M27)
+    if (story && (ev.category === 'disaster' || ev.category === 'paranormal')) story.lastDramaTick = clock.tick;
   }
 }
