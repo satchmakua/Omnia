@@ -37,6 +37,7 @@ const BADGE = {
   sleep:     '#9fb6d9',
   seek_food: '#ef9f6a',
   socialize: '#ef8fc0',
+  relax:     '#7fd6b0',
 };
 
 // The 8-neighbourhood, for the "in company" chat badge (M10 slice 4.5).
@@ -350,6 +351,7 @@ export class Renderer {
         quest: world.hasComponent(e, C_QUEST),                       // ⚑ on a quest (M20 s3)
         veteran: !!cmb && (cmb.kills > 0 || cmb.scars > 0),          // ⚔ a fighter (M16)
         outlaw: world.hasComponent(e, C_CRIME),                      // ⚖ an outlaw (M16)
+        mentalState: agent.mentalState,                              // a mental break mark (M28 s2)
         boat,                                                        // ⛵ afloat — a folk on the water rides a boat (M24)
       });
     }
@@ -399,7 +401,7 @@ export class Renderer {
     ctx.restore();
   }
 
-  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; wounded: boolean; action: string; chatting: boolean; bodyColor?: string; quest?: boolean; veteran?: boolean; outlaw?: boolean; boat?: boolean }): void {
+  private iconFolk(gx: number, gy: number, child: boolean, st: { mage: boolean; ill: boolean; wounded: boolean; action: string; chatting: boolean; bodyColor?: string; quest?: boolean; veteran?: boolean; outlaw?: boolean; mentalState?: string; boat?: boolean }): void {
     const ctx = this.ctx;
     // A folk on the water rides a boat (M24): a wooden hull beneath them, with a little wake.
     if (st.boat) {
@@ -441,6 +443,19 @@ export class Renderer {
       }
       // ⚖ an outlaw: a small red mark at the lower left (M16).
       if (st.outlaw) { ctx.fillStyle = '#ff5a5a'; ctx.beginPath(); ctx.arc(-7.5, 4, 1.7, 0, Math.PI * 2); ctx.fill(); }
+      // A mental break (M28 s2): a mark above the head — despair (blue drizzle), rage (red flash), joy (gold sparkle).
+      if (st.mentalState === 'despair') {
+        ctx.strokeStyle = '#7fa8d0'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-2, -13); ctx.lineTo(-2, -10.5); ctx.moveTo(2, -13); ctx.lineTo(2, -10.5); ctx.stroke();
+      } else if (st.mentalState === 'anger') {
+        ctx.strokeStyle = '#ff5a5a'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-2, -11); ctx.lineTo(0.5, -14); ctx.lineTo(-0.8, -12); ctx.lineTo(1.5, -15); ctx.stroke();
+      } else if (st.mentalState === 'elation') {
+        ctx.strokeStyle = '#ffd278'; ctx.lineWidth = 1; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, -15.2); ctx.lineTo(0, -11.2); ctx.moveTo(-2, -13.2); ctx.lineTo(2, -13.2);
+        ctx.moveTo(-1.4, -14.6); ctx.lineTo(1.4, -11.8); ctx.moveTo(1.4, -14.6); ctx.lineTo(-1.4, -11.8); ctx.stroke();
+      }
     });
   }
 
@@ -495,6 +510,7 @@ export class Renderer {
     else if (action === 'sleep') { ctx.beginPath(); ctx.arc(bx, by, 3, 0.5, Math.PI * 1.5, false); ctx.arc(bx + 1.4, by, 2.2, Math.PI * 1.5, 0.5, true); ctx.fill(); }
     else if (action === 'seek_food') { ctx.beginPath(); ctx.moveTo(bx - 2, by - 3); ctx.lineTo(bx - 2, by + 3); ctx.moveTo(bx, by - 3); ctx.lineTo(bx, by + 3); ctx.moveTo(bx + 2, by - 3); ctx.lineTo(bx + 2, by + 3); ctx.stroke(); }
     else if (action === 'socialize') { ctx.beginPath(); ctx.arc(bx - 1.6, by, 1.4, 0, Math.PI * 2); ctx.arc(bx + 1.6, by, 1.4, 0, Math.PI * 2); ctx.fill(); }
+    else if (action === 'relax') { ctx.beginPath(); ctx.arc(bx, by - 1, 3, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); }   // a content little smile (M28 leisure)
   }
 
   private spark(x: number, y: number): void {

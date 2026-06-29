@@ -60,6 +60,8 @@ export interface Needs {
   hunger: number;  // 0..1; 1 = full, 0 = starving
   energy: number;  // 0..1; 1 = rested, 0 = exhausted
   social: number;  // 0..1; 1 = content, 0 = lonely
+  fun?: number;    // 0..1; 1 = entertained, 0 = restless/bored (M28). Optional: absent reads as full,
+                   // so pre-M28 saves & test fixtures behave unchanged; spawnAgent seeds it for live folk.
 }
 
 export interface Wallet {
@@ -88,7 +90,7 @@ export interface Equipment {
   armour: number;   // best carried armour power → soak
 }
 
-export type AgentAction = 'wander' | 'seek_food' | 'sleep' | 'work' | 'socialize';
+export type AgentAction = 'wander' | 'seek_food' | 'sleep' | 'work' | 'socialize' | 'relax';
 
 export type Sex = 'male' | 'female';
 
@@ -116,7 +118,15 @@ export interface Agent {
                         // derived daily from deeds & means — leadership, landholding, valour, and
                         // wealth lift it; crime and debt sink it. Drives social class + warms how
                         // readily others seek one's company (D26). See StatusSystem / society.ts.
+  mentalState?: MentalState;  // a RimWorld-style break when mood bottoms out / peaks (M28 s2): despair
+                        // → withdraws, anger → lashes out, elation → celebrates. Overrides ordinary
+                        // behaviour (but never survival) while it lasts. See MentalStateSystem.
+  mentalUntil?: number; // the tick the current mental state passes (then it clears with a little catharsis).
 }
+
+// A procedural mental break (M28 s2), triggered by mood reaching an extreme. Deterministic, never
+// the LLM. Despair/anger come from misery (split by disposition); elation from joy.
+export type MentalState = 'despair' | 'anger' | 'elation';
 
 // A social structure — a tribe/faction (M14, D33). Like cultures, organizations are a few
 // shared objects agents reference by `orgId`, kept in a singleton store; they hold a leader,
@@ -165,12 +175,14 @@ export interface Alignment {
   law: number;    // −1 chaotic … +1 lawful
 }
 
-// Personality (M13): one archetype trait that colours behaviour — `ambitious`/`greedy`
-// strive harder, `content`/`generous` less; others (loyal, brave, curious, gentle…) are
-// flavour now with homes in later milestones. Heritable (children often take after a
-// parent) and shifted by mid-life trauma (deep loss → `hardened`). See src/sim/heredity.ts.
+// Personality (M13; multi-trait M28 s3): a small SET of archetype traits that colour behaviour.
+// `trait` is the DOMINANT one (drives the wealth-goal & crime couplings); `traits` is the full
+// 2–3 set, whose members shape the newer reactions — friendship (who they befriend), mood (what
+// lifts/sours it), and hardship (how readily they break). Heritable (children draw from their
+// parents' pooled traits). Absent `traits` reads as just `[trait]`. See src/sim/heredity.ts.
 export interface Personality {
   trait: string;
+  traits?: string[];
 }
 
 // Combat record (M16) — attached the first time an agent fights, so the peaceful majority
@@ -485,7 +497,10 @@ export type RelationType = 'friend' | 'rival' | 'partner';
 
 export interface RelationEdge {
   type: RelationType;
-  sentiment: number;  // -1..1
+  sentiment: number;  // -1..1 — the opinion (how warmly/coldly they regard the other)
+  reason?: string;    // the headline "why" behind the opinion (M29 s1): "robbed them", "a long
+                      // friendship", "murdered their son Korga", "vied for Mira's hand". Names are
+                      // baked in, so it stays readable after the other party dies. Latest cause wins.
 }
 
 // An agent's social graph: a small map of other agents → how they feel about them.

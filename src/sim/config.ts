@@ -6,8 +6,10 @@ export interface SimConfig {
   ticksPerDay: number;
   hungerDecayPerDay: number;
   energyDecayPerDay: number;
+  funDecayPerDay: number;          // recreation/fun need depletion (M28): boredom creeps in over days
   actionThreshold: number;
   sleepRestorePerTick: number;
+  funRestorePerTick: number;       // fun restored per tick of leisure (the 'relax' action) (M28)
   simSpeedTicksPerSecond: number;  // initial real-time playback speed (renderer only; decoupled from sim time)
   biomeSeedCount: number;    // number of Voronoi biome seeds at world generation
   // World population at generation (per passable tile, gated by biome spawn tables):
@@ -226,8 +228,10 @@ export const defaultConfig: SimConfig = {
   ticksPerDay: 240,
   hungerDecayPerDay: 0.8,
   energyDecayPerDay: 0.7,
+  funDecayPerDay: 0.3,             // slow burn — folk seek leisure every few days, not constantly
   actionThreshold: 0.4,
   sleepRestorePerTick: 0.008,
+  funRestorePerTick: 0.02,         // leisure refreshes briskly, so breaks are short
   simSpeedTicksPerSecond: 6,   // gentle default; adjust live with the speed slider
   biomeSeedCount: 14,
   floraDensity: 0.06,

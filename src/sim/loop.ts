@@ -26,6 +26,7 @@ import { runSocialSystem }   from './systems/SocialSystem.ts';
 import { runReproductionSystem } from './systems/ReproductionSystem.ts';
 import { runHealthSystem }   from './systems/HealthSystem.ts';
 import { runMoodSystem }     from './systems/MoodSystem.ts';
+import { runMentalStateSystem } from './systems/MentalStateSystem.ts';
 import { runStatusSystem }   from './systems/StatusSystem.ts';
 import { runCivicSystem }    from './systems/CivicSystem.ts';
 import { runCivicBuildSystem } from './systems/CivicBuildSystem.ts';
@@ -81,6 +82,7 @@ export function tick(
   runReproductionSystem(world, cfg, rng, content); // births → children + lineage
   runHealthSystem(world, cfg, rng);      // illness, ageing, death → tombstones
   runMoodSystem(world, cfg);             // daily well-being: home / family / solvency / health → mood
+  runMentalStateSystem(world, cfg);      // mood made causal: breaks (despair/anger/elation) when it hits an extreme (M28 s2)
   runStatusSystem(world, cfg);           // daily social standing/reputation from deeds & means (M14)
   runCivicSystem(world, cfg);            // functional buildings: infirmary heals, tavern cheers (M21)
   runCivicBuildSystem(world, cfg, content); // the town raises new civic buildings as it grows (M21)

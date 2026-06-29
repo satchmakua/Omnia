@@ -92,7 +92,7 @@ export class GodPanel {
 
     const foot = document.createElement('div');
     Object.assign(foot.style, { marginTop: '8px', color: '#667', fontSize: '10px' } as Partial<CSSStyleDeclaration>);
-    foot.textContent = 'Pick a power · Esc cancels';
+    foot.textContent = 'Pick a power → click a soul (town powers fire at once) · Esc cancels · G exits';
 
     body.append(this.favourEl, this.hintEl, btnWrap, logTitle, this.logEl, foot);
     document.body.appendChild(this.panel);

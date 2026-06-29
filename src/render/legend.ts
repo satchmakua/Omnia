@@ -65,6 +65,8 @@ export class Legend {
       entryRow(glyphCell('⊥', '#ffd24a'), 'Working', 'at a job, earning gold') +
       entryRow(glyphCell('☾', '#9fb6d9'), 'Sleeping', 'resting to recover energy') +
       entryRow(glyphCell('··', '#9ab'), 'Chatting', 'socialising with a neighbour') +
+      entryRow(glyphCell('‿', '#7fd6b0'), 'At leisure', 'relaxing — playing, drinking, unwinding') +
+      entryRow(glyphCell('▲', '#e0a0a0'), 'Mental break', 'mood at an extreme — ▼ despair · ▲ rage · ★ joy') +
       entryRow(glyphCell('⚑', '#ffd278'), 'On a quest', 'pursuing a goal — to hunt, avenge, or explore') +
       entryRow(glyphCell('⚔', '#d6dae4'), 'Veteran', 'has fought — scars or kills to their name') +
       entryRow(glyphCell('⚖', '#ff7a7a'), 'Outlaw', 'a known criminal — theft, assault, or worse') +

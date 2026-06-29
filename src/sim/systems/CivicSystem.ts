@@ -49,7 +49,10 @@ export function runCivicSystem(world: World, cfg: SimConfig): void {
         if (craft) craft.skill = Math.min(SKILL_CAP, craft.skill + mag);
       } else {   // cheer
         const needs = world.getComponent<Needs>(e, C_NEEDS);
-        if (needs) needs.social = clamp01(needs.social + mag);
+        if (needs) {
+          needs.social = clamp01(needs.social + mag);
+          needs.fun = clamp01((needs.fun ?? 1) + mag);   // a tavern is where folk drink & unwind (M28)
+        }
         const agent = world.getComponent<Agent>(e, C_AGENT)!;
         if (agent.mood !== undefined) agent.mood = clamp01(agent.mood + mag * 0.5);
       }

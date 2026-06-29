@@ -5,15 +5,16 @@
 // victim defends themselves and a good neighbour may mete out rough **justice** on the spot.
 import type { World, EntityId } from '../ecs.ts';
 import {
-  C_AGENT, C_ALIGNMENT, C_WALLET, C_POSITION, C_HEALTH, C_PERSONALITY, C_RELATIONSHIPS, C_CLOCK, C_CRIME, C_CHRONICLE,
+  C_AGENT, C_ALIGNMENT, C_WALLET, C_POSITION, C_HEALTH, C_PERSONALITY, C_RELATIONSHIPS, C_LINEAGE, C_CLOCK, C_CRIME, C_CHRONICLE,
 } from '../components.ts';
 import type {
-  Agent, Alignment, Wallet, Position, Health, Personality, Relationships, Clock, Crime,
+  Agent, Alignment, Wallet, Position, Health, Personality, Relationships, Lineage, Clock, Crime,
 } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears, ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { earn } from '../economy.ts';
+import { opine } from '../relationships.ts';
 import { lawCrimeFactor } from '../heredity.ts';
 import { combatantOf, rollAttack, markCombat } from '../combat.ts';
 import { killAgent } from '../death.ts';
@@ -66,12 +67,24 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
     return null;
   };
   const goodOf = (id: EntityId): number => world.getComponent<Alignment>(id, C_ALIGNMENT)?.good ?? 0;
-  const rivalrise = (victim: EntityId, criminal: EntityId): void => {
+  // The wronged turn on the wrongdoer — a rival edge with the reason why (M29 s1).
+  const rivalrise = (victim: EntityId, criminal: EntityId, reason: string): void => {
     const rel = world.getComponent<Relationships>(victim, C_RELATIONSHIPS);
-    if (!rel) return;
-    const edge = rel.edges[criminal] ?? (rel.edges[criminal] = { type: 'rival', sentiment: 0 });
-    edge.type = 'rival';
-    edge.sentiment = Math.max(-1, edge.sentiment - 0.5);
+    if (rel) opine(rel, criminal, 'rival', -0.5, reason);
+  };
+  // A murder makes a feud: the victim's living kin loathe the killer (the seed of M29 s2 vendettas).
+  const kinGrudge = (vlin: Lineage | undefined, victimName: string, killer: EntityId): void => {
+    if (!vlin) return;
+    // Label the bond from the GRIEVING kin's side: the victim is their partner / child / parent.
+    const kin: [EntityId, string][] = [];
+    if (vlin.partner != null) kin.push([vlin.partner, 'partner']);
+    for (const p of vlin.parents) kin.push([p, 'child']);    // a bereaved parent lost their child
+    for (const c of vlin.children) kin.push([c, 'parent']);  // a bereaved child lost their parent
+    for (const [k, rel] of kin) {
+      if (k === killer) continue;
+      const krel = world.getComponent<Relationships>(k, C_RELATIONSHIPS);
+      if (krel && world.hasComponent(k, C_AGENT)) opine(krel, killer, 'rival', -0.7, `murdered their ${rel} ${victimName}`);
+    }
   };
 
   for (const e of world.query(C_AGENT, C_ALIGNMENT, C_WALLET, C_POSITION)) {
@@ -82,11 +95,13 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const wallet = world.getComponent<Wallet>(e, C_WALLET)!;
     const wicked = al.good < cfg.crimeAlignmentThreshold;
     const desperate = wallet.debt > 0 && al.good < 0.4;
-    if (!wicked && !desperate) continue;
+    const enraged = agent.mentalState === 'anger';   // a rage loosens even an honest hand (M28 s2)
+    if (!wicked && !desperate && !enraged) continue;
     // The lawful resist, the chaotic indulge (D26): law scales the offend chance. Under the eye
     // of a watch-house the wicked think twice (M21): `wardFactor` cuts the chance near the watch.
+    // A mental rage sharply raises the odds (and can override a peaceable nature, below).
     const p0 = world.getComponent<Position>(e, C_POSITION)!;
-    if (rng() >= cfg.crimeChancePerDay * (wicked ? 2 : 1) * lawCrimeFactor(al.law) * wardFactor(world, p0.x, p0.y)) continue;
+    if (rng() >= cfg.crimeChancePerDay * (wicked ? 2 : 1) * (enraged ? 3 : 1) * lawCrimeFactor(al.law) * wardFactor(world, p0.x, p0.y)) continue;
 
     const victim = nearby(e, 3, () => true);   // a mark somewhere in the vicinity
     if (victim === null) continue;
@@ -97,13 +112,15 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const vp = world.getComponent<Position>(victim, C_POSITION)!;
     const vpos = { x: vp.x, y: vp.y };
 
-    if (wicked && trait && AGGRESSIVE.has(trait)) {
-      // ── Assault: a short brawl. The aggressor strikes; the victim defends each round. It
+    if (enraged || (wicked && trait && AGGRESSIVE.has(trait))) {
+      // ── Assault: a short brawl (a rage strikes out even without a wicked streak). The aggressor
+      //    strikes; the victim defends each round. It
       //    ends in a beating (assault), a killing (murder), or the aggressor's own death. ──
       const vh = world.getComponent<Health>(victim, C_HEALTH)!;
       const ah = world.getComponent<Health>(e, C_HEALTH)!;
       let outcome: 'assault' | 'murder' | 'felled' = 'assault';
-      rivalrise(victim, e);
+      rivalrise(victim, e, 'assaulted them');
+      const vlin = world.getComponent<Lineage>(victim, C_LINEAGE);   // captured before any killAgent strips it
       for (let round = 0; round < 3; round++) {
         const dmg = rollAttack(combatantOf(world, e), combatantOf(world, victim), rng);
         vh.value = Math.max(0, vh.value - dmg);
@@ -119,6 +136,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
         const tomb = killAgent(world, victim, tick, 'murdered', tpy, agent.name);
         markCrime(world, e, 'murder');
         harden(al, 0.08);
+        kinGrudge(vlin, tomb.name, e);   // the victim's kin now loathe the killer (M29 s1 — a feud is born)
         emitEvent(world, 'crime', `${agent.name} murdered ${tomb.name}.`, vpos);
         const ch = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
         if (ch) chronicleAdd(ch, { tick, importance: 0.82, kind: 'death', text: `${agent.name} murdered ${tomb.name}.` }, cfg.chronicleImportanceThreshold);
@@ -141,7 +159,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
       earn(wallet, loot);
       markCrime(world, e, 'theft');
       harden(al, 0.02);
-      rivalrise(victim, e);
+      rivalrise(victim, e, 'robbed them');
       emitEvent(world, 'crime', `${agent.name} robbed ${vName} of ${loot.toFixed(0)} gold.`, vpos);
     }
 

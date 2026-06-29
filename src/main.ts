@@ -350,6 +350,7 @@ document.addEventListener('keydown', (e) => {
   else if (master.isTabKey(e.key)) { master.openTab(e.key, active.world); e.preventDefault(); }
   else if (e.key === 'l' || e.key === 'L') { legend.toggle(); e.preventDefault(); }
   else if (e.key === 'h' || e.key === 'H') { eventFeed.toggle(); e.preventDefault(); }
+  else if (e.key === 'g' || e.key === 'G') { godMode = !godMode; refreshGodPanel(); e.preventDefault(); }   // become a god / step back (M27)
   else if (e.key === 'ArrowLeft')  { renderer.panBy(-0.12, 0); e.preventDefault(); }
   else if (e.key === 'ArrowRight') { renderer.panBy(0.12, 0); e.preventDefault(); }
   else if (e.key === 'ArrowUp')    { renderer.panBy(0, -0.12); e.preventDefault(); }

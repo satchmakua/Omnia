@@ -6,12 +6,13 @@
 // forming generation after generation. Weddings are written to the Chronicle.
 import type { World, EntityId } from '../ecs.ts';
 import {
-  C_AGENT, C_NEEDS, C_POSITION, C_RELATIONSHIPS, C_LINEAGE, C_CLOCK, C_CHRONICLE, C_BODY, C_ALIGNMENT,
+  C_AGENT, C_NEEDS, C_POSITION, C_RELATIONSHIPS, C_LINEAGE, C_CLOCK, C_CHRONICLE, C_BODY, C_ALIGNMENT, C_PERSONALITY,
 } from '../components.ts';
 import type {
-  Agent, Needs, Position, Relationships, RelationEdge, Lineage, Clock, Body, Alignment,
+  Agent, Needs, Position, Relationships, RelationEdge, Lineage, Clock, Body, Alignment, Personality,
 } from '../components.ts';
-import { charismaWarmth, alignmentWarmth } from '../heredity.ts';
+import { charismaWarmth, alignmentWarmth, traitBondFactor, traitsOf } from '../heredity.ts';
+import { opine } from '../relationships.ts';
 import { standingWarmth } from '../society.ts';
 import { getReligionStore, faithFactor } from '../../religion/religionStore.ts';
 import type { SimConfig } from '../config.ts';
@@ -134,7 +135,11 @@ function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId, cstore
   const faith = faithFactor(getReligionStore(world), agentA.religionId, agentB.religionId);
   // …and the esteemed are sought out (M14 class/reputation): folk warm to the well-regarded.
   const standing = standingWarmth(agentA.standing ?? 0.5, agentB.standing ?? 0.5);
-  const warm = cfg.sentimentGainPerInteract * bond * synergy * mood * charisma * align * faith * standing;
+  // …and kindred spirits click (M28 s3): gregarious/loyal warm, solitary cools, like minds bond.
+  const persA = world.getComponent<Personality>(a, C_PERSONALITY);
+  const persB = world.getComponent<Personality>(b, C_PERSONALITY);
+  const kinship = traitBondFactor(persA, persB);
+  const warm = cfg.sentimentGainPerInteract * bond * synergy * mood * charisma * align * faith * standing * kinship;
 
   const ea = edge(world.getComponent<Relationships>(a, C_RELATIONSHIPS)!, b);
   const eb = edge(world.getComponent<Relationships>(b, C_RELATIONSHIPS)!, a);
@@ -149,6 +154,10 @@ function interact(world: World, cfg: SimConfig, a: EntityId, b: EntityId, cstore
   if (agentB.fluency && ca) learnTongue(agentB.fluency, ca.language, cfg.langLearnPerInteract);
 
   if (!wasFriend && ea.type === 'friend' && ea.sentiment >= cfg.friendSentiment) {  // just became friends
+    // Record *why* they're close (M29 s1): kindred spirits if they share a trait, else long acquaintance.
+    const shared = traitsOf(persA).find(t => traitsOf(persB).includes(t));
+    const reason = shared ? `kindred spirits — both ${shared}` : 'a long friendship';
+    ea.reason = reason; eb.reason = reason;
     emitEvent(world, 'friendship', `${agentA.name} and ${agentB.name} became friends.`);
     remember(world, a, tick, `befriended ${agentB.name}`, 0.45);
     remember(world, b, tick, `befriended ${agentA.name}`, 0.45);
@@ -196,6 +205,14 @@ function matchmake(
     world.getComponent<Relationships>(f, C_RELATIONSHIPS)!.edges[m] = { type: 'partner', sentiment: 0.8 };
     const mn = world.getComponent<Agent>(m, C_AGENT)!.name;
     const fn = world.getComponent<Agent>(f, C_AGENT)!.name;
+    // Love triangle (M29 s1): an unattached suitor who'd grown fond of the bride bears a grudge
+    // against the groom — "vied for her hand". A pure read of who already fancied her (no RNG).
+    for (const suitor of males) {
+      if (suitor === m || taken.has(suitor)) continue;
+      const srel = world.getComponent<Relationships>(suitor, C_RELATIONSHIPS);
+      const fancy = srel?.edges[f];
+      if (fancy && fancy.sentiment >= cfg.friendSentiment) opine(srel!, m, 'rival', -0.4, `vied for ${fn}'s hand`);
+    }
     emitEvent(world, 'marriage', `${mn} and ${fn} were wed.`);
     remember(world, m, tick, `wed ${fn}`, 0.7);
     remember(world, f, tick, `wed ${mn}`, 0.7);

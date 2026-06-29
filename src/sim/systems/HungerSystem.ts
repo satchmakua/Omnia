@@ -11,6 +11,7 @@ import { emitEvent } from '../../history/eventlog.ts';
 export function runHungerSystem(world: World, cfg: SimConfig): void {
   const baseHunger = cfg.hungerDecayPerDay / cfg.ticksPerDay;
   const baseEnergy = cfg.energyDecayPerDay / cfg.ticksPerDay;
+  const baseFun = cfg.funDecayPerDay / cfg.ticksPerDay;   // recreation need slowly depletes (M28)
 
   const agents = world.query(C_AGENT, C_NEEDS);
   const toKill: number[] = [];
@@ -24,6 +25,8 @@ export function runHungerSystem(world: World, cfg: SimConfig): void {
 
     needs.hunger = Math.max(0, needs.hunger - baseHunger * hMult);
     needs.energy = Math.max(0, needs.energy - baseEnergy * eMult);
+    // Recreation drains slowly (no death from it — boredom isn't fatal, just a pull toward leisure).
+    needs.fun = Math.max(0, (needs.fun ?? 1) - baseFun);
 
     if (needs.hunger <= 0) toKill.push(entity);
   }

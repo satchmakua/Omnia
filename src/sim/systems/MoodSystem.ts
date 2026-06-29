@@ -5,10 +5,11 @@
 // settled, housed, solvent town grows more connected. Deterministic (no RNG); a pure read
 // of durable state, so it never perturbs the trajectory.
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_WALLET, C_HEALTH, C_LINEAGE, C_HOME, C_CLOCK } from '../components.ts';
-import type { Agent, Wallet, Health, Lineage, Home, Clock } from '../components.ts';
+import { C_AGENT, C_WALLET, C_HEALTH, C_LINEAGE, C_HOME, C_NEEDS, C_PERSONALITY, C_CLOCK } from '../components.ts';
+import type { Agent, Wallet, Health, Lineage, Home, Needs, Personality, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
+import { traitMoodBias } from '../heredity.ts';
 import { getReligionStore } from '../../religion/religionStore.ts';
 
 export const MOOD_BASELINE = 0.6;   // a fresh soul starts mildly content; spawnAgent seeds this
@@ -20,6 +21,7 @@ const DEBT_PENALTY = 0.20;      // owing more than you have wears on you (debt's
 const HOMELESS_PENALTY = 0.10;  // an adult with no home of their own
 const FAITH_COMFORT = 0.12;     // a devout faith is a solace (scaled by its fervor) (M18 s2)
 const ILL_PENALTY = 0.15;       // sickness saps contentment
+const BORED_PENALTY = 0.10;     // a life with no leisure wears on you (M28: fun → mood, D26)
 const ADJUST_PER_DAY = 0.34;    // mood drifts ~⅓ of the way to its target each day (days, not instant)
 
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
@@ -61,6 +63,14 @@ export function runMoodSystem(world: World, cfg: SimConfig): void {
     // A roof — even a rented one — spares the homeless penalty (children are dependents anyway).
     if (adult && !owns && agent.rentsFrom === undefined) target -= HOMELESS_PENALTY;
     if (health && health.ill) target -= ILL_PENALTY;
+    // Boredom weighs on the spirit — a soul starved of leisure is a touch less content (M28).
+    const fun = world.getComponent<Needs>(e, C_NEEDS)?.fun;
+    if (fun !== undefined && fun < cfg.actionThreshold) target -= BORED_PENALTY;
+    // Temperament colours it (M28 s3): the cheerful/content sit higher, the nervous lower; the
+    // ambitious chafe at debt, the gregarious wilt without kin.
+    target += traitMoodBias(world.getComponent<Personality>(e, C_PERSONALITY), {
+      inDebt: !!wallet && wallet.debt > 0, noFamily: !hasFamily,
+    });
     // Faith is a solace — a follower draws comfort scaled by how devout their faith is.
     if (faithStore && agent.religionId) target += FAITH_COMFORT * (faithStore.byId[agent.religionId]?.fervor ?? 0);
     target = clamp01(target);
