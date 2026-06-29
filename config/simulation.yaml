@@ -58,7 +58,13 @@ warChancePerEra: 0.5
 warMartialThreshold: 0.55
 minWarMembers: 5
 warDurationEras: 2
+captiveFraction: 0.25
 battleChancePerTick: 0.006
+caravanIntervalDays: 2
+caravanProfit: 4
+caravanMaxDistance: 44
+caravanChancePerInterval: 0.4
+reputationCrimeHit: 0.08
 wanderIdleChance: 0.6
 researchBasePerDay: 2
 researchPerMemberPerDay: 1.0

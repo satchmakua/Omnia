@@ -15,6 +15,7 @@ import { ageInYears, ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { earn } from '../economy.ts';
 import { opine, kinGrudge, isRivalOf } from '../relationships.ts';
+import { getOrgStore, adjustStanding } from '../../org/orgStore.ts';
 import { inflictWound } from '../afflictions.ts';
 import { lawCrimeFactor } from '../heredity.ts';
 import { combatantOf, rollAttack, markCombat } from '../combat.ts';
@@ -46,6 +47,7 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
   if (clock.tick === 0 || clock.tick % cfg.ticksPerDay !== 0) return;
   const tick = clock.tick;
   const tpy = ticksPerYear(cfg);
+  const store = getOrgStore(world);   // for faction reputation: a crime sours the clans' standing (M31 s2)
 
   // Folk indexed by tile for adjacency.
   const folkAt = new Map<number, EntityId>();
@@ -100,6 +102,11 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
     const cpos = { ...world.getComponent<Position>(e, C_POSITION)! };
     const vp = world.getComponent<Position>(victim, C_POSITION)!;
     const vpos = { x: vp.x, y: vp.y };
+
+    // Faction reputation (M31 s2): a crime across clan lines sours how the victim's clan regards the
+    // offender's — a person's deeds ripple to their whole kin-band's standing, and can stir a rivalry.
+    const offClan = agent.orgId, vicClan = world.getComponent<Agent>(victim, C_AGENT)!.orgId;
+    if (store && offClan && vicClan && offClan !== vicClan) adjustStanding(store, offClan, vicClan, -cfg.reputationCrimeHit, tick);
 
     if (enraged || (wicked && trait && AGGRESSIVE.has(trait))) {
       // ── Assault: a short brawl (a rage strikes out even without a wicked streak). The aggressor

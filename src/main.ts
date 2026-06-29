@@ -29,6 +29,7 @@ import { KnowledgeDashboard } from './render/knowledgeDashboard.ts';
 import { BestiaryDashboard } from './render/bestiaryDashboard.ts';
 import { setSkin } from './render/skin.ts';
 import type { Skin } from './render/skin.ts';
+import { asTemperament } from './event/director.ts';
 import { SpeedControl } from './render/controls.ts';
 import { EventFeed } from './render/eventFeed.ts';
 import { GodPanel } from './render/godPanel.ts';
@@ -118,7 +119,7 @@ let active: Simulation | null = null;
 let activeCfg: SimConfig = baseCfg;
 let lastSeed = baseCfg.seed;
 // The last chosen setup (seed / starting population / map size), reused by restart.
-let lastSetup: SetupOptions = { seed: baseCfg.seed, population: baseCfg.initialPopulation, mapSize: baseCfg.gridWidth, skin };
+let lastSetup: SetupOptions = { seed: baseCfg.seed, population: baseCfg.initialPopulation, mapSize: baseCfg.gridWidth, skin, temperament: asTemperament(baseCfg.storytellerTemperament) };
 let state: 'menu' | 'running' | 'paused' = 'menu';
 let realElapsedMs = 0;   // real-world time spent watching this run (excludes paused/menu)
 
@@ -168,7 +169,7 @@ function newSimulation(opts: SetupOptions): void {
   applySkin(opts.skin);                            // apply the chosen visual skin (M34)
   activeCfg = {
     ...baseCfg, seed: opts.seed, initialPopulation: opts.population,
-    gridWidth: opts.mapSize, gridHeight: opts.mapSize,
+    gridWidth: opts.mapSize, gridHeight: opts.mapSize, storytellerTemperament: opts.temperament,
   };
   active = createSimulation(activeCfg, content);
   renderer.configure(activeCfg);                 // size the camera/cells to the chosen map
@@ -191,7 +192,7 @@ function loadFromJson(json: string): void {
     renderer.configure(activeCfg);
     activeProvider = liveModel ? new OllamaProvider(OLLAMA) : stubProvider;
     lastSeed = save.config.seed;
-    lastSetup = { seed: save.config.seed, population: save.config.initialPopulation, mapSize: save.config.gridWidth, skin };
+    lastSetup = { seed: save.config.seed, population: save.config.initialPopulation, mapSize: save.config.gridWidth, skin, temperament: asTemperament(save.config.storytellerTemperament) };
     realElapsedMs = 0;
     inspector.close();
     menu.hide();
