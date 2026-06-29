@@ -11,8 +11,8 @@
 // effects; slice 2 (disasters) adds real negative — but survivable — consequences.
 import type { World, EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
-import { C_AGENT, C_FLORA, C_HEALTH, C_POSITION, C_TILEMAP, C_HOME, C_MEMORY, C_MAGIC, C_CHRONICLE } from '../sim/components.ts';
-import type { Agent, Flora, Health, Position, Magic } from '../sim/components.ts';
+import { C_AGENT, C_FLORA, C_HEALTH, C_POSITION, C_TILEMAP, C_HOME, C_MEMORY, C_MAGIC, C_NEEDS, C_CHRONICLE } from '../sim/components.ts';
+import type { Agent, Flora, Health, Position, Magic, Needs } from '../sim/components.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import type { RNG } from '../sim/rng.ts';
 import type { WorldEvent } from '../content/schema.ts';
@@ -46,12 +46,14 @@ export const EVENT_EFFECTS: Record<string, EventEffectFn> = {
     }
   },
 
-  // A festival / day of gladness: the town's spirits lift. A temporary bump that
-  // MoodSystem then drifts back toward each agent's circumstance — joy fades.
+  // A festival / day of gladness: the town's spirits lift and folk are entertained — they attend
+  // (M28: a fun spike). A temporary bump that MoodSystem then drifts back toward circumstance.
   festival: ({ world }) => {
     for (const e of world.query(C_AGENT)) {
       const a = world.getComponent<Agent>(e, C_AGENT)!;
       if (a.mood !== undefined) a.mood = clamp01(a.mood + 0.15);
+      const needs = world.getComponent<Needs>(e, C_NEEDS);
+      if (needs) needs.fun = clamp01((needs.fun ?? 1) + 0.3);
     }
   },
 

@@ -2,13 +2,13 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE, C_ENCHANTMENT, C_VOYAGE,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE, C_ENCHANTMENT, C_VOYAGE, C_RELATIONSHIPS,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse, Enchantment, Voyage,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse, Enchantment, Voyage, Relationships,
 } from '../sim/components.ts';
-import { eyeColour, hairColour, buildWord, alignmentName } from '../sim/heredity.ts';
+import { eyeColour, hairColour, buildWord, alignmentName, traitsOf } from '../sim/heredity.ts';
 import { socialClassOf } from '../sim/society.ts';
 import { schoolOf } from '../magic/schools.ts';
 import { getReligionStore, getReligion } from '../religion/religionStore.ts';
@@ -216,7 +216,25 @@ export class Inspector {
     }
     const moodVal = agent.mood ?? 0.6;
     const moodWord = moodVal >= 0.66 ? 'content' : moodVal >= 0.4 ? 'unsettled' : 'low';
-    const moodLine = `<div>Mood ${bar(moodVal)} <span style="color:#889">${moodWord}</span></div>`;
+    // A current mental break (M28 s2), if any — the headline of an agent's inner state.
+    const STATE_TAG: Record<string, string> = {
+      despair: '<span style="color:#7fa8d0">▼ in despair (withdrawn)</span>',
+      anger:   '<span style="color:#e06666">▲ in a rage</span>',
+      elation: '<span style="color:#ffd278">★ overjoyed</span>',
+    };
+    const stateTag = agent.mentalState ? ` · ${STATE_TAG[agent.mentalState]}` : '';
+    // Why the mood sits where it does — the same circumstance the MoodSystem reads (D35 legibility).
+    const aliveRel = (id: number | null | undefined) => id != null && world.hasComponent(id, C_AGENT);
+    const hasFamily = !!lin && (aliveRel(lin.partner) || lin.parents.some(aliveRel) || lin.children.some(aliveRel));
+    const lifts: string[] = [], weighs: string[] = [];
+    if (homeCount > 0) lifts.push('a home'); if (hasFamily) lifts.push('family');
+    if (wallet.debt > 0) weighs.push('debt');
+    if (!child && homeCount === 0 && agent.rentsFrom === undefined) weighs.push('no home');
+    if (health?.ill) weighs.push('illness');
+    if ((needs.fun ?? 1) < defaultConfig.actionThreshold) weighs.push('no leisure');
+    const causeBits = [lifts.length ? `lifted by ${lifts.join(', ')}` : '', weighs.length ? `weighed by ${weighs.join(', ')}` : ''].filter(Boolean).join(' · ');
+    const causeLine = causeBits ? `<div style="color:#778;font-size:10px">${causeBits}</div>` : '';
+    const moodLine = `<div>Mood ${bar(moodVal)} <span style="color:#889">${moodWord}</span>${stateTag}</div>${causeLine}`;
     const renting = agent.rentsFrom !== undefined && world.hasComponent(agent.rentsFrom, C_AGENT)
       ? world.getComponent<Agent>(agent.rentsFrom, C_AGENT)!.name : null;
     let tenants = 0;
@@ -263,6 +281,29 @@ export class Inspector {
         <div style="${SECTION}">Family</div>
         <div><b>Partner</b> ${partnerName ?? '<span style="color:#889">none</span>'}</div>
         <div><b>Children</b> ${livingChildren}</div>`;
+    }
+
+    // Ties (M29 s1): the soul's strongest opinions of the living — friends & rivals, each with the
+    // reason behind it. (The partner is named in Family; everyone else surfaces here.)
+    let tiesBlock = '';
+    const rel = world.getComponent<Relationships>(e, C_RELATIONSHIPS);
+    if (rel) {
+      const ties = Object.entries(rel.edges)
+        .map(([id, edge]) => ({ id: Number(id), edge }))
+        .filter(t => t.edge.type !== 'partner' && world.hasComponent(t.id, C_AGENT))
+        .sort((a, b) => Math.abs(b.edge.sentiment) - Math.abs(a.edge.sentiment))
+        .slice(0, 5);
+      if (ties.length) {
+        const rows = ties.map(t => {
+          const nm = world.getComponent<Agent>(t.id, C_AGENT)!.name;
+          const foe = t.edge.type === 'rival' || t.edge.sentiment < 0;
+          const glyph = foe ? '<span style="color:#ff7a7a">⚔</span>' : '<span style="color:#7fd6a0">♥</span>';
+          const word = foe ? 'rival' : 'friend';
+          const why = t.edge.reason ? ` <span style="color:#889;font-size:11px">— ${t.edge.reason}</span>` : '';
+          return `<div style="margin:2px 0">${glyph} ${nm} <span style="color:#9ab;font-size:11px">(${word})</span>${why}</div>`;
+        }).join('');
+        tiesBlock = `<hr style="${RULE}"><div style="${SECTION}">Ties</div>${rows}`;
+      }
     }
     const healthBlock = health
       ? `<div>Health ${bar(health.value)}${health.ill ? ' <span style="color:#f99">(ill)</span>' : ''}</div>` : '';
@@ -335,6 +376,7 @@ export class Inspector {
       <div>Hunger ${bar(needs.hunger)}</div>
       <div>Energy ${bar(needs.energy)}</div>
       <div>Social ${bar(needs.social)}</div>
+      <div>Fun ${bar(needs.fun ?? 1)}</div>
       ${moodLine}
       ${healthBlock}
       ${questLine}
@@ -344,6 +386,7 @@ export class Inspector {
       ${livelihoodBlock}
       ${carryingBlock}
       ${family}
+      ${tiesBlock}
       ${this._bodyBlock(world, e)}
       ${this._allegianceBlock(world, e, agent)}
       ${this._faithBlock(world, agent)}
@@ -359,7 +402,7 @@ export class Inspector {
     const score = (label: string, v: number) => `<span style="display:inline-block;min-width:60px">${label} <b style="color:#dde">${v}</b></span>`;
     const al = world.getComponent<Alignment>(e, C_ALIGNMENT);
     const pers = world.getComponent<Personality>(e, C_PERSONALITY);
-    const charBits = [pers ? pers.trait : '', al ? alignmentName(al) : ''].filter(Boolean).join(' · ');
+    const charBits = [pers ? traitsOf(pers).join(', ') : '', al ? alignmentName(al) : ''].filter(Boolean).join(' · ');
     const charLine = charBits ? `<div style="color:#c9b6e6;margin-top:3px">${charBits}</div>` : '';
     const cmb = world.getComponent<Combat>(e, C_COMBAT);
     const combatLine = cmb && (cmb.scars > 0 || cmb.kills > 0)

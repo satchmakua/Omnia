@@ -10,8 +10,10 @@ seed: 2
 ticksPerDay: 240
 hungerDecayPerDay: 0.8
 energyDecayPerDay: 0.7
+funDecayPerDay: 0.3
 actionThreshold: 0.4
 sleepRestorePerTick: 0.008
+funRestorePerTick: 0.02
 simSpeedTicksPerSecond: 6
 biomeSeedCount: 14
 floraDensity: 0.06

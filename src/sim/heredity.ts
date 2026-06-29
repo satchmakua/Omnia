@@ -98,13 +98,53 @@ export function lawCrimeFactor(law: number): number {
   return Math.max(0.4, Math.min(1.6, 1 - law * 0.6));
 }
 
-// ── Personality (M13) ──────────────────────────────────────────────────────────────
-// A weighted palette of archetypes. A few have behavioural homes today (the goal factor
-// below); the rest are flavour with homes in later milestones (combat/crime, M16).
+// ── Personality (M13; multi-trait M28 s3) ────────────────────────────────────────────
+// A weighted palette of archetypes. Each agent carries a small SET of traits (M28 s3): a
+// `trait` (the dominant one — drives the established wealth-goal & crime couplings) plus
+// secondary `traits` that shape the newer reactions (who they befriend, what lifts/sours
+// their mood, how they bear hardship). Heritable; children draw from their parents' pool.
 const TRAITS: readonly (readonly [string, number])[] = [
   ['ambitious', 2], ['content', 2], ['curious', 2], ['loyal', 2], ['gentle', 2], ['gregarious', 2],
-  ['solitary', 1], ['brave', 1], ['hot-headed', 1], ['greedy', 1], ['generous', 1],
+  ['cheerful', 2], ['solitary', 1], ['brave', 1], ['hot-headed', 1], ['greedy', 1], ['generous', 1], ['nervous', 1],
 ];
+const ALL_TRAITS: string[] = TRAITS.map(([t]) => t);
+
+// Each trait's behavioural pulls (M28 s3). All optional → a trait with no entry is pure flavour.
+// `goal`/`aggressive` are read off the DOMINANT trait (unchanged couplings); the rest aggregate
+// over the whole set and feed the low-cost hooks (mood / breaks / friendship) so multi-trait folk
+// never perturb the RNG-sensitive ecology (D32) — see MentalStateSystem's note.
+const TRAIT_FX: Record<string, { moodBase?: number; breakFactor?: number; bond?: number; aggressive?: boolean; poorSensitive?: boolean; lonelySensitive?: boolean }> = {
+  ambitious:   { aggressive: true, poorSensitive: true },
+  greedy:      { poorSensitive: true },
+  content:     { moodBase: 0.06, breakFactor: 0.6 },
+  cheerful:    { moodBase: 0.10, breakFactor: 0.6 },      // a sunny disposition — happier & hard to break
+  generous:    { moodBase: 0.03, bond: 0.08 },
+  curious:     {},
+  loyal:       { bond: 0.15 },                            // bonds deeply
+  gentle:      { bond: 0.05 },
+  gregarious:  { bond: 0.18, lonelySensitive: true },     // warms to all; wilts without kin
+  solitary:    { bond: -0.18 },                           // slow to bond, content alone
+  brave:       { breakFactor: 0.6, aggressive: true },    // steels against despair (but may rage)
+  'hot-headed': { breakFactor: 1.4, aggressive: true },   // volatile — cracks & rages easily
+  nervous:     { moodBase: -0.08, breakFactor: 1.7, lonelySensitive: true }, // anxious & fragile
+};
+
+// The agent's trait set — the full list, or just the dominant for pre-M28 fixtures/saves.
+export function traitsOf(p: Personality | undefined): string[] {
+  if (!p) return [];
+  return p.traits && p.traits.length ? p.traits : [p.trait];
+}
+export function hasTrait(p: Personality | undefined, t: string): boolean {
+  return traitsOf(p).includes(t);
+}
+
+// A deterministic float in [0,1) from (id, salt) — used to expand a primary trait into a SET
+// without drawing from the sim RNG, so multi-trait folk add zero new draws to the shared stream.
+function hashId(id: number, salt: number): number {
+  let h = (Math.imul(id ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(salt ^ 0xc2b2ae35, 0x27d4eb2f)) >>> 0;
+  h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d) >>> 0; h ^= h >>> 13;
+  return (h >>> 0) / 4294967296;
+}
 
 export function rollPersonality(rng: RNG): Personality {
   const total = TRAITS.reduce((s, [, w]) => s + w, 0);
@@ -113,7 +153,7 @@ export function rollPersonality(rng: RNG): Personality {
   return { trait: TRAITS[0][0] };
 }
 
-// A child usually takes after one parent, but may strike out with a fresh trait.
+// A child usually takes after one parent for its dominant trait, but may strike out fresh.
 export function inheritPersonality(rng: RNG, a: Personality, b: Personality): Personality {
   const r = rng();
   if (r < 0.33) return { trait: a.trait };
@@ -121,10 +161,64 @@ export function inheritPersonality(rng: RNG, a: Personality, b: Personality): Pe
   return rollPersonality(rng);
 }
 
-// Personality bends the wealth goal (D26): the ambitious/greedy strive past where others
-// rest; the content/generous want less. (Extends the purpose-driven goal bend in ActionSystem.)
+// Expand a dominant trait into a 2–3 trait SET, deterministically by entity id (no RNG draw).
+// Founders draw extras from the whole palette; children inherit from their parents' pooled traits.
+export function expandPersonality(id: number, primary: string, pool?: string[]): Personality {
+  const source = (pool && pool.length ? pool : ALL_TRAITS).filter((t, i, arr) => arr.indexOf(t) === i);
+  const traits = [primary];
+  const want = hashId(id, 1) < 0.45 ? 2 : 3;
+  const candidates = source.filter(t => t !== primary);
+  let k = 0;
+  while (traits.length < want && candidates.length > 0) {
+    const idx = Math.floor(hashId(id, 2 + k) * candidates.length) % candidates.length;
+    traits.push(candidates.splice(idx, 1)[0]);
+    k++;
+  }
+  return { trait: primary, traits };
+}
+
+// Personality bends the wealth goal (D26): the ambitious/greedy strive past where others rest;
+// the content/generous want less. Read off the DOMINANT trait (unchanged from M13).
 export function traitGoalFactor(trait: string): number {
   if (trait === 'ambitious' || trait === 'greedy') return 1.3;
   if (trait === 'content' || trait === 'generous') return 0.78;
   return 1;
+}
+
+// ── The new multi-trait hooks (M28 s3): friendship, mood, hardship ───────────────────
+// Friendship warmth from a pair's traits: gregarious/loyal warm, solitary cools, and like
+// minds (shared traits) click. Centred on 1 (neutral), bounded. Used by SocialSystem.
+export function traitBondFactor(pa: Personality | undefined, pb: Personality | undefined): number {
+  const ta = traitsOf(pa), tb = traitsOf(pb);
+  let f = 1;
+  for (const t of ta) f += TRAIT_FX[t]?.bond ?? 0;
+  for (const t of tb) f += TRAIT_FX[t]?.bond ?? 0;
+  f += ta.filter(t => tb.includes(t)).length * 0.10;   // shared traits → faster rapport
+  return Math.max(0.6, Math.min(1.5, f));
+}
+
+// Mood-target delta from traits: a flat baseline pull (cheerful/content lift, nervous lowers)
+// plus circumstance sensitivities (the ambitious chafe at debt; the gregarious wilt without kin).
+export function traitMoodBias(p: Personality | undefined, ctx: { inDebt: boolean; noFamily: boolean }): number {
+  let d = 0;
+  for (const t of traitsOf(p)) {
+    const fx = TRAIT_FX[t]; if (!fx) continue;
+    d += fx.moodBase ?? 0;
+    if (fx.poorSensitive && ctx.inDebt) d -= 0.08;
+    if (fx.lonelySensitive && ctx.noFamily) d -= 0.08;
+  }
+  return d;
+}
+
+// Break-susceptibility multiplier from traits: the content/cheerful/brave resist, the
+// hot-headed/nervous crack easily. Centred on 1, bounded. Used by MentalStateSystem.
+export function traitBreakFactor(p: Personality | undefined): number {
+  let f = 1;
+  for (const t of traitsOf(p)) f *= TRAIT_FX[t]?.breakFactor ?? 1;
+  return Math.max(0.3, Math.min(2.5, f));
+}
+
+// Disposed to rage rather than mope? Any aggressive trait in the set. Used by MentalStateSystem.
+export function traitAggressive(p: Personality | undefined): boolean {
+  return traitsOf(p).some(t => TRAIT_FX[t]?.aggressive);
 }

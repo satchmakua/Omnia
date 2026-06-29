@@ -5,25 +5,31 @@ import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 import { traitGoalFactor } from '../heredity.ts';
 
-// Once an agent starts restoring a survival need, it commits until the need climbs
-// back to here — hysteresis, so folk sleep/eat in long stretches instead of flipping
-// sleep↔work every tick right at the threshold (the observed jitter).
+// Once an agent starts restoring a need, it commits until the need climbs back to
+// here — hysteresis, so folk sleep/eat/relax in long stretches instead of flipping
+// every tick right at the threshold (the observed jitter).
 const RESTED = 0.85;
+const REFRESHED = 0.85;   // leisure runs until fun climbs back to here
 
 // Utility action selection (every tick, pure code, no LLM). Priority: survival
-// (hunger/energy) → company (social) → a livelihood (adults work toward their
-// wealth goal) → wander. Children just live until they come of age.
+// (hunger/energy) → company (social) → leisure (fun) → a livelihood (adults work
+// toward their wealth goal) → wander. Children just live (and play) until of age.
 export function runActionSystem(world: World, cfg: SimConfig): void {
   for (const entity of world.query(C_AGENT, C_NEEDS)) {
     const needs = world.getComponent<Needs>(entity, C_NEEDS)!;
     const agent = world.getComponent<Agent>(entity, C_AGENT)!;
+    const fun = needs.fun ?? 1;   // absent (old fixtures) reads as fully entertained
 
     agent.ticksAlive += 1;
 
-    // Stick with an in-progress restore until well-restored — unless the OTHER
-    // survival need has itself gone urgent (then re-evaluate below).
+    // Stick with an in-progress restore until well-restored — unless a more urgent
+    // need has itself gone below the threshold (then re-evaluate below).
     if (agent.action === 'sleep' && needs.energy < RESTED && needs.hunger >= cfg.actionThreshold) continue;
     if (agent.action === 'seek_food' && needs.hunger < RESTED && needs.energy >= cfg.actionThreshold) continue;
+    // Leisure holds until refreshed, but any survival/social need pre-empts it.
+    if (agent.action === 'relax' && fun < REFRESHED
+        && needs.hunger >= cfg.actionThreshold && needs.energy >= cfg.actionThreshold
+        && needs.social >= cfg.actionThreshold) continue;
 
     // Survival needs dominate only when genuinely urgent (below the threshold);
     // otherwise the agent is free to socialise, work, or wander. A higher gate
@@ -33,8 +39,22 @@ export function runActionSystem(world: World, cfg: SimConfig): void {
       continue;
     }
 
+    // A mental break (M28 s2) overrides ordinary life — but never survival (handled above), so a
+    // despairing soul still eats. Despair/anger withdraw into restless drifting (anger may then lash
+    // out — the CrimeSystem reads the state); elation throws itself into leisure (celebrates).
+    if (agent.mentalState) {
+      agent.action = agent.mentalState === 'elation' ? 'relax' : 'wander';
+      continue;
+    }
+
     if (needs.social < cfg.actionThreshold) {
       agent.action = 'socialize';
+      continue;
+    }
+
+    // Bored: a life beyond survival — folk take leisure when their fun runs low (M28).
+    if (fun < cfg.actionThreshold) {
+      agent.action = 'relax';
       continue;
     }
 

@@ -3,8 +3,8 @@
 // has slain whom, and how the dead actually died. A pure read of the Combat/Crime records,
 // the OrgStore (active + concluded wars), the tombstones, and the cause-of-death histogram.
 import type { World } from '../sim/ecs.ts';
-import { C_AGENT, C_COMBAT, C_CRIME, C_WORLDSTATS, C_TOMBSTONE, C_ALIGNMENT } from '../sim/components.ts';
-import type { Agent, Combat, Crime, Tombstone, Alignment } from '../sim/components.ts';
+import { C_AGENT, C_COMBAT, C_CRIME, C_WORLDSTATS, C_TOMBSTONE, C_ALIGNMENT, C_RELATIONSHIPS } from '../sim/components.ts';
+import type { Agent, Combat, Crime, Tombstone, Alignment, Relationships } from '../sim/components.ts';
 import { alignmentName } from '../sim/heredity.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import type { WorldStatsData } from '../history/stats.ts';
@@ -108,6 +108,26 @@ export class ConflictDashboard extends ModalPanel {
     const slayRows = slain.map(t =>
       `<div style="color:#caa;font-size:12px;margin:2px 0">${t.name} <span style="color:#888">— ${t.cause} —</span> <span style="color:#ff8a8a">${t.slayer}</span> <span style="color:#677">· yr ${yr(t.diedTick)}</span></div>`).join('');
 
+    // ── Bad blood (interpersonal rivalries with their reasons, M29 s1) ──
+    // The bitterest grudge per living pair — feuds emerging from theft, assault, murdered kin, or
+    // a rivalry in love. (One-directional grudges, e.g. a slain man's son vs the killer, count too.)
+    const grudges = new Map<string, { a: string; b: string; reason: string; s: number }>();
+    for (const e of world.query(C_AGENT, C_RELATIONSHIPS)) {
+      const r = world.getComponent<Relationships>(e, C_RELATIONSHIPS)!;
+      const an = world.getComponent<Agent>(e, C_AGENT)!.name;
+      for (const [idStr, edge] of Object.entries(r.edges)) {
+        const id = Number(idStr);
+        if ((edge.type !== 'rival' && edge.sentiment >= -0.2) || !world.hasComponent(id, C_AGENT)) continue;
+        const key = e < id ? `${e}.${id}` : `${id}.${e}`;
+        const cur = grudges.get(key);
+        if (!cur || edge.sentiment < cur.s) {
+          grudges.set(key, { a: an, b: world.getComponent<Agent>(id, C_AGENT)!.name, reason: edge.reason ?? 'bad blood', s: edge.sentiment });
+        }
+      }
+    }
+    const grudgeRows = [...grudges.values()].sort((x, y) => x.s - y.s).slice(0, 7).map(g =>
+      `<div style="color:#caa;font-size:12px;margin:2px 0">${g.a} <span style="color:#ff7a7a">⚔</span> ${g.b} <span style="color:#888">— ${g.reason}</span></div>`).join('');
+
     // ── Cause of death (cumulative; bounded key-set) ──
     const wsEnts = world.query(C_WORLDSTATS);
     const ws = wsEnts.length ? world.getComponent<WorldStatsData>(wsEnts[0], C_WORLDSTATS) : undefined;
@@ -135,6 +155,7 @@ export class ConflictDashboard extends ModalPanel {
       sub('Clans') + tribesLine +
       sub('Champions <span style="color:#789">(most foes slain)</span>') + (champRows || none) +
       sub('Most wanted') + (wantedRows || none) +
+      sub('Bad blood <span style="color:#789">(personal grudges)</span>') + (grudgeRows || none) +
       sub('Who killed whom') + (slayRows || none) +
       sub('How the dead died') + (causeRows || none);
   }

@@ -11,7 +11,7 @@ import type {
   Body, Alignment, Personality,
 } from './components.ts';
 import {
-  rollBody, inheritBody, rollAlignment, inheritAlignment, rollPersonality, inheritPersonality,
+  rollBody, inheritBody, rollAlignment, inheritAlignment, rollPersonality, inheritPersonality, expandPersonality, traitsOf,
 } from './heredity.ts';
 import type { SimConfig } from './config.ts';
 import { ticksPerYear } from './config.ts';
@@ -78,6 +78,7 @@ export function spawnAgent(
     hunger: rngFloat(rng, 0.6, 1.0),
     energy: rngFloat(rng, 0.6, 1.0),
     social: rngFloat(rng, 0.6, 1.0),
+    fun: 0.85,   // mildly entertained at birth; a constant (no RNG draw) keeps the spawn stream identical
   });
   world.addComponent<Wallet>(e, C_WALLET, { gold: isChild ? 0 : rngFloat(rng, 10, 50), debt: 0 });
   world.addComponent<SpeciesComp>(e, C_SPECIES, {
@@ -116,7 +117,12 @@ export function spawnAgent(
   world.addComponent<Alignment>(e, C_ALIGNMENT, aa && ab ? inheritAlignment(rng, aa, ab) : rollAlignment(rng));
   const ma = parents[0] !== undefined ? world.getComponent<Personality>(parents[0], C_PERSONALITY) : undefined;
   const mb = parents[1] !== undefined ? world.getComponent<Personality>(parents[1], C_PERSONALITY) : undefined;
-  world.addComponent<Personality>(e, C_PERSONALITY, ma && mb ? inheritPersonality(rng, ma, mb) : rollPersonality(rng));
+  // The dominant trait rolls/inherits as before (one RNG draw); the secondary traits are then
+  // filled in deterministically by entity id (no extra RNG draw) — children draw from their
+  // parents' pooled traits, founders from the whole palette (M28 s3).
+  const base = ma && mb ? inheritPersonality(rng, ma, mb) : rollPersonality(rng);
+  const pool = ma && mb ? [...traitsOf(ma), ...traitsOf(mb)] : undefined;
+  world.addComponent<Personality>(e, C_PERSONALITY, expandPersonality(e, base.trait, pool));
 
   // Rare innate magic aptitude — scarce by construction, but heritable: children
   // of a mage get a much higher chance (lineage weighting from the design docs).

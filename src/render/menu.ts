@@ -32,7 +32,7 @@ export interface SavesActions {
 const CONTROLS: [string, string][] = [
   ['Scroll / drag', 'zoom & pan the map'],
   ['Arrow keys · + −', 'pan & zoom'],
-  ['Click', 'inspect anything (✕ or Esc closes the card)'],
+  ['Click', 'inspect anyone — needs, mood &amp; mental state, character, ties &amp; more (✕/Esc closes)'],
   ['Space', 'pause / resume'],
   ['Esc', 'menu · or close an open card / dashboard'],
   ['C', 'Legends &amp; town charts'],
@@ -48,6 +48,7 @@ const CONTROLS: [string, string][] = [
   ['M', 'Events — harvests, disasters &amp; the uncanny'],
   ['J', 'Knowledge — the tech tree &amp; lost arts'],
   ['B', 'Bestiary — races, beasts &amp; monsters (with last-seen)'],
+  ['G', 'God mode — reach in &amp; act: smite · bless · curse · bestow · summon'],
   ['L', 'toggle the Legend key'],
   ['H', 'toggle Town Happenings'],
 ];
@@ -231,7 +232,9 @@ export class Menu {
       'Scroll to zoom, drag or arrow-keys to pan, click anyone to inspect.<br>' +
       'Space pauses time; the slider sets its speed. Esc opens the menu — ' +
       '<b>Controls</b> there lists every key.<br>' +
-      'Then just watch — folk work, wed, raise families, hunt, reflect, and pass on.';
+      'Watch folk work, wed, raise families, befriend &amp; feud, take their leisure, break down ' +
+      '&amp; recover, and pass on — click anyone to see their needs, mood, character &amp; ties.<br>' +
+      'Press <b>G</b> any time to become a god and reach in — smite, bless, or summon a festival.';
     help.addEventListener('click', () => { about.style.display = about.style.display === 'none' ? 'block' : 'none'; });
 
     this.card.append(start, help, about);

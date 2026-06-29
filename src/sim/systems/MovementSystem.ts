@@ -14,6 +14,7 @@ import { getOrgStore } from '../../org/orgStore.ts';
 // Mobile creatures never share a tile; a content agent at its workplace fidgets a
 // little so it looks alive rather than frozen on the spot.
 const WORK_FIDGET = 0.3;
+const RELAX_FIDGET = 0.4;   // a folk at leisure strolls/potters about now and then (M28)
 const HUNT_MEAL = 0.7;   // hunger a hungry agent gains from hunting a fauna (M8 slice 5)
 const HOME_REST_BONUS = 1.4;   // one's own bed restores energy faster than rough sleeping (M11 s2)
 
@@ -138,6 +139,14 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
       const nearest = agentGrid.nearest(pos.x, pos.y, (id) => id !== entity);
       if (nearest) { pathToward(pos, nearest.x, nearest.y, rng, ent, occ, cfg.gridWidth, cfg.gridHeight); continue; }
       // Alone in the world — wander.
+    }
+
+    if (agent.action === 'relax') {
+      // Leisure (M28): potter about and unwind — fun recovers wherever they are. (A tavern nearby
+      // tops it up further via the CivicSystem; seeking the tavern out to drink is a follow-on.)
+      if (rng() < RELAX_FIDGET) wanderStep(pos, rng, enterable, occ);
+      needs.fun = Math.min(1, (needs.fun ?? 1) + cfg.funRestorePerTick);
+      continue;
     }
 
     if (agent.action === 'seek_food') {
