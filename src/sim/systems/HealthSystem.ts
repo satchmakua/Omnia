@@ -3,12 +3,13 @@
 // with extra risk while in poor health. The dead become tombstones; notable
 // deaths are written to the Chronicle.
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_HEALTH, C_LINEAGE, C_CLOCK, C_CHRONICLE, C_WALLET } from '../components.ts';
-import type { Agent, Health, Lineage, Clock, Wallet } from '../components.ts';
+import { C_AGENT, C_HEALTH, C_LINEAGE, C_CLOCK, C_CHRONICLE, C_WALLET, C_AFFLICTIONS } from '../components.ts';
+import type { Agent, Health, Lineage, Clock, Wallet, Afflictions } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { killAgent } from '../death.ts';
+import { addAffliction, recoveryFactor, hasAffliction } from '../afflictions.ts';
 import { getOrgStore } from '../../org/orgStore.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
@@ -33,6 +34,12 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
   for (const e of world.query(C_AGENT, C_HEALTH)) {
     const agent = world.getComponent<Agent>(e, C_AGENT)!;
     const health = world.getComponent<Health>(e, C_HEALTH)!;
+    const af = world.getComponent<Afflictions>(e, C_AFFLICTIONS);
+    const ageRatio = agent.lifespanTicks > 0 ? agent.ticksAlive / agent.lifespanTicks : 0;
+
+    // The frailty of age (M30): deep into their years, the body fails — a permanent infirmity that
+    // slows & weakens them (afflictions.ts). Added once, deterministically.
+    if (ageRatio >= 0.82 && !hasAffliction(af, 'infirmity')) addAffliction(world, e, 'infirmity', tick);
 
     // Illness strikes occasionally; otherwise health recovers. Pulling through a *grave*
     // illness is itself a remembered turning point (M10 slice 3) — a brush with mortality
@@ -47,11 +54,13 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
       }
     } else {
       // The indebted recover more slowly — poverty means worse food and no care, so debt
-      // finally has a cost (Economy Rebalance). A pure read of the wallet; no RNG.
+      // finally has a cost (Economy Rebalance). A pure read of the wallet; no RNG. A chronic
+      // illness (M30) drags recovery down further — the lingering sick mend slowly.
       const wallet = world.getComponent<Wallet>(e, C_WALLET);
       let recover = wallet && wallet.debt > 0 ? recovery * (1 - cfg.debtRecoveryPenalty) : recovery;
       const medicine = orgStore && agent.orgId ? (orgStore.byId[agent.orgId]?.effects?.medicine ?? 0) : 0;
       if (medicine > 0) recover *= 1 + medicine * 0.25;   // a tribe's healing knowledge (+25% per medicine tech)
+      recover *= recoveryFactor(af);
       health.value = Math.min(1, health.value + recover);
       if (health.ill && health.value >= 0.5) {
         health.ill = false;
@@ -59,12 +68,16 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
           health.grave = false;
           emitEvent(world, 'illness', `${agent.name} pulled through a grave illness.`);
           remember(world, e, tick, 'survived a grave illness', 0.45);
+          // The old don't fully bounce back: a grave illness past middle age can leave a chronic
+          // condition that lingers thereafter (M30 — disease beyond binary `ill`).
+          if (ageRatio >= 0.5 && addAffliction(world, e, 'chronic_illness', tick)) {
+            emitEvent(world, 'illness', `${agent.name}'s illness left them chronically frail.`);
+          }
         }
       }
     }
 
     // Mortality: flat base + steep age ramp + poor-health penalty.
-    const ageRatio = agent.lifespanTicks > 0 ? agent.ticksAlive / agent.lifespanTicks : 0;
     const ageMort = Math.pow(ageRatio, 10) * (cfg.ageMortalityScale / cfg.ticksPerDay);
     const sick = health.value < 0.3 ? sickMort : 0;
     const pTick = baseMort + ageMort + sick;

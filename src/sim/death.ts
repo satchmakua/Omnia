@@ -7,7 +7,7 @@ import type { World, EntityId } from './ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB,
   C_HEALTH, C_RELATIONSHIPS, C_LINEAGE, C_TOMBSTONE,
-  C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_WARD, C_ENCHANTMENT,
+  C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_WARD, C_ENCHANTMENT, C_AFFLICTIONS,
 } from './components.ts';
 import type { Agent, SpeciesComp, Job, Lineage, Tombstone } from './components.ts';
 
@@ -16,6 +16,7 @@ const LIVING_COMPONENTS = [
   C_HEALTH, C_RELATIONSHIPS, C_LINEAGE,
   C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME,   // M13/M16 facets — strip on death too
   C_WARD, C_ENCHANTMENT,   // M26 magic: a corpse is neither warded nor wielding an enchanted blade
+  C_AFFLICTIONS,           // M30: the dead carry no injuries
 ];
 
 export function tombstoneFor(

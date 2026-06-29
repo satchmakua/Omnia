@@ -2,13 +2,14 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE, C_ENCHANTMENT, C_VOYAGE, C_RELATIONSHIPS,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE, C_ENCHANTMENT, C_VOYAGE, C_RELATIONSHIPS, C_AFFLICTIONS,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse, Enchantment, Voyage, Relationships,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse, Enchantment, Voyage, Relationships, Afflictions,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName, traitsOf } from '../sim/heredity.ts';
+import { afflictionLabels } from '../sim/afflictions.ts';
 import { socialClassOf } from '../sim/society.ts';
 import { schoolOf } from '../magic/schools.ts';
 import { getReligionStore, getReligion } from '../religion/religionStore.ts';
@@ -307,6 +308,10 @@ export class Inspector {
     }
     const healthBlock = health
       ? `<div>Health ${bar(health.value)}${health.ill ? ' <span style="color:#f99">(ill)</span>' : ''}</div>` : '';
+    // Specific afflictions the body carries (M30): injuries, the frailty of age, a chronic illness.
+    const afflictions = afflictionLabels(world.getComponent<Afflictions>(e, C_AFFLICTIONS));
+    const afflictLine = afflictions.length
+      ? `<div style="color:#d9a0a0">⚕ afflicted by ${afflictions.join(', ')}</div>` : '';
     // A procedural quest the soul has taken up (M20 s3).
     const quest = world.getComponent<Quest>(e, C_QUEST);
     const questLine = quest ? `<div style="color:#ffd27a">⚑ on a quest — to ${quest.text}</div>` : '';
@@ -330,7 +335,7 @@ export class Inspector {
     const hasInv = !!inv && Object.keys(inv.items).length > 0;
     const carryingBlock = (hasInv || craft)
       ? `<hr style="${RULE}"><div style="${SECTION}">Carrying${craft ? ' &amp; craft' : ''}</div>` +
-        (craft ? `<div style="color:#cbb6e0">Craft skill ${craft.skill.toFixed(1)}</div>` : '') +
+        (craft ? `<div style="color:#cbb6e0">Craft skill ${craft.skill.toFixed(1)}${craft.skill >= 6 ? ' <span style="color:#e7c98a">· a master of the craft</span>' : ''}</div>` : '') +
         (hasInv ? Object.entries(inv!.items).sort((a, b) => b[1] - a[1]).map(([id, q]) =>
           `<div><span style="color:#cdb89a">${id.charAt(0).toUpperCase() + id.slice(1)}</span> <span style="color:#9ab">${q.toFixed(1)}</span></div>`).join('') : '')
       : '';
@@ -379,6 +384,7 @@ export class Inspector {
       <div>Fun ${bar(needs.fun ?? 1)}</div>
       ${moodLine}
       ${healthBlock}
+      ${afflictLine}
       ${questLine}
       ${wardLine}
       ${enchLine}

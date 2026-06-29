@@ -18,10 +18,13 @@ import { stubProvider } from '../../ai/stubProvider.ts';
 import { AIRunner } from '../../ai/aiRunner.ts';
 import {
   retrieve, distill, remember, CHILD_VOW_SET,
-  buildReflectionPrompt, buildDreamPrompt, buildDialoguePrompt, buildDecisionPrompt,
+  buildReflectionPrompt, buildDreamPrompt, buildDecisionPrompt,
 } from '../../ai/memory.ts';
 import { recordResponse } from '../../ai/recording.ts';
+import { generateConversation } from '../../ai/dialogue.ts';
+import type { Relationship } from '../../ai/dialogue.ts';
 import { emitEvent } from '../../history/eventlog.ts';
+import { logConversation } from '../../history/conversation.ts';
 
 // Persists across ticks for the async (live-model) path: the queue and the pending
 // jobs whose results we still need to apply.
@@ -216,6 +219,11 @@ const NEIGH: readonly [number, number][] = [
   [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1],
 ];
 
+// Folk who stand together hold a real **conversation** — an opener and a reply (sometimes a
+// rejoinder), coloured by both moods and their relationship: warm friends & partners, weary souls
+// leaning on each other, or rivals trading cold words (the M29 grudges finally find a voice). The
+// exchange is generated deterministically (no sim RNG, replay-safe), logged whole for the
+// Conversation tab, and announced by its opening line in the feed.
 function dialoguePass(env: Env, interval: number, budget: number): number {
   const { world, cfg, tick } = env;
   if (budget <= 0) return budget;
@@ -228,6 +236,7 @@ function dialoguePass(env: Env, interval: number, budget: number): number {
     if (list) list.push(e); else byTile.set(p.y * cfg.gridWidth + p.x, [e]);
   }
 
+  const TALK_TYPES = new Set(['partner', 'friend', 'rival']);
   const spoken = new Set<EntityId>();
   for (const speaker of [...ents].sort((a, b) => a - b)) {
     if (budget <= 0) break;
@@ -240,31 +249,34 @@ function dialoguePass(env: Env, interval: number, budget: number): number {
     const p = world.getComponent<Position>(speaker, C_POSITION)!;
 
     let listener: EntityId | undefined;
+    let kind: Relationship | undefined;
     for (const [dx, dy] of NEIGH) {
       const nx = p.x + dx, ny = p.y + dy;
       if (nx < 0 || nx >= cfg.gridWidth || ny < 0 || ny >= cfg.gridHeight) continue;
       const here = byTile.get(ny * cfg.gridWidth + nx);
       if (!here) continue;
-      listener = here.find(o => o !== speaker && !spoken.has(o) &&
-        (rel.edges[o]?.type === 'partner' || rel.edges[o]?.type === 'friend'));
-      if (listener !== undefined) break;
+      listener = here.find(o => o !== speaker && !spoken.has(o) && TALK_TYPES.has(rel.edges[o]?.type ?? ''));
+      if (listener !== undefined) { kind = rel.edges[listener]!.type as Relationship; break; }
     }
-    if (listener === undefined) continue;
+    if (listener === undefined || kind === undefined) continue;
 
-    const name = world.getComponent<Agent>(speaker, C_AGENT)!.name;
-    const other = world.getComponent<Agent>(listener, C_AGENT)!.name;
-    const top = retrieve(mem, `${name} and ${other}`, env.provider, cfg.reflectMemories);
-    const prompt = buildDialoguePrompt(name, other, tick, top);
+    const a = world.getComponent<Agent>(speaker, C_AGENT)!;
+    const b = world.getComponent<Agent>(listener, C_AGENT)!;
+    const convo = generateConversation(
+      `${speaker}.${listener}.${tick}`,
+      { name: a.name, mood: a.mood ?? 0.6 }, { name: b.name, mood: b.mood ?? 0.6 }, kind,
+    );
+
     mem.lastSpokeTick = tick;
+    const lmem = world.getComponent<Memory>(listener, C_MEMORY);
+    if (lmem) lmem.lastSpokeTick = tick;   // a reply counts as their turn too
     spoken.add(speaker); spoken.add(listener);
 
-    dispatch(env, speaker, prompt, (text, at) => {
-      const m = world.getComponent<Memory>(speaker, C_MEMORY);
-      if (!m) return;
-      pushUtterance(m, cfg, at, 'say', `“${text}” — to ${other}`);
-      recordResponse(world, at, hashString(prompt), text);
-      emitEvent(world, 'dialogue', `${name} to ${other}: “${text}”`);
-    });
+    logConversation(world, { tick, participants: [a.name, b.name], rel: kind, lines: convo });
+    // The whole exchange lives in the Conversation tab; the feed shows just its opening line.
+    emitEvent(world, 'dialogue', `${convo[0].speaker} to ${b.name === convo[0].speaker ? a.name : b.name}: “${convo[0].text}”`);
+    pushUtterance(mem, cfg, tick, 'say', `“${convo[0].text}” — to ${b.name}`);
+    if (lmem && convo[1]) pushUtterance(lmem, cfg, tick, 'say', `“${convo[1].text}” — to ${a.name}`);
     budget--;
   }
   return budget;

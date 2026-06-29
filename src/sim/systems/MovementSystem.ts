@@ -1,11 +1,12 @@
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_FAUNA, C_JOB, C_RESOURCE, C_TILEMAP, C_HOME, C_QUEST, C_VOYAGE } from '../components.ts';
-import type { Agent, Needs, Position, Flora, Job, Resource, Home, Quest, Voyage } from '../components.ts';
+import { C_AGENT, C_NEEDS, C_POSITION, C_FLORA, C_FAUNA, C_JOB, C_RESOURCE, C_TILEMAP, C_HOME, C_QUEST, C_VOYAGE, C_AFFLICTIONS, C_CLOCK } from '../components.ts';
+import type { Agent, Needs, Position, Flora, Job, Resource, Home, Quest, Voyage, Afflictions, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import type { Content } from '../../content/loader.ts';
 import { invokeCapability } from '../../capability/invoke.ts';
 import type { TileMapData } from '../../world/tilemap.ts';
+import { isSlowed } from '../afflictions.ts';
 import { makeEnterable, wanderStep, buildOccupancy } from './movementUtil.ts';
 import { SpatialGrid } from '../spatialGrid.ts';
 import { pathToward } from '../pathfinding.ts';
@@ -20,6 +21,8 @@ const HOME_REST_BONUS = 1.4;   // one's own bed restores energy faster than roug
 
 export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, content: Content): void {
   const forage = content.capabilities.require('forage');
+  const clockEnts = world.query(C_CLOCK);
+  const tick = clockEnts.length ? world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick : 0;
 
   const mapEnts = world.query(C_TILEMAP);
   const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
@@ -87,6 +90,12 @@ export function runMovementSystem(world: World, cfg: SimConfig, rng: RNG, conten
     const agent = world.getComponent<Agent>(entity, C_AGENT)!;
     const pos   = world.getComponent<Position>(entity, C_POSITION)!;
     const needs = world.getComponent<Needs>(entity, C_NEEDS)!;
+
+    // A maimed leg or the frailty of age halves an agent's pace (M30): on "hold" ticks they stay
+    // put. Survival actions are spared (so the slow never starves them — no death-spiral); it's
+    // their getting-about — work, errands, socialising — that the injury hampers. Deterministic.
+    if (isSlowed(world.getComponent<Afflictions>(entity, C_AFFLICTIONS)) &&
+        agent.action !== 'seek_food' && agent.action !== 'sleep' && (tick + entity) % 2 !== 0) continue;
     const ent = seafaring(agent.orgId) ? seaEnterable : enterable;   // boats let seafarers cross water
 
     // A merchant on a sea voyage (M25 s3) attends to nothing else — they sail for the far shore.

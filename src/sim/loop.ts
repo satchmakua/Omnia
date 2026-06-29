@@ -13,6 +13,7 @@ import { runActionSystem }   from './systems/ActionSystem.ts';
 import { runMovementSystem } from './systems/MovementSystem.ts';
 import { runGatherSystem }   from './systems/GatherSystem.ts';
 import { runCraftSystem }    from './systems/CraftSystem.ts';
+import { runMentorSystem }   from './systems/MentorSystem.ts';
 import { runEquipSystem }    from './systems/EquipSystem.ts';
 import { runTradeSystem }    from './systems/TradeSystem.ts';
 import { runVoyageSystem }   from './systems/VoyageSystem.ts';
@@ -71,6 +72,7 @@ export function tick(
   runMovementSystem(world, cfg, rng, content); // sapient movement / forage / commute / socialise / gather
   runGatherSystem(world, cfg);           // deplete resource nodes being worked → materials into the bag
   runCraftSystem(world, cfg, content);   // crafters turn carried materials into goods, skill-gated (M23)
+  runMentorSystem(world, cfg, content);  // a master crafter teaches an apprentice — skill + a bond (M29 s3)
   runEquipSystem(world, cfg, content);   // denormalise best carried weapon/armour for combat (M23 s3)
   runTradeSystem(world, cfg, content);   // sell crafted goods for gold — crafting feeds wealth (M25 s2)
   runFishingSystem(world, cfg);          // coastal fisheries net fish → food (fish-limited) (M24)

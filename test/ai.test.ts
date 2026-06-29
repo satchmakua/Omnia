@@ -37,13 +37,18 @@ describe('StubProvider', () => {
     expect(stubProvider.completeSync(p)).toBe(stubProvider.completeSync(p));
   });
 
-  const FAMILY_BELIEFS = ['treasures family above all', 'lives for their kin', 'finds meaning in their family'];
+  // The full family / grief belief pools (kept in sync with stubProvider.ts; the stub themes a belief
+  // off the prompt's dominant memory keyword, picking deterministically from the matching pool).
+  const FAMILY_BELIEFS = ['treasures family above all', 'lives for their kin', 'finds meaning in their family',
+    'believes blood is the truest bond', 'would give anything for their own', 'holds that a house full of voices is wealth'];
+  const GRIEF_BELIEFS = ['carries old grief quietly', 'has learned that all things pass', 'guards their heart against loss',
+    'has made a kind of peace with sorrow', 'believes the dead are not wholly gone', 'knows joy and grief are kin'];
 
   it('themes the belief from the memories in the prompt', () => {
     const family = stubProvider.completeSync('memories: a child was born; another child was born');
     expect(FAMILY_BELIEFS).toContain(family);
     const grief = stubProvider.completeSync('memories: lost their spouse; their parent died');
-    expect(['carries old grief quietly', 'has learned that all things pass', 'guards their heart against loss']).toContain(grief);
+    expect(GRIEF_BELIEFS).toContain(grief);
   });
 
   it('a self-birth memory does NOT read as having children; a child being born does', () => {
