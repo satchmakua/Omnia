@@ -1,0 +1,143 @@
+// Treatment & recovery (M30 slice 2): herbal remedies are content; the infirmary tends the afflicted;
+// a chronic illness is cured over time when the remedy's herb grows; permanent disabilities are
+// carried for life. These tests pin the content boundary, the affliction model, and the system.
+import { describe, it, expect } from 'vitest';
+import { loadContent } from '../src/content/loader.ts';
+import { World } from '../src/sim/ecs.ts';
+import type { EntityId } from '../src/sim/ecs.ts';
+import { defaultConfig } from '../src/sim/config.ts';
+import {
+  C_AGENT, C_POSITION, C_AFFLICTIONS, C_CIVIC, C_CLOCK, C_FLORA,
+} from '../src/sim/components.ts';
+import type { Agent, Position, Afflictions, Civic, Clock, Flora, AfflictionKind } from '../src/sim/components.ts';
+import {
+  isPermanent, isTreatableKind, isAfflictionKind, cureAffliction, recoversUnderCare, addAffliction,
+} from '../src/sim/afflictions.ts';
+import { runTreatmentSystem } from '../src/sim/systems/TreatmentSystem.ts';
+import { testContent } from './helpers.ts';
+
+const cfg = defaultConfig;
+const tpd = cfg.ticksPerDay;
+const content = testContent();
+
+// Minimal content fixtures for the loader-boundary cases (a remedy needs a real herb + species).
+const SPECIES = `id: "elf"\nname: "Elf"\nlifespanYears: { min: 300, max: 500 }\nsize: "medium"\ncolor: "#88ff88"\nneeds: { hunger: 1.0, energy: 1.0 }\nlanguage: "old_vant"`;
+const HERB = `id: "bruisewort"\nname: "Bruisewort"\ncolor: "#9a6fd0"\ngrowthPerDay: 0.7\nedibleAt: 0.55\nfoodYield: 0.55\nspreadChancePerDay: 0.1`;
+const remedyYaml = (treats: string, herb = 'bruisewort') =>
+  `id: "tonic"\nname: "Tonic"\nherb: "${herb}"\ntreats: "${treats}"\npotency: 0.2`;
+const filesOf = (m: Record<string, string>) => new Map(Object.entries(m));
+
+describe('herbal remedies are content (M30 s2)', () => {
+  it('the real content loads the remedies, brewed from real herbs for treatable ills', () => {
+    const all = content.remedies.all();
+    expect(all.length).toBeGreaterThanOrEqual(1);
+    for (const r of all) {
+      expect(content.flora.has(r.herb)).toBe(true);            // brewed from a real herb
+      expect(isTreatableKind(r.treats as AfflictionKind)).toBe(true);   // and it treats something curable
+    }
+    const poultice = content.remedies.get('bruisewort_poultice');
+    expect(poultice?.herb).toBe('bruisewort');
+    expect(poultice?.treats).toBe('chronic_illness');
+  });
+
+  it('the loader rejects a remedy for a permanent disability', () => {
+    expect(() => loadContent(filesOf({ 'species/elf.yaml': SPECIES, 'flora/bruisewort.yaml': HERB, 'remedies/tonic.yaml': remedyYaml('maimed_leg') })))
+      .toThrowError(/permanent disability/);
+  });
+
+  it('the loader rejects a remedy for an unknown affliction, or an unknown herb', () => {
+    expect(() => loadContent(filesOf({ 'species/elf.yaml': SPECIES, 'flora/bruisewort.yaml': HERB, 'remedies/tonic.yaml': remedyYaml('hiccups') })))
+      .toThrowError(/unknown affliction/);
+    expect(() => loadContent(filesOf({ 'species/elf.yaml': SPECIES, 'flora/bruisewort.yaml': HERB, 'remedies/tonic.yaml': remedyYaml('chronic_illness', 'moonpetal') })))
+      .toThrowError(/unknown herb/);
+  });
+});
+
+describe('permanence & cure helpers (M30 s2)', () => {
+  it('disabilities are permanent; a chronic illness is treatable', () => {
+    expect(isPermanent('maimed_leg')).toBe(true);
+    expect(isPermanent('lost_eye')).toBe(true);
+    expect(isPermanent('infirmity')).toBe(true);
+    expect(isTreatableKind('chronic_illness')).toBe(true);
+    expect(isAfflictionKind('chronic_illness')).toBe(true);
+    expect(isAfflictionKind('hiccups')).toBe(false);
+  });
+
+  it('cureAffliction removes the ailment and sheds the empty component', () => {
+    const w = new World(); const e = w.createEntity();
+    addAffliction(w, e, 'chronic_illness', 0);
+    expect(cureAffliction(w, e, 'maimed_leg')).toBe(false);   // not carried
+    expect(cureAffliction(w, e, 'chronic_illness')).toBe(true);
+    expect(w.getComponent(e, C_AFFLICTIONS)).toBeUndefined(); // empty list → component shed
+  });
+
+  it('recovery is a deterministic per-day roll bounded by the chance', () => {
+    expect(recoversUnderCare(7, 'chronic_illness', 3, 1)).toBe(true);    // certain
+    expect(recoversUnderCare(7, 'chronic_illness', 3, 0)).toBe(false);   // never
+    expect(recoversUnderCare(7, 'chronic_illness', 3, 0.2)).toBe(recoversUnderCare(7, 'chronic_illness', 3, 0.2)); // stable
+    let cured = 0; for (let d = 0; d < 1000; d++) if (recoversUnderCare(7, 'chronic_illness', d, 0.2)) cured++;
+    expect(cured).toBeGreaterThan(120); expect(cured).toBeLessThan(280);  // ~0.2 of days
+  });
+});
+
+describe('the infirmary tends the afflicted (M30 s2)', () => {
+  function world(opts: { herb?: boolean; near?: boolean } = {}): { w: World; sick: EntityId } {
+    const { herb = true, near = true } = opts;
+    const w = new World();
+    w.addComponent<Clock>(w.createEntity(), C_CLOCK, { tick: 0, day: 0, hour: 0, isDay: true });
+    // an infirmary at (10,10)
+    const inf = w.createEntity();
+    w.addComponent<Position>(inf, C_POSITION, { x: 10, y: 10 });
+    w.addComponent<Civic>(inf, C_CIVIC, { kind: 'infirmary', name: 'Infirmary', effect: 'heal', radius: 5 });
+    if (herb) {   // bruisewort growing somewhere → the poultice is available
+      const f = w.createEntity();
+      w.addComponent<Position>(f, C_POSITION, { x: 30, y: 30 });
+      w.addComponent<Flora>(f, C_FLORA, { speciesId: 'bruisewort', name: 'Bruisewort', color: '#9a6fd0', maturity: 1, growthPerTick: 0, edibleAt: 0.55, foodYield: 0.55, spreadChancePerTick: 0 });
+    }
+    const sick = w.createEntity();
+    w.addComponent<Position>(sick, C_POSITION, near ? { x: 11, y: 11 } : { x: 40, y: 40 });
+    w.addComponent<Agent>(sick, C_AGENT, { name: 'Sick', action: 'wander', ticksAlive: 5000, wealthGoal: 50, sex: 'male', lifespanTicks: 1e9 });
+    return { w, sick };
+  }
+  // Run `days` daily ticks; return the day the sick one was cured (or -1 if never).
+  function daysToCure(w: World, sick: EntityId, days = 300): number {
+    const clk = w.query(C_CLOCK)[0];
+    for (let d = 1; d <= days; d++) {
+      w.getComponent<Clock>(clk, C_CLOCK)!.tick = d * tpd;
+      runTreatmentSystem(w, cfg, content);
+      if (!w.getComponent<Afflictions>(sick, C_AFFLICTIONS)) return d;
+    }
+    return -1;
+  }
+
+  it('cures a chronic illness over time when tended and the herb grows', () => {
+    const { w, sick } = world();
+    addAffliction(w, sick, 'chronic_illness', 0);
+    expect(daysToCure(w, sick)).toBeGreaterThan(0);   // healed within the window
+  });
+
+  it('never cures a permanent disability, however long they are tended', () => {
+    const { w, sick } = world();
+    addAffliction(w, sick, 'maimed_leg', 0);
+    expect(daysToCure(w, sick)).toBe(-1);
+    expect(w.getComponent<Afflictions>(sick, C_AFFLICTIONS)!.list[0].kind).toBe('maimed_leg');
+  });
+
+  it('cannot cure when no remedy herb grows in the world', () => {
+    const { w, sick } = world({ herb: false });
+    addAffliction(w, sick, 'chronic_illness', 0);
+    expect(daysToCure(w, sick)).toBe(-1);
+  });
+
+  it('cannot cure one who never comes to the infirmary', () => {
+    const { w, sick } = world({ near: false });
+    addAffliction(w, sick, 'chronic_illness', 0);
+    expect(daysToCure(w, sick)).toBe(-1);
+  });
+
+  it('is deterministic — the same world heals on the same day', () => {
+    const a = world(); addAffliction(a.w, a.sick, 'chronic_illness', 0);
+    const b = world(); addAffliction(b.w, b.sick, 'chronic_illness', 0);
+    expect(daysToCure(a.w, a.sick)).toBe(daysToCure(b.w, b.sick));
+  });
+});

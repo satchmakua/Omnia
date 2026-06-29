@@ -94,6 +94,8 @@ export interface SimConfig {
   marryChancePerDay: number;           // daily chance an eligible, willing pair weds
   illnessChancePerDay: number;         // chance per day of falling ill
   illnessHealthLoss: number;           // health lost when illness strikes
+  chronicIllnessChance: number;        // fraction of the old's illnesses that settle into a chronic, treatable condition (M30 s2)
+  infirmaryCareRadius: number;         // how far an infirmary's healers make their rounds to tend the afflicted (M30 s2)
   healthRecoveryPerDay: number;        // health regained per day when not newly ill
   baseMortalityPerDay: number;         // flat background death chance
   ageMortalityScale: number;           // age-driven mortality multiplier (ramps near lifespan)
@@ -302,6 +304,8 @@ export const defaultConfig: SimConfig = {
   marryChancePerDay: 0.5,
   illnessChancePerDay: 0.03,
   illnessHealthLoss: 0.4,
+  chronicIllnessChance: 0.3,      // ~⅓ of an old soul's bouts of sickness linger as a chronic ailment
+  infirmaryCareRadius: 18,        // healers tend the afflicted across the settlement, not just inside the walls
   healthRecoveryPerDay: 0.25,
   baseMortalityPerDay: 0.0003,
   ageMortalityScale: 0.5,

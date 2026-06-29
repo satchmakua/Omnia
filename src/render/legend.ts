@@ -2,7 +2,7 @@
 // symbol, so the category-first icons are self-explanatory. Built once from the
 // shared icons module; minimized via its header caret, or hidden with the 'L' key.
 import { CATEGORY_COLOR, LEGEND_ENTRIES } from './icons.ts';
-import { glyphHtml, isEmoji } from './skin.ts';
+import { glyphHtml } from './skin.ts';
 import { makePanel } from './panelUtil.ts';
 
 // A legend swatch — the active skin's glyph for `key` (lo-fi icon or emoji); `scale` < 1 shrinks it.
@@ -55,9 +55,9 @@ export class Legend {
     const mapRows = LEGEND_ENTRIES.map(({ key, label, desc }) =>
       entryRow(swatch(key, CATEGORY_COLOR[key as keyof typeof CATEGORY_COLOR]), label, desc)).join('');
 
-    // Folk badges + the day/night phase. The badges are lo-fi state overlays; under the emoji skin
-    // the map shows the bare emoji, so we note that and skip the badge list there.
-    const badgeRows = isEmoji() ? '' :
+    // Folk badges + the day/night phase. These small state overlays frame the folk in *both* skins
+    // (the emoji map draws them around the glyph, M34 parity), so the list applies regardless.
+    const badgeRows =
       entryRow(swatch('folk', folk, 0.6), 'Child', 'too young to work, court, or bear children') +
       entryRow(glyphCell('✦', '#c79bf0'), 'Magic spark', 'born with a rare magic aptitude') +
       entryRow(glyphCell('✚', '#e06666'), 'Ill', 'sick — at higher risk of death') +

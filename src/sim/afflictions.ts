@@ -8,12 +8,14 @@ import type { World, EntityId } from './ecs.ts';
 import { C_AFFLICTIONS } from './components.ts';
 import type { Afflictions, AfflictionKind } from './components.ts';
 
-interface Fx { str?: number; dex?: number; slow?: boolean; recovery?: number; label: string; }
+interface Fx { str?: number; dex?: number; slow?: boolean; recovery?: number; permanent?: boolean; label: string; }
 const FX: Record<AfflictionKind, Fx> = {
-  maimed_leg:      { slow: true, label: 'a maimed leg' },
-  lost_eye:        { dex: -3, label: 'a lost eye' },
-  maimed_arm:      { str: -3, label: 'a crippled arm' },
-  infirmity:       { slow: true, str: -2, dex: -2, label: 'the frailty of age' },
+  // A lost eye, a crippled arm, a maimed leg and the frailty of age are *permanent* — disabilities
+  // borne for life. A chronic illness is the one affliction a healer can draw out and cure (M30 s2).
+  maimed_leg:      { slow: true, permanent: true, label: 'a maimed leg' },
+  lost_eye:        { dex: -3, permanent: true, label: 'a lost eye' },
+  maimed_arm:      { str: -3, permanent: true, label: 'a crippled arm' },
+  infirmity:       { slow: true, str: -2, dex: -2, permanent: true, label: 'the frailty of age' },
   chronic_illness: { recovery: 0.5, label: 'a chronic illness' },
 };
 
@@ -44,6 +46,10 @@ export const hasAffliction = (af: Afflictions | undefined, kind: AfflictionKind)
 export const afflictionLabels = (af: Afflictions | undefined): string[] =>
   af ? af.list.map(a => FX[a.kind].label) : [];
 export const labelOf = (kind: AfflictionKind): string => FX[kind].label;
+// Permanence (M30 s2): a disability is carried for life; a treatable affliction can be cured by care.
+export const isPermanent = (kind: AfflictionKind): boolean => !!FX[kind].permanent;
+export const isTreatableKind = (kind: AfflictionKind): boolean => !FX[kind].permanent;
+export const isAfflictionKind = (s: string): s is AfflictionKind => s in FX;
 
 // ── Writes ──
 // Attach an affliction (lazily creating the component). Returns true if it's newly carried (so callers
@@ -54,6 +60,33 @@ export function addAffliction(world: World, e: EntityId, kind: AfflictionKind, t
   if (af.list.some(a => a.kind === kind) || af.list.length >= MAX_AFFLICTIONS) return false;
   af.list.push({ kind, sinceTick: tick });
   return true;
+}
+
+// Cure (remove) an affliction — a healer drew it out (M30 s2). Returns true if it was carried and
+// is now gone; sheds the component once the body bears nothing more.
+export function cureAffliction(world: World, e: EntityId, kind: AfflictionKind): boolean {
+  const af = world.getComponent<Afflictions>(e, C_AFFLICTIONS);
+  if (!af) return false;
+  const i = af.list.findIndex(a => a.kind === kind);
+  if (i < 0) return false;
+  af.list.splice(i, 1);
+  if (af.list.length === 0) world.removeComponent(e, C_AFFLICTIONS);
+  return true;
+}
+
+// Deterministic recovery roll (no sim RNG → replay-safe): under a healer's care, a treatable
+// affliction is cured on a given day with probability `chance`. Salted by kind so a soul's several
+// afflictions don't all resolve on the very same day.
+export function recoversUnderCare(e: EntityId, kind: AfflictionKind, day: number, chance: number): boolean {
+  const salt = kind.length * 131 + kind.charCodeAt(0);
+  return (hash(e, day * 257 + salt) % 100000) / 100000 < chance;
+}
+
+// Deterministic onset roll (no sim RNG): whether a sickness takes hold as a chronic condition. Used
+// in the HealthSystem's illness branch, where the RNG draw for *falling ill* has already happened —
+// this only decides whether that illness lingers, so the stream is untouched and replay holds.
+export function chronicOnset(e: EntityId, tick: number, chance: number): boolean {
+  return (hash(e, tick ^ 0x5bd1e995) % 100000) / 100000 < chance;
 }
 
 // Surviving a *grievous* wound can cripple you. A maiming isn't a function of one big number — a

@@ -9,7 +9,7 @@ import type { SimConfig } from '../config.ts';
 import { ticksPerYear } from '../config.ts';
 import type { RNG } from '../rng.ts';
 import { killAgent } from '../death.ts';
-import { addAffliction, recoveryFactor, hasAffliction } from '../afflictions.ts';
+import { addAffliction, recoveryFactor, hasAffliction, chronicOnset } from '../afflictions.ts';
 import { getOrgStore } from '../../org/orgStore.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
@@ -51,6 +51,10 @@ export function runHealthSystem(world: World, cfg: SimConfig, rng: RNG): void {
         health.grave = true;
         emitEvent(world, 'illness', `${agent.name} fell gravely ill.`);
         remember(world, e, tick, 'fell gravely ill', 0.5);
+      } else if (ageRatio >= 0.4 && chronicOnset(e, tick, cfg.chronicIllnessChance) && addAffliction(world, e, 'chronic_illness', tick)) {
+        // A bout of sickness in the old can settle into a lingering chronic ailment (M30 s2) — the
+        // kind a healer's remedy can later draw out at the infirmary. Deterministic (no new RNG).
+        emitEvent(world, 'illness', `${agent.name}'s sickness settled into a chronic ailment.`);
       }
     } else {
       // The indebted recover more slowly — poverty means worse food and no care, so debt

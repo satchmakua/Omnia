@@ -30,6 +30,7 @@ import { runMoodSystem }     from './systems/MoodSystem.ts';
 import { runMentalStateSystem } from './systems/MentalStateSystem.ts';
 import { runStatusSystem }   from './systems/StatusSystem.ts';
 import { runCivicSystem }    from './systems/CivicSystem.ts';
+import { runTreatmentSystem } from './systems/TreatmentSystem.ts';
 import { runCivicBuildSystem } from './systems/CivicBuildSystem.ts';
 import { runOrgSystem }      from './systems/OrgSystem.ts';
 import { runResearchSystem } from './systems/ResearchSystem.ts';
@@ -88,6 +89,7 @@ export function tick(
   runMentalStateSystem(world, cfg);      // mood made causal: breaks (despair/anger/elation) when it hits an extreme (M28 s2)
   runStatusSystem(world, cfg);           // daily social standing/reputation from deeds & means (M14)
   runCivicSystem(world, cfg);            // functional buildings: infirmary heals, tavern cheers (M21)
+  runTreatmentSystem(world, cfg, content); // the infirmary tends the afflicted: herbal cures for treatable ills (M30 s2)
   runCivicBuildSystem(world, cfg, content); // the town raises new civic buildings as it grows (M21)
   runOrgSystem(world, cfg, rng);         // tribes: leadership succession, extinction, schism (M14)
   runResearchSystem(world, cfg, content); // tribes accumulate research & climb the tech ladder (M17)

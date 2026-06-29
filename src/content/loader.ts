@@ -6,13 +6,14 @@ import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { FOLDER_SCHEMAS } from './schema.ts';
 import type {
-  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, Good, Recipe, Wonder, Monster, Building, MagicSchool, Power, ContentFolder,
+  Species, Capability, Biome, Flora, Fauna, Resource, Profession, Language, Culture, Tech, WorldEvent, Good, Recipe, Wonder, Monster, Building, MagicSchool, Power, Remedy, ContentFolder,
 } from './schema.ts';
 import { Registry } from './registry.ts';
 import { isKnownEffectTag } from '../capability/effects.ts';
 import { isKnownEventEffect } from '../event/effects.ts';
 import { isKnownSpellEffect } from '../magic/effects.ts';
 import { isKnownPowerEffect } from '../sim/powers.ts';
+import { isAfflictionKind, isTreatableKind } from '../sim/afflictions.ts';
 import { setMagicSchools } from '../magic/schools.ts';
 
 export interface Content {
@@ -34,6 +35,7 @@ export interface Content {
   buildings: Registry<Building>;
   magic: Registry<MagicSchool>;
   powers: Registry<Power>;
+  remedies: Registry<Remedy>;
 }
 
 // Relative path like "species/human.yaml" -> "species".
@@ -57,7 +59,7 @@ function formatZodError(relPath: string, err: z.ZodError): string {
  */
 export function loadContent(files: Map<string, string>): Content {
   const buckets: Record<ContentFolder, unknown[]> = {
-    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [], goods: [], recipes: [], wonders: [], monsters: [], buildings: [], magic: [], powers: [],
+    species: [], capabilities: [], biomes: [], flora: [], fauna: [], resources: [], professions: [], languages: [], cultures: [], tech: [], events: [], goods: [], recipes: [], wonders: [], monsters: [], buildings: [], magic: [], powers: [], remedies: [],
   };
   const errors: string[] = [];
 
@@ -129,6 +131,15 @@ export function loadContent(files: Map<string, string>): Content {
       errors.push(`powers/${p.id}: effect '${p.effect}' has no implementation in src/sim/powers.ts`);
     }
   }
+  // Same boundary for herbal remedies (M30 s2): a remedy must name a real affliction kind, and one
+  // that is actually *treatable* — you cannot brew away a lost eye or the frailty of age.
+  for (const r of buckets.remedies as Remedy[]) {
+    if (!isAfflictionKind(r.treats)) {
+      errors.push(`remedies/${r.id}: treats unknown affliction kind '${r.treats}'`);
+    } else if (!isTreatableKind(r.treats)) {
+      errors.push(`remedies/${r.id}: '${r.treats}' is a permanent disability — it cannot be treated`);
+    }
+  }
 
   if (errors.length > 0) {
     throw new Error(
@@ -155,6 +166,7 @@ export function loadContent(files: Map<string, string>): Content {
   let buildings: Registry<Building>;
   let magic: Registry<MagicSchool>;
   let powers: Registry<Power>;
+  let remedies: Registry<Remedy>;
   try {
     species = new Registry(buckets.species as Species[]);
     capabilities = new Registry(buckets.capabilities as Capability[]);
@@ -174,6 +186,7 @@ export function loadContent(files: Map<string, string>): Content {
     buildings = new Registry(buckets.buildings as Building[]);
     magic = new Registry(buckets.magic as MagicSchool[]);
     powers = new Registry(buckets.powers as Power[]);
+    remedies = new Registry(buckets.remedies as Remedy[]);
   } catch (e) {
     throw new Error(`Content failed to load: ${(e as Error).message}`);
   }
@@ -229,6 +242,10 @@ export function loadContent(files: Map<string, string>): Content {
   for (const p of powers.all()) {
     if (p.event !== undefined && !events.has(p.event)) refErrors.push(`powers/${p.id}: summons unknown event '${p.event}'`);
   }
+  // A remedy must be brewed from a real herb (M30 s2) — healing is tied to the world's flora.
+  for (const r of remedies.all()) {
+    if (!flora.has(r.herb)) refErrors.push(`remedies/${r.id}: brewed from unknown herb '${r.herb}'`);
+  }
   if (refErrors.length > 0) {
     throw new Error(
       `Content failed to load (${refErrors.length} problem${refErrors.length > 1 ? 's' : ''}):\n` +
@@ -243,5 +260,5 @@ export function loadContent(files: Map<string, string>): Content {
   // inspector + four systems (D9 boundary; see DECISIONS).
   setMagicSchools(magic);
 
-  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events, goods, recipes, wonders, monsters, buildings, magic, powers };
+  return { species, capabilities, biomes, flora, fauna, resources, professions, languages, cultures, tech, events, goods, recipes, wonders, monsters, buildings, magic, powers, remedies };
 }

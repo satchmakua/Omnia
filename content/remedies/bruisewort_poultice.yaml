@@ -1,0 +1,8 @@
+# A bitter mash of bruisewort, pressed warm to the ailing. The old healers swear it draws a
+# lingering sickness out of the blood over a week or two of tending at the infirmary.
+id: "bruisewort_poultice"
+name: "Bruisewort Poultice"
+blurb: "A bruise-purple mash that draws out a chronic sickness over days of tending."
+herb: "bruisewort"
+treats: "chronic_illness"
+potency: 0.22

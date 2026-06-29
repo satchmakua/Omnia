@@ -9,7 +9,7 @@ import type {
   Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse, Enchantment, Voyage, Relationships, Afflictions,
 } from '../sim/components.ts';
 import { eyeColour, hairColour, buildWord, alignmentName, traitsOf } from '../sim/heredity.ts';
-import { afflictionLabels } from '../sim/afflictions.ts';
+import { labelOf, isTreatableKind } from '../sim/afflictions.ts';
 import { socialClassOf } from '../sim/society.ts';
 import { schoolOf } from '../magic/schools.ts';
 import { getReligionStore, getReligion } from '../religion/religionStore.ts';
@@ -309,9 +309,13 @@ export class Inspector {
     const healthBlock = health
       ? `<div>Health ${bar(health.value)}${health.ill ? ' <span style="color:#f99">(ill)</span>' : ''}</div>` : '';
     // Specific afflictions the body carries (M30): injuries, the frailty of age, a chronic illness.
-    const afflictions = afflictionLabels(world.getComponent<Afflictions>(e, C_AFFLICTIONS));
-    const afflictLine = afflictions.length
-      ? `<div style="color:#d9a0a0">⚕ afflicted by ${afflictions.join(', ')}</div>` : '';
+    // Permanent disabilities are marked "lasting"; a treatable ailment (a chronic illness) can be
+    // nursed away at the infirmary (M30 s2) and so is left unmarked.
+    const afflicted = world.getComponent<Afflictions>(e, C_AFFLICTIONS);
+    const afflictLine = afflicted && afflicted.list.length
+      ? `<div style="color:#d9a0a0">⚕ afflicted by ${afflicted.list.map(a =>
+          labelOf(a.kind) + (isTreatableKind(a.kind) ? '' : ' <span style="opacity:.65">(lasting)</span>')).join(', ')}</div>`
+      : '';
     // A procedural quest the soul has taken up (M20 s3).
     const quest = world.getComponent<Quest>(e, C_QUEST);
     const questLine = quest ? `<div style="color:#ffd27a">⚑ on a quest — to ${quest.text}</div>` : '';
