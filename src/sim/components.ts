@@ -154,6 +154,8 @@ export interface Organization {
   effects?: Record<string, number>;  // tech effect tags → how many unlocked (e.g. arms 3, medicine 1) — confers tribe-wide bonuses (M17 s2)
   overseas?: boolean;    // an island settlement across the sea (M24 s4) — isolated until contact
   discovered?: boolean;  // first contact with the rest of the world has been made (M24 s4)
+  lord?: string;         // M31: the org this clan is vassal to (pays tribute, will not war its lord/co-vassals)
+  vassalSince?: number;  // tick the vassalage began (for the Chronicle / display)
 }
 
 // Body & heredity (M13): six D&D-style ability scores (3..18) plus heritable physical

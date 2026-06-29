@@ -4,7 +4,7 @@
 import type { World } from '../sim/ecs.ts';
 import { C_AGENT } from '../sim/components.ts';
 import type { Agent } from '../sim/components.ts';
-import { getOrgStore } from '../org/orgStore.ts';
+import { getOrgStore, areAllied, areRivals, vassalsOf } from '../org/orgStore.ts';
 import { ModalPanel, SECTION } from './modalPanel.ts';
 
 // Tech-tier → era label (M17), so the Clans view reads a clan's level of advancement.
@@ -31,7 +31,9 @@ export class OrgDashboard extends ModalPanel {
     const intro =
       `<div style="color:#8b8b9e;font-size:11px;line-height:1.5;margin-bottom:8px">
         Kin-bands that hold together, govern themselves, and split as they grow. Each clan has its own
-        colour — that's the tint on its folk out on the map — and a government that emerges from its values.</div>`;
+        colour — that's the tint on its folk out on the map — and a government that emerges from its values.
+        As the eras turn they forge <span style="color:#7fd6b0">alliances</span>, fall into
+        <span style="color:#e0a0a0">rivalry</span>, and the weak may <span style="color:#d9b878">swear fealty</span> to a dominant power.</div>`;
 
     const rows = living.map((o) => {
       const n = members.get(o.id) ?? 0;
@@ -42,6 +44,18 @@ export class OrgDashboard extends ModalPanel {
         .filter(w => w.a === o.id || w.b === o.id)
         .map(w => store.byId[w.a === o.id ? w.b : w.a]?.name).filter(Boolean);
       const war = foes.length ? `<div style="color:#ff7a6a;font-size:11px">⚔ at war with ${foes.join(', ')}</div>` : '';
+      // Diplomacy (M31): the standing it keeps with the other clans, and the realm it belongs to.
+      const lord = o.lord && store.byId[o.lord] ? store.byId[o.lord].name : null;
+      const vassals = vassalsOf(store, o.id).map(id => store.byId[id]?.name).filter(Boolean);
+      const allies = living.filter(x => x.id !== o.id && areAllied(store, o.id, x.id)).map(x => x.name);
+      const rivals = living.filter(x => x.id !== o.id && areRivals(store, o.id, x.id)).map(x => x.name);
+      const diplo = [
+        lord ? `<span style="color:#d9b878" title="a vassal — renders tribute, will not war its liege">⊢ sworn to ${lord}</span>` : '',
+        vassals.length ? `<span style="color:#d9b878" title="holds these clans as vassals">♚ liege of ${vassals.join(', ')}</span>` : '',
+        allies.length ? `<span style="color:#7fd6b0">allied with ${allies.join(', ')}</span>` : '',
+        rivals.length ? `<span style="color:#e0a0a0">rivals: ${rivals.join(', ')}</span>` : '',
+      ].filter(Boolean).join(' · ');
+      const diploLine = diplo ? `<div style="font-size:11px;margin-top:1px">${diplo}</div>` : '';
       const nTech = o.techs?.length ?? 0;
       const arms = o.effects?.arms ?? 0, medicine = o.effects?.medicine ?? 0;
       const fx = [arms ? `<span title="military tech — better arms in war">⚔ arms ${arms}</span>` : '',
@@ -52,7 +66,7 @@ export class OrgDashboard extends ModalPanel {
         <span style="width:13px;height:13px;border-radius:3px;background:${o.color};display:inline-block;flex:0 0 auto"></span>
         <div style="flex:1;min-width:0">
           <div style="color:#e6e6f0">${o.name}${parent}</div>
-          <div style="color:#889;font-size:11px">${o.government} · ${n} folk · led by ${leader}</div>${tech}${war}
+          <div style="color:#889;font-size:11px">${o.government} · ${n} folk · led by ${leader}</div>${diploLine}${tech}${war}
         </div></div>`;
     }).join('');
 

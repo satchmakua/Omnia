@@ -28,14 +28,86 @@ export interface PastWar {
   winner: string | null;   // null = peace; otherwise the tribe that prevailed
 }
 
+// Diplomacy beyond war (M31): the standing between two clans, and the relation it implies. Symmetric
+// (keyed by the sorted pair). Standing drifts from how alike their values are and their shared history
+// of war & peace; crossing a threshold forges an alliance or a rivalry, which then shapes who fights.
+export type OrgRelationKind = 'neutral' | 'ally' | 'rival';
+export interface OrgRelation {
+  standing: number;        // -1..1 — accumulated regard between the two clans
+  kind: OrgRelationKind;   // derived from standing (with hysteresis so it doesn't flicker at the edge)
+  since: number;           // tick the current kind began
+}
+
 export interface OrgStoreData {
   byId: Record<string, Organization>;
   created: number;         // total tribes ever formed — spaces the colour hues
   lastEvolveTick: number;  // the org-evolution (schism) clock
   wars: War[];             // active inter-tribe wars (M16)
   warLog?: PastWar[];      // recent concluded wars (bounded) — the town's war history (M16)
+  relations?: Record<string, OrgRelation>;   // inter-clan standing/diplomacy, keyed by pairKey (M31)
   everKnown?: string[];    // every tech ever discovered by any tribe (M17 s4 — for lost-tech tracking)
   lost?: string[];         // techs no living tribe holds any more — a fallen art until rediscovered (M17 s4)
+}
+
+// ── Diplomacy (M31) ──
+const ALLY_AT = 0.45, RIVAL_AT = -0.4, HYSTERESIS = 0.2;   // standing thresholds for ally / rival, with a sticky band
+
+export function pairKey(a: string, b: string): string { return a < b ? `${a}~${b}` : `${b}~${a}`; }
+
+export function getRelation(store: OrgStoreData, a: string, b: string): OrgRelation | undefined {
+  return store.relations?.[pairKey(a, b)];
+}
+export function standingBetween(store: OrgStoreData, a: string, b: string): number {
+  return store.relations?.[pairKey(a, b)]?.standing ?? 0;
+}
+export function relationKind(store: OrgStoreData, a: string, b: string): OrgRelationKind {
+  return store.relations?.[pairKey(a, b)]?.kind ?? 'neutral';
+}
+export const areAllied = (store: OrgStoreData, a: string, b: string): boolean => relationKind(store, a, b) === 'ally';
+export const areRivals = (store: OrgStoreData, a: string, b: string): boolean => relationKind(store, a, b) === 'rival';
+
+// Shift the standing between two clans and re-derive the relation kind. Hysteresis keeps a forged
+// bond/feud from flickering at the threshold. Returns the new kind iff it CHANGED (so the caller can
+// announce "forged an alliance" / "became rivals"), else null. Deterministic — no RNG.
+export function adjustStanding(store: OrgStoreData, a: string, b: string, delta: number, tick: number): OrgRelationKind | null {
+  if (a === b) return null;
+  if (!store.relations) store.relations = {};
+  const key = pairKey(a, b);
+  const rel = store.relations[key] ?? { standing: 0, kind: 'neutral' as OrgRelationKind, since: tick };
+  rel.standing = Math.max(-1, Math.min(1, rel.standing + delta));
+  const prev = rel.kind;
+  if (rel.kind === 'ally' && rel.standing < ALLY_AT - HYSTERESIS) rel.kind = 'neutral';
+  else if (rel.kind === 'rival' && rel.standing > RIVAL_AT + HYSTERESIS) rel.kind = 'neutral';
+  if (rel.kind === 'neutral') {
+    if (rel.standing >= ALLY_AT) rel.kind = 'ally';
+    else if (rel.standing <= RIVAL_AT) rel.kind = 'rival';
+  }
+  if (rel.kind !== prev) rel.since = tick;
+  store.relations[key] = rel;
+  return rel.kind !== prev ? rel.kind : null;
+}
+
+// ── Vassalage (M31): a weak clan submits to a dominant one — tribute for survival ──
+export const lordOf = (store: OrgStoreData, id: string): string | undefined => store.byId[id]?.lord;
+export const isVassal = (store: OrgStoreData, id: string): boolean => !!store.byId[id]?.lord;
+export function vassalsOf(store: OrgStoreData, id: string): string[] {
+  return Object.keys(store.byId).filter(k => store.byId[k].lord === id && !store.byId[k].extinct);
+}
+// Two clans are bound in one realm (lord↔vassal, or co-vassals of the same lord) → they do not war.
+export function inSameRealm(store: OrgStoreData, a: string, b: string): boolean {
+  if (a === b) return true;
+  const la = store.byId[a]?.lord, lb = store.byId[b]?.lord;
+  return la === b || lb === a || (la !== undefined && la === lb);
+}
+export function submitAsVassal(store: OrgStoreData, vassalId: string, lordId: string, tick: number): void {
+  const v = store.byId[vassalId];
+  if (!v || v.id === lordId) return;
+  v.lord = lordId;
+  v.vassalSince = tick;
+}
+// Free a clan's vassals when their lord falls (a realm dissolves on its overlord's death).
+export function releaseVassals(store: OrgStoreData, lordId: string): void {
+  for (const k of Object.keys(store.byId)) if (store.byId[k].lord === lordId) { store.byId[k].lord = undefined; store.byId[k].vassalSince = undefined; }
 }
 
 export function createOrgStore(): OrgStoreData {
