@@ -7,9 +7,10 @@ import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_POSITION, C_AFFLICTIONS, C_CIVIC, C_CLOCK, C_FLORA,
+  C_AGENT, C_POSITION, C_AFFLICTIONS, C_CIVIC, C_CLOCK, C_FLORA, C_ORGSTORE,
 } from '../src/sim/components.ts';
 import type { Agent, Position, Afflictions, Civic, Clock, Flora, AfflictionKind } from '../src/sim/components.ts';
+import type { OrgStoreData } from '../src/org/orgStore.ts';
 import {
   isPermanent, isTreatableKind, isAfflictionKind, cureAffliction, recoversUnderCare, addAffliction,
 } from '../src/sim/afflictions.ts';
@@ -139,5 +140,38 @@ describe('the infirmary tends the afflicted (M30 s2)', () => {
     const a = world(); addAffliction(a.w, a.sick, 'chronic_illness', 0);
     const b = world(); addAffliction(b.w, b.sick, 'chronic_illness', 0);
     expect(daysToCure(a.w, a.sick)).toBe(daysToCure(b.w, b.sick));
+  });
+});
+
+describe('a tribe that studies medicine heals surer (M30 s3 — the healer gains teeth)', () => {
+  // A town of 40 chronically-ill folk tended at one infirmary; count how many are cured within `days`.
+  function townCuredBy(medicine: number, days: number): number {
+    const w = new World();
+    w.addComponent<Clock>(w.createEntity(), C_CLOCK, { tick: 0, day: 0, hour: 0, isDay: true });
+    const inf = w.createEntity();
+    w.addComponent<Position>(inf, C_POSITION, { x: 10, y: 10 });
+    w.addComponent<Civic>(inf, C_CIVIC, { kind: 'infirmary', name: 'Infirmary', effect: 'heal', radius: 5 });
+    const herb = w.createEntity();
+    w.addComponent<Position>(herb, C_POSITION, { x: 30, y: 30 });
+    w.addComponent<Flora>(herb, C_FLORA, { speciesId: 'bruisewort', name: 'Bruisewort', color: '#9a6fd0', maturity: 1, growthPerTick: 0, edibleAt: 0.55, foodYield: 0.55, spreadChancePerTick: 0 });
+    if (medicine > 0) {
+      w.addComponent<OrgStoreData>(w.createEntity(), C_ORGSTORE,
+        { byId: { t1: { effects: { medicine } } }, created: 0, lastEvolveTick: 0, wars: [], warLog: [], everKnown: [], lost: [] } as unknown as OrgStoreData);
+    }
+    const sick: EntityId[] = [];
+    for (let i = 0; i < 40; i++) {
+      const e = w.createEntity();
+      w.addComponent<Position>(e, C_POSITION, { x: 11, y: 11 });
+      w.addComponent<Agent>(e, C_AGENT, { name: `S${e}`, action: 'wander', ticksAlive: 5000, wealthGoal: 50, sex: 'male', lifespanTicks: 1e9, orgId: 't1' });
+      addAffliction(w, e, 'chronic_illness', 0);
+      sick.push(e);
+    }
+    const clk = w.query(C_CLOCK)[0];
+    for (let d = 1; d <= days; d++) { w.getComponent<Clock>(clk, C_CLOCK)!.tick = d * tpd; runTreatmentSystem(w, cfg, content); }
+    return sick.filter(e => !w.getComponent(e, C_AFFLICTIONS)).length;
+  }
+
+  it('cures more of its sick within the same span than a town with no medicine', () => {
+    expect(townCuredBy(8, 4)).toBeGreaterThan(townCuredBy(0, 4));
   });
 });

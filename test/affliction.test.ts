@@ -12,6 +12,7 @@ import {
 import type { Agent, Health, Body, Position, Needs, Afflictions, Clock, Lineage } from '../src/sim/components.ts';
 import {
   addAffliction, inflictWound, abilityMod, isSlowed, recoveryFactor, hasAffliction, afflictionLabels,
+  afflictionMortality, afflictionDeathCause, oldWoundDisables,
 } from '../src/sim/afflictions.ts';
 import { combatantOf } from '../src/sim/combat.ts';
 import { runMovementSystem } from '../src/sim/systems/MovementSystem.ts';
@@ -175,6 +176,41 @@ describe('age & illness inflict afflictions (M30)', () => {
     const e = w.createEntity();
     addAffliction(w, e, 'chronic_illness', 0);
     expect(recoveryFactor(aff(w, e))).toBe(0.5);
+  });
+});
+
+describe('afflictions as death on-ramps & scars → disabilities (M30 s3)', () => {
+  it('afflictions add an honest extra mortality (chronic kills; old wounds frail; infirmity does not double-count age)', () => {
+    const w = new World(); const e = w.createEntity();
+    expect(afflictionMortality(undefined)).toBe(0);
+    addAffliction(w, e, 'infirmity', 0);
+    expect(afflictionMortality(aff(w, e))).toBe(0);              // the age ramp already handles old-age death
+    addAffliction(w, e, 'maimed_arm', 0);
+    expect(afflictionMortality(aff(w, e))).toBeCloseTo(0.001);   // an old wound frails a little
+    addAffliction(w, e, 'chronic_illness', 0);
+    expect(afflictionMortality(aff(w, e))).toBeCloseTo(0.013);   // + a chronic illness, the real risk
+  });
+
+  it('names the cause an affliction carried a soul off by (chronic before wounds; infirmity is just old age)', () => {
+    const w = new World();
+    const chronic = w.createEntity(); addAffliction(w, chronic, 'chronic_illness', 0); addAffliction(w, chronic, 'maimed_leg', 0);
+    expect(afflictionDeathCause(aff(w, chronic))).toBe('a long illness');   // chronic outranks wounds
+    const wounded = w.createEntity(); addAffliction(w, wounded, 'lost_eye', 0);
+    expect(afflictionDeathCause(aff(w, wounded))).toBe('old wounds');
+    const old = w.createEntity(); addAffliction(w, old, 'infirmity', 0);
+    expect(afflictionDeathCause(aff(w, old))).toBeNull();        // an infirmity death is "old age", handled elsewhere
+    expect(afflictionDeathCause(undefined)).toBeNull();
+  });
+
+  it("a battle-scarred veteran's old wounds can leave a lasting disability (deterministic)", () => {
+    const w1 = new World(); const e1 = w1.createEntity();
+    expect(oldWoundDisables(w1, e1, 500, 4, 0)).toBeNull();          // never, at chance 0
+    const kind = oldWoundDisables(w1, e1, 500, 4, 1);               // certain, at chance 1
+    expect(kind).toMatch(/maimed_leg|lost_eye|maimed_arm/);
+    expect(aff(w1, e1)!.list.length).toBe(1);
+    // deterministic: a separate world with the same id/tick/scars yields the same wound
+    const w2 = new World(); const e2 = w2.createEntity();
+    expect(oldWoundDisables(w2, e2, 500, 4, 1)).toBe(kind);
   });
 });
 

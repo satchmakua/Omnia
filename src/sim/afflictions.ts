@@ -8,15 +8,18 @@ import type { World, EntityId } from './ecs.ts';
 import { C_AFFLICTIONS } from './components.ts';
 import type { Afflictions, AfflictionKind } from './components.ts';
 
-interface Fx { str?: number; dex?: number; slow?: boolean; recovery?: number; permanent?: boolean; label: string; }
+interface Fx { str?: number; dex?: number; slow?: boolean; recovery?: number; permanent?: boolean; mortality?: number; label: string; }
 const FX: Record<AfflictionKind, Fx> = {
   // A lost eye, a crippled arm, a maimed leg and the frailty of age are *permanent* — disabilities
   // borne for life. A chronic illness is the one affliction a healer can draw out and cure (M30 s2).
-  maimed_leg:      { slow: true, permanent: true, label: 'a maimed leg' },
-  lost_eye:        { dex: -3, permanent: true, label: 'a lost eye' },
-  maimed_arm:      { str: -3, permanent: true, label: 'a crippled arm' },
+  // `mortality` is an extra per-day death risk the affliction carries (M30 s3): a chronic illness can
+  // prove fatal if never treated; old wounds make a body a little frailer. (Infirmity adds none — the
+  // age-mortality ramp already kills the old, so loading it here would double-count.)
+  maimed_leg:      { slow: true, permanent: true, mortality: 0.001, label: 'a maimed leg' },
+  lost_eye:        { dex: -3, permanent: true, mortality: 0.001, label: 'a lost eye' },
+  maimed_arm:      { str: -3, permanent: true, mortality: 0.001, label: 'a crippled arm' },
   infirmity:       { slow: true, str: -2, dex: -2, permanent: true, label: 'the frailty of age' },
-  chronic_illness: { recovery: 0.5, label: 'a chronic illness' },
+  chronic_illness: { recovery: 0.5, mortality: 0.012, label: 'a chronic illness' },
 };
 
 const INJURIES: readonly AfflictionKind[] = ['maimed_leg', 'lost_eye', 'maimed_arm'];   // wounds combat can leave
@@ -87,6 +90,32 @@ export function recoversUnderCare(e: EntityId, kind: AfflictionKind, day: number
 // this only decides whether that illness lingers, so the stream is untouched and replay holds.
 export function chronicOnset(e: EntityId, tick: number, chance: number): boolean {
   return (hash(e, tick ^ 0x5bd1e995) % 100000) / 100000 < chance;
+}
+
+// ── Death on-ramps (M30 s3) ──
+// The extra per-day death risk a body's afflictions carry — a chronic illness can kill if never
+// treated; old wounds leave a body a little frailer. The HealthSystem folds this into mortality.
+export function afflictionMortality(af: Afflictions | undefined): number {
+  let m = 0;
+  if (af) for (const a of af.list) m += FX[a.kind].mortality ?? 0;
+  return m;
+}
+// When an affliction is what carried a soul off, the (fixed-keyset) cause to record. Chronic illness
+// before old wounds before nothing (infirmity deaths stay "old age", handled by the age ramp).
+export function afflictionDeathCause(af: Afflictions | undefined): string | null {
+  if (!af) return null;
+  if (af.list.some(a => a.kind === 'chronic_illness')) return 'a long illness';
+  if (af.list.some(a => INJURIES.includes(a.kind))) return 'old wounds';
+  return null;
+}
+
+// Scars become real disabilities (M30 s3): old wounds catch up with the battle-scarred. A heavily-
+// scarred veteran may, on a given day, find an old wound left a lasting disability (deterministic,
+// rare — `scars` salts & raises the odds via the caller). Returns the new injury's kind, or null.
+export function oldWoundDisables(world: World, e: EntityId, tick: number, scars: number, chance: number): AfflictionKind | null {
+  if ((hash(e, tick * 31 + scars) % 100000) / 100000 >= chance) return null;
+  const kind = INJURIES[hash(e, tick + 0x51ed) % INJURIES.length];
+  return addAffliction(world, e, kind, tick) ? kind : null;
 }
 
 // Surviving a *grievous* wound can cripple you. A maiming isn't a function of one big number — a

@@ -53,6 +53,7 @@ export interface SimConfig {
   combatScarThreshold: number;         // a blow this hard (Health 0..1) leaves a permanent scar
   maimGrievousHealth: number;          // surviving a wound that leaves you below this Health may cripple you (M30)
   maimChance: number;                  // fraction of such grievous woundings that leave a permanent injury (M30)
+  scarDisabilityChance: number;        // per-day chance a heavily-scarred veteran's old wounds leave a lasting disability (M30 s3)
   combatKillBlow: number;              // a counter-blow this hard slays the attacking beast
   crimeChancePerDay: number;           // daily chance an inclined agent offends against a neighbour
   crimeAlignmentThreshold: number;     // an agent whose `good` is below this is wicked enough to do violence
@@ -271,6 +272,7 @@ export const defaultConfig: SimConfig = {
   combatScarThreshold: 0.3,        // only a deep wound leaves a lasting scar
   maimGrievousHealth: 0.4,         // beaten below 40% Health and living — a grave wounding that can cripple
   maimChance: 0.35,                // about a third of those who survive so grievous a wound are left maimed
+  scarDisabilityChance: 0.0016,    // an old wound rarely catches up with a veteran on any given day — but over a violent life it tells
   combatKillBlow: 0.18,            // a solid counter-blow drives off / slays the beast
   crimeChancePerDay: 0.03,         // most folk are honest; the wicked/desperate offend now and then
   crimeAlignmentThreshold: 0.05,   // below this on the good axis → capable of violence
