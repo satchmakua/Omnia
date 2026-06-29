@@ -18,8 +18,9 @@ export function isEmoji(): boolean { return current === 'emoji'; }
 export const EMOJI: Record<string, string> = {
   // folk + states
   folk: '🧑', child: '🧒', mage: '🧙', boat: '🛶',
-  // fauna + fish
-  animal: '🐇', grazer: '🐇', predator: '🐺', fish: '🐟',
+  // fauna: a generic 'animal' for the legend's catch-all row; per-species glyphs are in FAUNA_EMOJI
+  // below, with grazer/predator as the diet fallback for any unmapped beast. + fish.
+  animal: '🐾', grazer: '🦌', predator: '🐺', fish: '🐟',
   // flora
   plant: '🌿', plantRipe: '🌳',
   // resources
@@ -31,14 +32,29 @@ export const EMOJI: Record<string, string> = {
   dragon: '🐉', vampire: '🧛', undead: '💀', monster: '👹', ghost: '👻', alien: '👽', kraken: '🦑', guardian: '✨',
 };
 
+// A distinct emoji per fauna SPECIES (keyed by the content species id), so the menagerie reads as
+// itself — a rabbit isn't an elk isn't a wolf. The renderer/bestiary fall back to the diet glyph
+// (grazer/predator) for any species without an entry, so a new YAML beast still draws something.
+export const FAUNA_EMOJI: Record<string, string> = {
+  rabbit: '🐇', deer: '🦌', wild_boar: '🐗', wild_horse: '🐎', wolf: '🐺', bear: '🐻',
+  moth_grazer: '🦋', glow_moth: '🐛', dust_hopper: '🦗', dust_beetle: '🪲',
+  crag_ram: '🐏', spire_elk: '🫎', thistle_doe: '🐐', ember_hound: '🐕', pallid_stalker: '🐆',
+};
+
+// The emoji for a beast: its species' own, else the diet fallback (grazer/predator).
+export function faunaEmoji(speciesId: string | undefined, diet: 'grazer' | 'predator'): string {
+  return (speciesId && FAUNA_EMOJI[speciesId]) || EMOJI[diet];
+}
+
 export function emojiFor(key: string): string | undefined {
-  return EMOJI[key];
+  return FAUNA_EMOJI[key] ?? EMOJI[key];
 }
 
 // A small DOM icon for the legend / bestiary — an emoji glyph under the emoji skin, else the lo-fi
-// SVG swatch. `scale` < 1 shrinks it (e.g. a child). Callers wrap it in their own swatch box.
-export function glyphHtml(key: string, color: string, size = 22, scale = 1): string {
-  const e = current === 'emoji' ? EMOJI[key] : undefined;
+// SVG swatch. `scale` < 1 shrinks it (e.g. a child). `emojiKey` overrides only the emoji lookup
+// (e.g. a fauna species id) while `key` stays the lo-fi category. Callers wrap it in a swatch box.
+export function glyphHtml(key: string, color: string, size = 22, scale = 1, emojiKey?: string): string {
+  const e = current === 'emoji' ? emojiFor(emojiKey ?? key) : undefined;
   if (e) return `<span style="font-size:${Math.round(size * 0.82 * scale)}px;line-height:1">${e}</span>`;
   const inner = iconSvgInner(key as Category, color);
   const g = scale === 1 ? inner : `<g transform="scale(${scale})">${inner}</g>`;

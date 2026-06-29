@@ -1,83 +1,96 @@
-// Islands (M24 slice 4): the Voronoi map is one connected landmass, so to give the sea a far
-// shore we carve a distinct **island** — a disc of land ringed by a water moat near a corner —
-// after terrain generation. A non-seafaring folk cannot reach it (the moat blocks 4-dir steps);
-// only a tribe with the Seafaring tech can sail across. The island sometimes holds its own
-// settlement (a foreign people), seeded by world.ts. Deterministic (uses the seeded RNG).
+// Islands (M24 s4; naturalised) — with the heightmap painting real seas (worldgen.ts), an island is
+// simply **a body of land cut off from the mainland by water**, found by flood-filling the passable
+// tiles into connected components: the biggest is the mainland, any other (sea-locked) component is
+// an island. A non-seafaring folk can't reach one (water blocks 4-dir steps); only a Seafaring tribe
+// sails across. The largest island sometimes holds its own settlement (a foreign people), seeded by
+// world.ts. Pure read of the generated map — draws no RNG.
 import { rngInt } from '../sim/rng.ts';
 import type { RNG } from '../sim/rng.ts';
-import { isPassable, isWater } from './tilemap.ts';
+import { isPassable, isWater, tileIdx } from './tilemap.ts';
 import type { TileMapData } from './tilemap.ts';
 
-export interface IslandRegion { cx: number; cy: number; r: number; }
+export interface IslandRegion {
+  tiles: Set<number>;   // tile indices (y*width + x) of the island's land
+  w: number;            // map width, so membership is index-checkable without the map
+  cx: number; cy: number;   // centroid, for camera/labels
+  size: number;             // tile count
+}
 
-const MOAT = 2;   // width of the water ring (≥1 already blocks foot travel; 2 reads clearly)
+const MIN_ISLAND = 6;   // ignore tiny specks of land; an island worth the name is at least this big
 
-// Carve one island into a corner of the map: a land disc (radius r) ringed by a water moat.
-// Returns the island region. Needs a passable land biome and a water biome in the content.
-export function carveIsland(rng: RNG, map: TileMapData, _seed?: number): IslandRegion | null {
-  const landIdx = map.passableByBiome.findIndex(p => p);
-  const waterIdx = map.passableByBiome.findIndex(p => !p);
-  if (landIdx < 0 || waterIdx < 0) return null;   // need both land and water biomes
+// Flood-fill the passable tiles into 4-connected components (4-dir = how folk walk). The largest is
+// the mainland; the largest *other* component is "the island". Returns both (island null if none).
+export function detectIslands(map: TileMapData): { mainland: Set<number>; island: IslandRegion | null } {
+  const { width, height } = map;
+  const visited = new Uint8Array(width * height);
+  const components: number[][] = [];
 
-  const r = Math.max(3, Math.floor(Math.min(map.width, map.height) * 0.13));
-  const inset = r + MOAT + 1;
-  // Pick one of the four corners, with a little jitter, so the island sits offshore.
-  const corner = rngInt(rng, 0, 3);
-  const jx = rngInt(rng, 0, 2), jy = rngInt(rng, 0, 2);
-  const cx = (corner & 1) ? map.width - 1 - inset - jx : inset + jx;
-  const cy = (corner & 2) ? map.height - 1 - inset - jy : inset + jy;
-
-  for (let y = cy - r - MOAT; y <= cy + r + MOAT; y++) {
-    for (let x = cx - r - MOAT; x <= cx + r + MOAT; x++) {
-      if (x < 0 || x >= map.width || y < 0 || y >= map.height) continue;
-      const d = Math.max(Math.abs(x - cx), Math.abs(y - cy));   // Chebyshev → a squarish isle
-      if (d <= r) map.biomeIndex[y * map.width + x] = landIdx;          // the island
-      else if (d <= r + MOAT) map.biomeIndex[y * map.width + x] = waterIdx;   // the moat
+  for (let start = 0; start < width * height; start++) {
+    if (visited[start] || !map.passableByBiome[map.biomeIndex[start]]) continue;
+    const comp: number[] = [];
+    const stack = [start];
+    visited[start] = 1;
+    while (stack.length) {
+      const t = stack.pop()!;
+      comp.push(t);
+      const x = t % width, y = (t - x) / width;
+      const neigh = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
+      for (const [nx, ny] of neigh) {
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const n = ny * width + nx;
+        if (!visited[n] && map.passableByBiome[map.biomeIndex[n]]) { visited[n] = 1; stack.push(n); }
+      }
     }
+    components.push(comp);
   }
-  return { cx, cy, r };
+
+  if (components.length === 0) return { mainland: new Set(), island: null };
+  components.sort((a, b) => b.length - a.length);
+  const mainland = new Set(components[0]);
+
+  const islandComp = components.slice(1).find(c => c.length >= MIN_ISLAND) ?? null;
+  let island: IslandRegion | null = null;
+  if (islandComp) {
+    let sx = 0, sy = 0;
+    for (const t of islandComp) { sx += t % width; sy += Math.floor(t / width); }
+    island = { tiles: new Set(islandComp), w: width, cx: Math.round(sx / islandComp.length), cy: Math.round(sy / islandComp.length), size: islandComp.length };
+  }
+  return { mainland, island };
 }
 
-// Is (x,y) part of the island's land (within the disc)?
+// Is (x,y) part of this island?
 export function inIsland(island: IslandRegion, x: number, y: number): boolean {
-  return Math.max(Math.abs(x - island.cx), Math.abs(y - island.cy)) <= island.r;
+  return island.tiles.has(y * island.w + x);
 }
 
-// A random passable tile on the MAINLAND (anywhere off the island + its moat). Falls back to
-// any passable tile. When `island` is null, this is just findPassableTile.
-export function findMainlandTile(rng: RNG, map: TileMapData, island: IslandRegion | null): { x: number; y: number } {
-  const off = (x: number, y: number) => !island || Math.max(Math.abs(x - island.cx), Math.abs(y - island.cy)) > island.r + MOAT;
+// A random tile in a given land set (the mainland, typically). Falls back to a deterministic scan.
+function tileInSet(rng: RNG, map: TileMapData, set: Set<number>): { x: number; y: number } {
   for (let attempt = 0; attempt < 200; attempt++) {
     const x = rngInt(rng, 0, map.width - 1), y = rngInt(rng, 0, map.height - 1);
-    if (isPassable(map, x, y) && off(x, y)) return { x, y };
+    if (set.has(tileIdx(map, x, y))) return { x, y };
   }
-  for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) if (isPassable(map, x, y) && off(x, y)) return { x, y };
-  for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) if (isPassable(map, x, y)) return { x, y };
-  throw new Error('World generation produced no passable mainland tile');
+  for (const t of set) return { x: t % map.width, y: Math.floor(t / map.width) };
+  throw new Error('World generation produced no land in the requested region');
 }
 
-// A random passable tile ON the island. Returns null if the island has no passable land.
-export function findIslandTile(rng: RNG, map: TileMapData, island: IslandRegion): { x: number; y: number } | null {
-  for (let attempt = 0; attempt < 200; attempt++) {
-    const x = rngInt(rng, island.cx - island.r, island.cx + island.r);
-    const y = rngInt(rng, island.cy - island.r, island.cy + island.r);
-    if (isPassable(map, x, y) && inIsland(island, x, y)) return { x, y };
-  }
-  for (let y = island.cy - island.r; y <= island.cy + island.r; y++)
-    for (let x = island.cx - island.r; x <= island.cx + island.r; x++)
-      if (isPassable(map, x, y) && inIsland(island, x, y)) return { x, y };
-  return null;
+// A random passable tile on the MAINLAND. `mainland` is the set from detectIslands.
+export function findMainlandTile(rng: RNG, map: TileMapData, mainland: Set<number>): { x: number; y: number } {
+  return tileInSet(rng, map, mainland);
 }
 
-// A passable mainland tile bordering water — for a coastal fishery (M24), kept off the island.
-export function findMainlandCoastalTile(rng: RNG, map: TileMapData, island: IslandRegion | null): { x: number; y: number } | null {
-  const off = (x: number, y: number) => !island || Math.max(Math.abs(x - island.cx), Math.abs(y - island.cy)) > island.r + MOAT;
+// A random passable tile ON the island, or null if there is none.
+export function findIslandTile(rng: RNG, map: TileMapData, island: IslandRegion | null): { x: number; y: number } | null {
+  if (!island || island.tiles.size === 0) return null;
+  return tileInSet(rng, map, island.tiles);
+}
+
+// A mainland tile bordering water — a coastal spot for a fishery/dock (M24). Null if none.
+export function findMainlandCoastalTile(rng: RNG, map: TileMapData, mainland: Set<number>): { x: number; y: number } | null {
   const borders = (x: number, y: number) => isWater(map, x + 1, y) || isWater(map, x - 1, y) || isWater(map, x, y + 1) || isWater(map, x, y - 1);
   for (let attempt = 0; attempt < 300; attempt++) {
     const x = rngInt(rng, 0, map.width - 1), y = rngInt(rng, 0, map.height - 1);
-    if (isPassable(map, x, y) && off(x, y) && borders(x, y)) return { x, y };
+    if (mainland.has(tileIdx(map, x, y)) && borders(x, y)) return { x, y };
   }
-  for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++)
-    if (isPassable(map, x, y) && off(x, y) && borders(x, y)) return { x, y };
+  for (const t of mainland) { const x = t % map.width, y = Math.floor(t / map.width); if (isPassable(map, x, y) && borders(x, y)) return { x, y }; }
   return null;
 }

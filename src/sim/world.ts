@@ -15,7 +15,7 @@ import type { Species } from '../content/schema.ts';
 import { spawnAgent, renameToClan } from './spawnAgent.ts';
 import { raiseCivic } from './civicBuild.ts';
 import { seedFish } from './systems/FishSystem.ts';
-import { carveIsland, findMainlandTile, findMainlandCoastalTile, findIslandTile } from '../world/islands.ts';
+import { detectIslands, findMainlandTile, findMainlandCoastalTile, findIslandTile } from '../world/islands.ts';
 import { generateTileMap } from '../world/worldgen.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { populateWorld } from '../world/populate.ts';
@@ -145,7 +145,7 @@ const ISLAND_POPULATE_CHANCE = 0.6;
 const ISLAND_FOUNDERS = 5;
 function seedIslandSettlement(
   world: World, cfg: SimConfig, rng: RNG, content: Content, map: TileMapData,
-  island: ReturnType<typeof carveIsland>,
+  island: ReturnType<typeof detectIslands>['island'],
 ): void {
   if (!island) return;
   if (rng() >= ISLAND_POPULATE_CHANCE) return;   // the isle is sometimes uninhabited
@@ -232,10 +232,10 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const clock: Clock = { tick: 0, day: 0, hour: 0, isDay: true };
   world.addComponent(clockEntity, C_CLOCK, clock);
 
-  // Generate terrain first (consumes RNG), store as a singleton component.
+  // Generate terrain first (consumes RNG), store as a singleton component. The heightmap paints
+  // natural seas; the mainland + any sea-locked island fall out as connected land components (M24).
   const tileMap = generateTileMap(rng, cfg.gridWidth, cfg.gridHeight, content.biomes, scaledBiomeSeeds(cfg));
-  // Carve an offshore island (M24 s4) — a far shore across the sea, reachable only by boat.
-  const island = carveIsland(rng, tileMap);
+  const { mainland, island } = detectIslands(tileMap);
   const mapEntity = world.createEntity();
   world.addComponent<TileMapData>(mapEntity, C_TILEMAP, tileMap);
 
@@ -282,7 +282,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   if (professions.length > 0) {
     for (let i = 0; i < scaledBusinessCount(cfg); i++) {
       const prof = professions[i % professions.length];
-      const spot = (prof.fishery ? findMainlandCoastalTile(rng, tileMap, island) : null) ?? findMainlandTile(rng, tileMap, island);
+      const spot = (prof.fishery ? findMainlandCoastalTile(rng, tileMap, mainland) : null) ?? findMainlandTile(rng, tileMap, mainland);
       spawnBusiness(world, spot.x, spot.y, prof, cfg);
     }
   }
@@ -294,7 +294,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   const tpy = ticksPerYear(cfg);
   for (let i = 0; i < cfg.initialPopulation; i++) {
     const species = rollSpecies(rng, speciesList, totalWeight);
-    const { x, y } = findMainlandTile(rng, tileMap, island);   // the town founds on the mainland
+    const { x, y } = findMainlandTile(rng, tileMap, mainland);   // the town founds on the mainland
     // Founders have a spread of ages so the town starts with a real generation mix.
     const ageTicks = Math.floor(rngFloat(rng, cfg.initialAgeMinYears, cfg.initialAgeMaxYears) * tpy);
     spawnAgent(world, cfg, rng, species, content, { x, y, ageTicks });

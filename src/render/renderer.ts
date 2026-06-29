@@ -15,7 +15,7 @@ import { isWater } from '../world/tilemap.ts';
 import { getOrgStore } from '../org/orgStore.ts';
 import { ageInYears, calendarOf } from '../sim/config.ts';
 import { CATEGORY_COLOR, resourceIcon } from './icons.ts';
-import { isEmoji, EMOJI } from './skin.ts';
+import { isEmoji, EMOJI, faunaEmoji } from './skin.ts';
 
 // Real-world watch time as H:MM:SS (or M:SS under an hour).
 function formatElapsed(ms: number): string {
@@ -305,7 +305,7 @@ export class Renderer {
     for (const e of world.query(C_FAUNA, C_POSITION)) {
       const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
-      if (emoji) this.drawEmoji(drawX(e, p.x), drawY(e, p.y), EMOJI[fa.diet === 'predator' ? 'predator' : 'grazer']);
+      if (emoji) this.drawEmoji(drawX(e, p.x), drawY(e, p.y), faunaEmoji(fa.speciesId, fa.diet));
       else this.iconAnimal(drawX(e, p.x), drawY(e, p.y), fa.color, fa.size);   // species colour + size
     }
     for (const e of world.query(C_SPECIAL, C_POSITION)) {   // monsters & uncanny visitors (M21)

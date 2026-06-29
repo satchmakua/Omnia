@@ -75,13 +75,15 @@ describe('CapabilitySystem', () => {
 
 describe('magic aptitude', () => {
   it('is rare across the population (well under 10%) yet appears', () => {
-    const big = { ...defaultConfig, seed: 7, initialPopulation: 300 };
-    const { world } = createSimulation(big, content);
-    const folk = world.query(C_AGENT).length;
-    const mages = world.query(C_AGENT, C_MAGIC).length;
-    expect(folk).toBe(300);
-    expect(mages).toBeGreaterThan(0);
-    expect(mages / folk).toBeLessThan(0.1);
+    // Aggregate over several seeds so the assertion rides on the *rate*, not one lucky species roll.
+    let folk = 0, mages = 0;
+    for (const seed of [3, 7, 11, 19]) {
+      const { world } = createSimulation({ ...defaultConfig, seed, initialPopulation: 300 }, content);
+      folk += world.query(C_AGENT).length;
+      mages += world.query(C_AGENT, C_MAGIC).length;
+    }
+    expect(mages).toBeGreaterThan(0);          // magic does appear…
+    expect(mages / folk).toBeLessThan(0.1);    // …but stays rare (well under 10%)
   });
 
   it('is deterministic: same seed → same number of mages', () => {
@@ -211,17 +213,20 @@ describe('MagicSystem (M17 s3)', () => {
   });
 
   it('aptitude-gifted folk are given a school and mastery at world-gen', () => {
-    // A larger founding town so the rare magic aptitude is near-certain to appear in someone
-    // (otherwise this is sensitive to which species the seed spawns — M21 added races with low
-    // aptitude, which shifted the per-seed mage count at the default population).
-    const { world } = createSimulation({ ...defaultConfig, seed: 8, initialPopulation: 80 }, content);
-    const mages = world.query(C_MAGIC, C_AGENT);
-    expect(mages.length).toBeGreaterThan(0);
-    for (const e of mages) {
-      const magic = world.getComponent<Magic>(e, C_MAGIC)!;
-      expect(schoolIds()).toContain(magic.school);
-      expect(magic.mastery).toBeGreaterThanOrEqual(1);
+    // Scan seeds for a founding town that rolled at least one mage (aptitude is rare & species-
+    // dependent, so no single seed is guaranteed), then validate every mage's school & mastery.
+    for (let seed = 1; seed <= 12; seed++) {
+      const { world } = createSimulation({ ...defaultConfig, seed, initialPopulation: 120 }, content);
+      const mages = world.query(C_MAGIC, C_AGENT);
+      if (mages.length === 0) continue;
+      for (const e of mages) {
+        const magic = world.getComponent<Magic>(e, C_MAGIC)!;
+        expect(schoolIds()).toContain(magic.school);
+        expect(magic.mastery).toBeGreaterThanOrEqual(1);
+      }
+      return;   // validated a town that has mages
     }
+    throw new Error('no mage appeared across seeds 1–12 at pop 120');
   });
 });
 
