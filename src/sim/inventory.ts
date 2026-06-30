@@ -29,6 +29,16 @@ export function itemCount(inv: Inventory, id: string): number {
   return inv.items[id] ?? 0;
 }
 
+// Record the craft-quality of a good just made (M33): the bag keeps the *best* tier carried of each
+// id (you wield / sell your finest). −1 means none carried.
+export function recordQuality(inv: Inventory, id: string, tier: number): void {
+  if (!inv.quality) inv.quality = {};
+  inv.quality[id] = Math.max(inv.quality[id] ?? -1, tier);
+}
+export function qualityOf(inv: Inventory, id: string): number {
+  return inv.quality?.[id] ?? -1;
+}
+
 export function totalItems(inv: Inventory): number {
   let n = 0;
   for (const id in inv.items) n += inv.items[id];

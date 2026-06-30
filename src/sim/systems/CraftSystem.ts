@@ -11,7 +11,8 @@ import type { Agent, Job, Clock, Crafting } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { Content } from '../../content/loader.ts';
 import type { Recipe } from '../../content/schema.ts';
-import { itemCount, takeItem, addItem } from '../inventory.ts';
+import { itemCount, takeItem, addItem, recordQuality } from '../inventory.ts';
+import { qualityFromSkill } from '../quality.ts';
 import type { Inventory } from '../components.ts';
 
 const SKILL_MAX = 10;   // craftsmanship tops out (keeps skill bounded)
@@ -54,7 +55,9 @@ export function runCraftSystem(world: World, cfg: SimConfig, content: Content): 
     if (!pick || !hasInputs(inv, pick)) continue;
 
     for (const id in pick.inputs) takeItem(inv, id, pick.inputs[id]);
-    addItem(inv, pick.output, pick.outputQty, cfg.inventoryMaxPerItem);
+    const added = addItem(inv, pick.output, pick.outputQty, cfg.inventoryMaxPerItem);
+    // The good is as fine as the hand that made it (M33): its quality is fixed now, from this skill.
+    if (added > 0) recordQuality(inv, pick.output, qualityFromSkill(skill));
     if (!craft) { craft = { skill: 0 }; world.addComponent<Crafting>(e, C_CRAFTING, craft); }
     craft.skill = Math.min(SKILL_MAX, craft.skill + pick.skillGain);
   }

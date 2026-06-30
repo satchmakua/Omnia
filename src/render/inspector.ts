@@ -2,14 +2,16 @@ import type { World } from '../sim/ecs.ts';
 import type { EntityId } from '../sim/ecs.ts';
 import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN,
-  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE, C_ENCHANTMENT, C_VOYAGE, C_RELATIONSHIPS, C_AFFLICTIONS,
+  C_HEALTH, C_LINEAGE, C_MEMORY, C_FAUNA, C_FLORA, C_RESOURCE, C_TILEMAP, C_TOMBSTONE, C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_INVENTORY, C_CRAFTING, C_EQUIPMENT, C_QUEST, C_WONDERSITE, C_SPECIAL, C_FISH, C_CLOCK, C_WARD, C_CURSE, C_ENCHANTMENT, C_VOYAGE, C_RELATIONSHIPS, C_AFFLICTIONS, C_ARTIFACTS,
 } from '../sim/components.ts';
 import type {
   Agent, Needs, Wallet, Position, SpeciesComp, Magic, Job, Business, Home, Civic,
-  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse, Enchantment, Voyage, Relationships, Afflictions,
+  Health, Lineage, Memory, Fauna, Flora, Resource, Tombstone, Body, Alignment, Personality, Combat, Crime, Inventory, Crafting, Equipment, Ruin, Quest, WonderSite, Special, Clock, Ward, Curse, Enchantment, Voyage, Relationships, Afflictions, ArtifactsData,
 } from '../sim/components.ts';
+import { bearerArtifact } from '../history/artifacts.ts';
 import { eyeColour, hairColour, buildWord, alignmentName, traitsOf } from '../sim/heredity.ts';
 import { labelOf, isTreatableKind } from '../sim/afflictions.ts';
+import { qualityName } from '../sim/quality.ts';
 import { socialClassOf } from '../sim/society.ts';
 import { schoolOf } from '../magic/schools.ts';
 import { getReligionStore, getReligion } from '../religion/religionStore.ts';
@@ -426,13 +428,26 @@ export class Inspector {
     ].filter(Boolean).join(', ') : '';
     const crimeLine = crimeBits ? `<div style="color:#ff8a8a;margin-top:3px">⚖ an outlaw — ${crimeBits}</div>` : '';
     const eq = world.getComponent<Equipment>(e, C_EQUIPMENT);
-    const eqBits = eq ? [eq.weapon > 0 ? `a weapon (+${eq.weapon})` : '', eq.armour > 0 ? `armour (+${eq.armour})` : ''].filter(Boolean).join(', ') : '';
+    const gearName = (id: string | undefined, q: number | undefined, fallback: string): string =>
+      `${q !== undefined && q >= 0 ? qualityName(q) + ' ' : ''}${(id ?? fallback).replace(/_/g, ' ')}`;
+    const eqBits = eq ? [
+      eq.weapon > 0 ? `a ${gearName(eq.weaponId, eq.weaponQuality, 'weapon')} (+${eq.weapon.toFixed(1)})` : '',
+      eq.armour > 0 ? `${gearName(eq.armourId, eq.armourQuality, 'armour')} (+${eq.armour.toFixed(1)})` : '',
+    ].filter(Boolean).join(', ') : '';
     const eqLine = eqBits ? `<div style="color:#9ec6e0;margin-top:3px">⚔ equipped — ${eqBits}</div>` : '';
+    // A legendary artifact this soul bears (M20/M33): its name, its graven scene, and its heirloom line.
+    const artEnt = world.query(C_ARTIFACTS)[0];
+    const relic = artEnt !== undefined ? bearerArtifact(world.getComponent<ArtifactsData>(artEnt, C_ARTIFACTS)!, e) : undefined;
+    const relicLine = relic
+      ? `<div style="color:#ffe0a0;margin-top:3px">${relic.kind === 'weapon' ? '⚔' : '🛡'} bears <b>${relic.name}</b> — ${relic.deeds}` +
+        `${relic.generations ? ` <span style="color:#c79bf0">⚱ heirloom (${relic.generations} gen${relic.generations === 1 ? '' : 's'})</span>` : ''}` +
+        `${relic.depicts ? `<br><span style="color:#c9a86a;font-size:11px;margin-left:14px">⚜ depicting ${relic.depicts}</span>` : ''}</div>`
+      : '';
     return `<hr style="${RULE}">
       <div style="${SECTION}">Body &amp; character</div>
       <div style="line-height:1.9">${score('STR', b.str)}${score('DEX', b.dex)}${score('CON', b.con)}<br>${score('INT', b.int)}${score('WIS', b.wis)}${score('CHA', b.cha)}</div>
       <div style="color:#9ab;margin-top:3px">${b.heightCm}cm · ${buildWord(b)} build · ${eyeColour(b)} eyes · ${hairColour(b)} hair</div>
-      ${charLine}${combatLine}${eqLine}${crimeLine}`;
+      ${charLine}${combatLine}${eqLine}${relicLine}${crimeLine}`;
   }
 
   // Clan (M14/M20): the clan this person belongs to — both their kin-line (its name is their

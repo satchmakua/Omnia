@@ -3,7 +3,7 @@ import type { EntityId } from '../sim/ecs.ts';
 import type { SimConfig } from '../sim/config.ts';
 import {
   C_POSITION, C_AGENT, C_MAGIC, C_HEALTH, C_FLORA, C_FAUNA, C_RESOURCE, C_BUSINESS, C_HOME, C_CIVIC, C_RUIN, C_WONDERSITE,
-  C_QUEST, C_CRIME, C_COMBAT, C_SPECIAL, C_FISH,
+  C_QUEST, C_CRIME, C_COMBAT, C_SPECIAL, C_FISH, C_AFFLICTIONS,
   C_CLOCK, C_TILEMAP, C_EVENTLOG,
 } from '../sim/components.ts';
 import type {
@@ -43,7 +43,7 @@ const BADGE = {
 // A folk's on-map state, dual-coded as small badges around the icon/emoji (mage, ill, action, …).
 interface FolkState {
   mage: boolean; ill: boolean; wounded: boolean; action: string; chatting: boolean;
-  bodyColor?: string; quest?: boolean; veteran?: boolean; outlaw?: boolean; mentalState?: string; boat?: boolean;
+  bodyColor?: string; quest?: boolean; veteran?: boolean; outlaw?: boolean; mentalState?: string; boat?: boolean; afflicted?: boolean;
 }
 
 // The 8-neighbourhood, for the "in company" chat badge (M10 slice 4.5).
@@ -356,6 +356,7 @@ export class Renderer {
         outlaw: world.hasComponent(e, C_CRIME),                      // ⚖ an outlaw (M16)
         mentalState: agent.mentalState,                              // a mental break mark (M28 s2)
         boat,                                                        // ⛵ afloat — a folk on the water rides a boat (M24)
+        afflicted: world.hasComponent(e, C_AFFLICTIONS),             // ⚕ carries a lasting affliction/disability (M30)
       };
       if (emoji) {
         // The emoji skin shows the same state badges as the icon skin (M34 parity): the bare glyph
@@ -367,11 +368,33 @@ export class Renderer {
       this.iconFolk(gx, gy, child, st);
     }
 
+    this.drawClanSeats(world, orgStore);   // a banner at each clan's seat — its hold on the ground (M31 s2)
     this.drawCombatFx(world, elapsedMs);   // fading clash/death marks (still in world space)
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.drawDayNight(world, clockEntity);   // soft time-of-day wash over the map (D13 aesthetic)
     this.drawHud(world, clockEntity, elapsedMs);
+  }
+
+  // A small banner at each clan's seat — the centroid of its folk, its hold on the ground (M31 s2
+  // territory), flown in the clan's own colour. A pure read; render-only.
+  private drawClanSeats(world: World, store: ReturnType<typeof getOrgStore>): void {
+    if (!store) return;
+    const count = new Map<string, number>();
+    for (const e of world.query(C_AGENT)) {
+      const id = world.getComponent<Agent>(e, C_AGENT)!.orgId;
+      if (id) count.set(id, (count.get(id) ?? 0) + 1);
+    }
+    const ctx = this.ctx;
+    for (const o of Object.values(store.byId)) {
+      if (o.extinct || !o.seat || (count.get(o.id) ?? 0) < 3) continue;   // only a clan with a real hold
+      this.at(o.seat.x, o.seat.y, 1, () => {
+        ctx.strokeStyle = 'rgba(15,15,24,0.7)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, -17); ctx.lineTo(0, -5); ctx.stroke();                                   // pole
+        ctx.fillStyle = o.color;
+        ctx.beginPath(); ctx.moveTo(0.5, -17); ctx.lineTo(8.5, -14.5); ctx.lineTo(0.5, -12); ctx.closePath(); ctx.fill();   // pennant
+      });
+    }
   }
 
   // A gentle day→night colour wash (D13). Drawn over the world but under the HUD, so the map
@@ -465,6 +488,11 @@ export class Renderer {
       }
       // ⚖ an outlaw: a small red mark at the lower left (M16).
       if (st.outlaw) { ctx.fillStyle = '#ff5a5a'; ctx.beginPath(); ctx.arc(-7.5, 4, 1.7, 0, Math.PI * 2); ctx.fill(); }
+      // ⚕ afflicted: a small dusky cross at the left — a lasting disability or chronic ill (M30).
+      if (st.afflicted) {
+        ctx.strokeStyle = '#d9a0a0'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-9.3, -2.2); ctx.lineTo(-9.3, 0.6); ctx.moveTo(-10.7, -0.8); ctx.lineTo(-7.9, -0.8); ctx.stroke();
+      }
       // A mental break (M28 s2): a mark above the head — despair (blue drizzle), rage (red flash), joy (gold sparkle).
       if (st.mentalState === 'despair') {
         ctx.strokeStyle = '#7fa8d0'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';

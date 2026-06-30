@@ -9,7 +9,8 @@ import { C_AGENT, C_INVENTORY, C_WALLET, C_CLOCK } from '../components.ts';
 import type { Inventory, Wallet, Clock } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { Content } from '../../content/loader.ts';
-import { itemCount, takeItem } from '../inventory.ts';
+import { itemCount, takeItem, qualityOf } from '../inventory.ts';
+import { qualityValueMultiplier } from '../quality.ts';
 import { earn } from '../economy.ts';
 
 const SELL_RATE = 0.5;   // crafters realise half a good's listed value at sale (friction/margin)
@@ -33,7 +34,10 @@ export function runTradeSystem(world: World, cfg: SimConfig, content: Content): 
       const keep = (g.category === 'weapon' || g.category === 'armour') ? 1 : 0;
       const sell = have - keep;
       if (sell <= 0) continue;
-      if (takeItem(inv, g.id, sell)) earned += g.value * sell * SELL_RATE;
+      // A finer good fetches more — quality lifts (or lowers) its worth (M33).
+      const tier = qualityOf(inv, g.id);
+      const worth = g.value * (tier >= 0 ? qualityValueMultiplier(tier) : 1);
+      if (takeItem(inv, g.id, sell)) earned += worth * sell * SELL_RATE;
     }
     if (earned > 0) earn(world.getComponent<Wallet>(e, C_WALLET)!, earned);
   }

@@ -109,10 +109,14 @@ export class LegendsPanel {
       Number(!!a.lost) - Number(!!b.lost) || b.forgedTick - a.forgedTick);
     const rows = sorted.slice(0, 20).map(a => {
       const glyph = a.kind === 'weapon' ? '⚔' : '🛡';
+      // An heirloom passed down a lineage, accruing a generation of history each time (M33 s3).
+      const heirloom = a.generations ? `<span style="color:#c79bf0;font-size:11px"> · ⚱ heirloom (${a.generations} gen${a.generations === 1 ? '' : 's'})</span>` : '';
+      // A masterwork's engraving — a scene from the town's own history graven into it (M33 s2).
+      const engraving = a.depicts ? `<div style="color:#c9a86a;font-size:11px;margin-left:16px">⚜ depicting ${a.depicts}</div>` : '';
       return `<div style="margin:2px 0">
         <span style="color:${a.lost ? '#b0a8c0' : '#ffe0a0'}">${glyph} ${a.name}</span>
         <span style="color:#9ab">— ${a.deeds}</span>
-        <span style="color:#677;font-size:11px">· forged by ${a.forgedBy}, yr ${yearOf(a.forgedTick)}</span>${a.lost ? ' <span style="color:#877;font-size:11px">(lost)</span>' : ''}</div>`;
+        <span style="color:#677;font-size:11px">· forged by ${a.forgedBy}, yr ${yearOf(a.forgedTick)}</span>${heirloom}${a.lost ? ' <span style="color:#877;font-size:11px">(lost)</span>' : ''}${engraving}</div>`;
     }).join('');
     return `<div style="color:#ffcf9a;text-transform:uppercase;font-size:11px;letter-spacing:1px;margin:6px 0 4px">Artifacts &amp; relics <span style="color:#789">(${data.artifacts.length})</span></div>${rows}<hr style="border-color:rgba(255,255,255,0.08);margin:12px 0">`;
   }
