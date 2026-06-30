@@ -523,6 +523,18 @@ Every milestone from the founding simulation through the inner-life trio (M28–
 
 ---
 
+## Milestone 36 — The Real Market Economy  *(user-requested 2026-06-30; promoted from the standing backlog)*
+
+**Goal:** the economy runs on **real supply & demand**, not abstract productivity — goods have floating prices, business income comes from actual sales, and an unprofitable trade can fold. Today only **food** works this way (M15); this extends it to the rest of the economy. **Balance-critical** — built in careful, soak-verified slices.
+
+- [x] **A goods market** *(S141)*: each crafted good (plank/beam/tool/fine_tool/blade/shield) now has a **price that floats with supply** instead of a fixed listed value. New `GoodsMarket` singleton + `goodsMarket.ts` + `GoodsMarketSystem` (runs daily, before the TradeSystem sells, so goods clear at the day's price). The model is **self-calibrating & mean-preserving**: each good's price chases `base × (avgSupply ÷ today's supply)` where `avgSupply` is a slow EMA of its own production — so the long-run price equals the listed value (= marginal cost) and only short-run deviations from a good's own norm move it (a glut cheapens, a scarce good dears), within a bounded band. The TradeSystem sells at this price; the Economy view shows each good's price + a glut/scarce tag. Pure arithmetic, **no RNG** → replay/save-safe. **Verified:** 778 tests (+7); 40k soak healthy (pop 60, mood 0.95); browser-verified prices float (made goods move, unmade stay at base) + the dashboard renders. **Balance note:** a goods market inherently rewards skill/timing, so it adds a **chaotic, band-insensitive ~+0.04 adults-gini** (multi-seed A/B: 0.30 → 0.34), amplified by the landlord home-building dynamic — still healthy and arguably desirable *emergent* wealth structure (the README's "small empires"), **not** the runaway concentration past bugs caused. Flagged for review; the band is a visibility knob, not a gini knob.
+- [ ] **Business revenue from real sales** *(slice 2)*: non-food businesses currently book a flat `revenuePerWorkerPerTick` (abstract). Tie a gathering/crafting business's income to what its workers actually **produce and sell** at the goods-market price (so depletion & oversupply hit revenue — also closes the "resource gathering economic coupling" backlog item). Likely *more* gini-neutral than slice 1 (revenue → wages, spread across employees, and businesses don't build homes). Balance-sensitive — the main wage stream; soak-tune solvency carefully.
+- [ ] **Bankruptcy & founding for all trades** *(slice 3)*: extend the food-sector's fold/found logic (BusinessSystem) to every trade — an unprofitable workshop folds, a new one opens where a good is dear. The trade sector then tracks demand like the farm sector does.
+
+**DoD:** crafted goods clear at supply-driven prices; non-food business income comes from real sales; an unprofitable trade can fold and a new one open where demand is unmet; determinism + soak hold (no runaway wealth, no economic collapse).
+
+---
+
 ## Backlog (unsorted — promote into a milestone before building)
 
 *(Append new ideas here with a date. Do not build directly from this list.)*
@@ -533,7 +545,7 @@ Every milestone from the founding simulation through the inner-life trio (M28–
 - More traditions for the capability system (alchemy, bio-engineering, ritual) — date: founding.
 - Domestication of fauna; agriculture depth — date: founding.
 - ~~Renderer: interpolate entity positions between ticks for smooth gliding motion~~ — **done S62 (D50):** the renderer glides mobile creatures between their previous/current tiles at an interpolation alpha (watchable speeds only), + a wander idle so folk linger. Pure render, sim untouched.
-- Economy: a real supply/demand **market** (prices, goods, business revenue from actual sales rather than abstract productivity); businesses that can go bankrupt and close — date: 2026-06-13 (deferred from M3 part 1). *(Requested next after resource gathering.)*
+- Economy: a real supply/demand **market** (prices, goods, business revenue from actual sales rather than abstract productivity); businesses that can go bankrupt and close — date: 2026-06-13 (deferred from M3 part 1). *(Promoted into **M36** below — S141 shipped slice 1, the goods market. Slices 2–3 (business revenue from sales · bankruptcy for all trades) remain.)*
 - Agents **building** structures (homes/businesses) from gathered resources over time, instead of pre-placed — date: 2026-06-14 (requested).
 - **Conflict / vice**: rivalries, crime, theft, fights (M8 theme) — date: 2026-06-14 (requested).
 - Resource gathering **economic coupling**: gathered resources feed business revenue / crafting, so depletion has real consequences (currently gathering depletes nodes but wages are unaffected) — date: 2026-06-14.
