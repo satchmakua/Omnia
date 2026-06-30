@@ -21,7 +21,7 @@ import { ageInYears } from '../sim/config.ts';
 import { defaultConfig } from '../sim/config.ts';
 import { getCultureStore, getCulture } from '../culture/cultureStore.ts';
 import { getLanguageStore, getLanguage } from '../lang/languageStore.ts';
-import { getOrgStore, getOrg } from '../org/orgStore.ts';
+import { getOrgStore, getOrg, vassalsOf } from '../org/orgStore.ts';
 
 function bar(v: number): string {
   const filled = Math.max(0, Math.min(10, Math.round(v * 10)));
@@ -39,6 +39,7 @@ export class Inspector {
   private readonly bodyEl: HTMLDivElement;
   private selected: EntityId | null = null;
   private selectedTile: { x: number; y: number } | null = null;
+  private selectedOrg: string | null = null;   // a clan banner is selected (M31 banners aren't entities)
 
   constructor() {
     this.panel = document.createElement('div');
@@ -80,6 +81,7 @@ export class Inspector {
   inspect(entity: EntityId, world: World): void {
     this.selected = entity;
     this.selectedTile = null;   // an entity click supersedes a tile click
+    this.selectedOrg = null;
     this.panel.style.display = 'block';
     this._render(entity, world);
   }
@@ -88,8 +90,19 @@ export class Inspector {
   inspectTile(x: number, y: number, world: World): void {
     this.selected = null;
     this.selectedTile = { x, y };
+    this.selectedOrg = null;
     this.panel.style.display = 'block';
     this.bodyEl.innerHTML = this._tile(world, x, y);
+  }
+
+  // Inspect a clan by its banner (M31 s2): clan seats are flown on the map but aren't ECS entities,
+  // so they get their own selection path — the clan itself as the subject, not one of its folk.
+  inspectOrg(orgId: string, world: World): void {
+    this.selected = null;
+    this.selectedTile = null;
+    this.selectedOrg = orgId;
+    this.panel.style.display = 'block';
+    this.bodyEl.innerHTML = this._org(world, orgId);
   }
 
   /** The currently-inspected entity, if any (used by the family-tree dashboard). */
@@ -98,6 +111,17 @@ export class Inspector {
   get isOpen(): boolean { return this.panel.style.display !== 'none'; }
 
   update(world: World): void {
+    if (this.selectedOrg !== null) {
+      const store = getOrgStore(world);
+      const org = store ? getOrg(store, this.selectedOrg) : undefined;
+      if (!org || org.extinct) {
+        this.bodyEl.innerHTML = '<b style="color:#f88">— this clan is no more —</b>';
+        this.selectedOrg = null;   // the persistent ✕ (or Esc) closes the panel
+        return;
+      }
+      this.bodyEl.innerHTML = this._org(world, this.selectedOrg);
+      return;
+    }
     if (this.selectedTile !== null) { this.bodyEl.innerHTML = this._tile(world, this.selectedTile.x, this.selectedTile.y); return; }
     if (this.selected === null) return;
     if (!world.isAlive(this.selected)) {
@@ -111,6 +135,7 @@ export class Inspector {
   close(): void {
     this.selected = null;
     this.selectedTile = null;
+    this.selectedOrg = null;
     this.panel.style.display = 'none';
   }
 
@@ -469,6 +494,87 @@ export class Inspector {
       <div style="color:#9ab">${org.government} · kin &amp; faction</div>
       ${eraLine}
       ${seafaring}`;
+  }
+
+  // The clan itself as the subject (M31 s2): selected by clicking its banner. The faction's
+  // government & bearing, its leader and living strength, its tech age, the values that shape it,
+  // and its standing in the world — alliances, feuds, wars, and any realm it lords or serves.
+  private _org(world: World, orgId: string): string {
+    const store = getOrgStore(world);
+    const org = store ? getOrg(store, orgId) : undefined;
+    if (!store || !org) return this.title('A clan', 'kin &amp; faction');
+
+    // Living strength & the head of the clan.
+    let members = 0;
+    for (const e of world.query(C_AGENT)) if (world.getComponent<Agent>(e, C_AGENT)!.orgId === orgId) members++;
+    const leaderName = org.leader != null && world.hasComponent(org.leader, C_AGENT)
+      ? world.getComponent<Agent>(org.leader, C_AGENT)!.name : null;
+    const parent = org.parent && store.byId[org.parent]
+      ? ` <span style="color:#889">⟵ ${store.byId[org.parent].name}</span>` : '';
+
+    const tier = Math.max(1, Math.min(7, org.tier ?? 1));
+    const arts = org.techs?.length ?? 0;
+    const eraLine = `<div style="color:#c9b27a">⚒ ${ERA_NAMES[tier]}${arts > 0 ? ` · ${arts} ${arts === 1 ? 'art' : 'arts'} mastered` : ''}</div>`;
+    const seafaring = (org.effects?.seafaring ?? 0) > 0
+      ? '<div style="color:#7fb8cf">⛵ seafaring — they cross the water by boat</div>' : '';
+    const seatLine = org.seat ? `<div><b>Seat</b> (${org.seat.x}, ${org.seat.y})</div>` : '';
+    const foundedYear = Math.floor(org.founded / (defaultConfig.ticksPerDay * defaultConfig.daysPerYear));
+
+    const axis = (label: string, v: number) => `<div>${label} ${bar(v)}</div>`;
+
+    // Standing in the world (M31): alliances, rivalries, active wars, and any lord/vassals.
+    const named = (id: string): string | null => {
+      const o = store.byId[id];
+      return o && !o.extinct ? o.name : null;
+    };
+    const allies: string[] = [], rivals: string[] = [];
+    for (const [key, rel] of Object.entries(store.relations ?? {})) {
+      const [a, b] = key.split('~');
+      const other = a === orgId ? b : b === orgId ? a : null;
+      if (!other) continue;
+      const nm = named(other);
+      if (!nm) continue;
+      if (rel.kind === 'ally') allies.push(nm);
+      else if (rel.kind === 'rival') rivals.push(nm);
+    }
+    const wars: string[] = [];
+    for (const w of store.wars ?? []) {
+      const other = w.a === orgId ? w.b : w.b === orgId ? w.a : null;
+      const nm = other ? named(other) : null;
+      if (nm) wars.push(nm);
+    }
+    const lordName = org.lord ? named(org.lord) : null;
+    const vassals = vassalsOf(store, orgId).map(id => store.byId[id]?.name).filter(Boolean) as string[];
+
+    const diploRow = (glyph: string, color: string, label: string, names: string[]): string =>
+      names.length ? `<div style="color:${color}">${glyph} ${label} <span style="color:#9ab">${names.join(', ')}</span></div>` : '';
+    const diploBits = [
+      diploRow('⚔', '#ff8a8a', 'at war with', wars),
+      diploRow('⚑', '#f0b46a', 'rivals', rivals),
+      diploRow('♥', '#7fd6a0', 'allied with', allies),
+      lordName ? `<div style="color:#c9a86a">⮟ sworn to ${lordName} <span style="color:#9ab">— a vassal</span></div>` : '',
+      vassals.length ? `<div style="color:#caa46a">⮝ overlord of <span style="color:#9ab">${vassals.join(', ')}</span></div>` : '',
+    ].filter(Boolean).join('');
+    const diploBlock = diploBits
+      ? `<hr style="${RULE}"><div style="${SECTION}">Standing in the world</div>${diploBits}`
+      : `<hr style="${RULE}"><div style="${SECTION}">Standing in the world</div><div style="color:#889">keeps to itself — no allies or feuds</div>`;
+
+    return `
+      ${this.title(org.name, 'a clan · kin &amp; faction')}
+      <div><span style="color:${org.color}">●</span> ${org.government}${parent}</div>
+      <div style="color:#9ab">${members} living member${members === 1 ? '' : 's'}</div>
+      <div><b>Leader</b> ${leaderName ?? '<span style="color:#889">none</span>'}</div>
+      ${seatLine}
+      ${eraLine}
+      ${seafaring}
+      <hr style="${RULE}">
+      <div style="${SECTION}">Values</div>
+      ${axis('Communal', org.values.communal)}
+      ${axis('Martial', org.values.martial)}
+      ${axis('Traditional', org.values.traditional)}
+      ${axis('Open', org.values.open)}
+      ${diploBlock}
+      <div style="color:#889;font-size:11px;margin-top:8px">founded in year ${foundedYear}</div>`;
   }
 
   // Faith (M18): the religion this person follows — its deity, tenets, and their devoutness.
