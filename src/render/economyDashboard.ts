@@ -5,6 +5,7 @@ import { C_AGENT, C_JOB, C_BUSINESS, C_MAGIC } from '../sim/components.ts';
 import type { Agent, Job, Business } from '../sim/components.ts';
 import { wealthStats } from '../sim/wealth.ts';
 import { getMarket, foodSalesGold } from '../sim/market.ts';
+import { getGoodsMarket } from '../sim/goodsMarket.ts';
 import { adultWealthGini } from '../analysis/metrics.ts';
 import { ageInYears, defaultConfig } from '../sim/config.ts';
 import { ModalPanel, SECTION } from './modalPanel.ts';
@@ -88,8 +89,34 @@ export class EconomyDashboard extends ModalPanel {
       </div>`;
     })() : '';
 
+    // Crafted-goods market (M36): each good's price floats with how much the town is making it.
+    const gm = getGoodsMarket(world);
+    const goodsHtml = gm && Object.keys(gm.prices).length ? (() => {
+      const rows = Object.keys(gm.prices).sort().map(id => {
+        const price = gm.prices[id];
+        const sup = gm.supply[id] ?? 0, avg = gm.avgSupply[id] ?? 0;
+        const scarce = avg > 0 && sup < avg * 0.9;
+        const glut = avg > 0 && sup > avg * 1.1;
+        const tag = scarce ? '<span style="color:#ff9a6a">scarce — dear</span>'
+          : glut ? '<span style="color:#8fe88f">a glut — cheap</span>'
+          : '<span style="color:#889">steady</span>';
+        const name = id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, ' ');
+        return `<tr><td style="padding:2px 12px 2px 0">${name}</td>` +
+          `<td style="padding:2px 12px 2px 0;color:#cdb89a">${price.toFixed(1)}g</td>` +
+          `<td style="padding:2px 0">${tag}</td></tr>`;
+      }).join('');
+      return `
+      <div style="${SECTION}">Market — crafted goods</div>
+      <table style="font-size:12px;border-collapse:collapse">${rows}</table>
+      <div style="color:#889;font-size:11px;margin-top:4px">
+        Each crafted good's price floats with how much the town is making it — a <b>glut</b> cheapens it,
+        a <b>scarce</b> good dears. Crafters sell their wares at the day's price (M36).
+      </div>`;
+    })() : '';
+
     this.body.innerHTML = `
       ${mktHtml}
+      ${goodsHtml}
       <div style="${SECTION}">Wealth</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${metric('Median', `${Math.round(w.median)}g`)}

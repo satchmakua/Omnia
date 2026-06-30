@@ -315,8 +315,8 @@ export const defaultConfig: SimConfig = {
   holyDayMoodLift: 0.07,           // small & bounded — devotion gladdens, but the Storyteller still owns the drama band
   healerHousePerPop: 0.035,        // ~1 healer's house per ~30 folk (pop 60 → 2 houses); care scales with people, not map area
   healerCarePerWorker: 0.12,       // each working healer makes the infirmary's cures surer (capped at +0.6, like a strong medicine tech)
-  goodsPriceMinMult: 0.45,         // a glutted good still fetches ~half its worth (a floor on crafter income)
-  goodsPriceMaxMult: 2.2,          // a scarce good fetches up to ~2.2× — dear, but bounded
+  goodsPriceMinMult: 0.7,          // a glutted good fetches ~0.7× its worth — a floor on crafter income
+  goodsPriceMaxMult: 1.4,          // a scarce good up to ~1.4× — visibly dearer, but bounded so scarcity windfalls stay modest (the band sets market VISIBILITY; wealth-equality is band-insensitive — the goods market adds a chaotic ~+0.04 adults-gini either way, amplified by the landlord dynamic, landing a still-healthy ~0.34)
   goodsPriceAdjustRate: 0.3,       // prices drift toward the target rather than snapping
   goodsSupplyEmaRate: 0.1,         // a ~10-day memory: the price self-centres on the base value, only deviations move it
   seasonGrowthSpring: 1.3,         // the lush season — plants surge, foraging is easy
