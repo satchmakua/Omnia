@@ -16,6 +16,7 @@ import { getOrgStore } from '../../org/orgStore.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
+import { depictableScene } from '../../history/depiction.ts';
 
 export function createWonders(): WondersData {
   return { progress: {}, built: {} };
@@ -83,6 +84,10 @@ export function runWonderSystem(world: World, cfg: SimConfig, content: Content):
   if (data.progress[w.id] >= w.cost) {
     data.built[w.id] = tick;
     data.current = undefined;
+    // A wonder is raised in memory of a great age (M33 s2): it commemorates a real Chronicle event —
+    // generated, not authored, deterministic (keyed by the completion tick, no RNG). The "or wonder"
+    // half of M33 s2's depicting, alongside engraved masterworks. Pure history — never feeds the sim.
+    const depicts = depictableScene(ch, tick);
     const mapEnts = world.query(C_TILEMAP);
     const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP)! : undefined;
     let site: EntityId | undefined;
@@ -91,11 +96,11 @@ export function runWonderSystem(world: World, cfg: SimConfig, content: Content):
       if (spot) {
         site = world.createEntity();
         world.addComponent<Position>(site, C_POSITION, { x: spot.x, y: spot.y });
-        world.addComponent<WonderSite>(site, C_WONDERSITE, { wonderId: w.id, name: w.name, builtTick: tick });
+        world.addComponent<WonderSite>(site, C_WONDERSITE, { wonderId: w.id, name: w.name, builtTick: tick, depicts });
       }
     }
     void site;
-    emitEvent(world, 'culture', `🏛 ${w.name} was completed — a wonder of the age.`);
-    if (ch) chronicleAdd(ch, { tick, importance: 0.92, kind: 'wonder', text: `🏛 ${w.name} was raised — a wonder of the re-ascended world.` }, cfg.chronicleImportanceThreshold);
+    emitEvent(world, 'culture', `🏛 ${w.name} was completed — a wonder of the age${depicts ? `, raised in memory of ${depicts}` : ''}.`);
+    if (ch) chronicleAdd(ch, { tick, importance: 0.92, kind: 'wonder', text: `🏛 ${w.name} was raised — a wonder of the re-ascended world${depicts ? `, commemorating ${depicts}` : ''}.` }, cfg.chronicleImportanceThreshold);
   }
 }

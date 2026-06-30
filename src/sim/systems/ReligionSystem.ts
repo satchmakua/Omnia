@@ -8,7 +8,7 @@ import { C_AGENT, C_CLOCK, C_CHRONICLE, C_POSITION } from '../components.ts';
 import type { Agent, Clock, Position } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { RNG } from '../rng.ts';
-import { getReligionStore, forkReligion, pruneReligions } from '../../religion/religionStore.ts';
+import { getReligionStore, forkReligion, pruneReligions, mythFor } from '../../religion/religionStore.ts';
 import { getCultureStore, getCulture } from '../../culture/cultureStore.ts';
 import { getLanguageStore, getLanguage } from '../../lang/languageStore.ts';
 import { word } from '../../lang/language.ts';
@@ -49,6 +49,33 @@ export function runReligionSystem(world: World, cfg: SimConfig, rng: RNG): void 
     const r = store.byId[id];
     if (r.extinct) continue;
     if (!followers.get(id)?.length) { r.extinct = true; r.diedTick = tick; }
+  }
+
+  // Holy days (M18 s2): a faith celebrates on a recurring day — phased per faith (by a stable hash of
+  // its id) so they don't all fall together — and its living faithful are gladdened. This is devotion's
+  // payoff: faith finally *does* something for those who keep it, the more so the more devout the faith.
+  // Deterministic (a fixed schedule + bounded lift, no RNG → replay/save-safe); the lift is small, so
+  // the Storyteller (M32) still owns the drama band. A holy day is a feed line; the very devout, a legend.
+  const day = Math.floor(tick / cfg.ticksPerDay);
+  const interval = Math.max(1, Math.round(cfg.holyDayIntervalDays));
+  const ch0 = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
+  for (const [id, list] of followers) {
+    const r = store.byId[id];
+    if (!r || r.extinct || list.length === 0) continue;
+    if (!r.myth) r.myth = mythFor(r.deity, r.tenets);   // backfill an origin story for faiths from older saves
+    let off = 0; for (let i = 0; i < id.length; i++) off = (off + id.charCodeAt(i)) % interval;
+    if (((day - off) % interval + interval) % interval !== 0) continue;   // not this faith's holy day
+    if (r.lastHolyDay === tick) continue;                                 // fire once per occurrence
+    r.lastHolyDay = tick;
+    const lift = cfg.holyDayMoodLift * (0.6 + 0.4 * r.fervor);
+    for (const e of list) {
+      const a = world.getComponent<Agent>(e, C_AGENT)!;
+      if (a.mood !== undefined) a.mood = clamp01(a.mood + lift);
+    }
+    emitEvent(world, 'culture', `${r.name} kept its holy day — the faithful gathered before ${r.deity} and were gladdened.`);
+    if (ch0 && r.fervor > 0.7 && list.length >= cfg.minFaithFollowers) {
+      chronicleAdd(ch0, { tick, importance: 0.5, kind: 'religion', text: `The devout of ${r.name} kept the holy day of ${r.deity}.` }, cfg.chronicleImportanceThreshold);
+    }
   }
 
   // Conversion (M18 s2): faith spreads by contact — a folk standing beside a *more devout*

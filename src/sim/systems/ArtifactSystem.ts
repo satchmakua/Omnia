@@ -17,28 +17,12 @@ import { bearerArtifact, enshrineArtifact, pruneArtifacts } from '../../history/
 import { emitEvent } from '../../history/eventlog.ts';
 import { chronicleAdd } from '../../history/chronicle.ts';
 import type { ChronicleData } from '../../history/chronicle.ts';
+import { depictableScene } from '../../history/depiction.ts';
 import { MASTERWORK } from '../quality.ts';
 
 const MIN_SKILL = 3;        // only a master's work becomes legend
 const MAX_ARTIFACTS = 40;
-const SCENE_IMPORTANCE = 0.78;   // only the loudest legends (wars, foundings, conquests) are worth graving
 const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
-
-function hash32(n: number): number {
-  let h = (n * 2654435761) >>> 0; h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0; h ^= h >>> 13;
-  return h >>> 0;
-}
-// A grand scene from the durable history (M33 s2) for a masterwork to depict — drawn from the
-// Chronicle's loudest legends + its compressed ages, generated, not authored. Deterministic (keyed by
-// the maker's entity id — no sim RNG), so engraving never perturbs the trajectory. Trailing '.' trimmed.
-function depictableScene(ch: ChronicleData | undefined, e: EntityId): string | undefined {
-  if (!ch) return undefined;
-  const scenes: string[] = [];
-  for (const era of ch.eras) scenes.push(era.text);
-  for (const en of ch.entries) if (en.importance >= SCENE_IMPORTANCE) scenes.push(en.text);
-  if (!scenes.length) return undefined;
-  return scenes[hash32(e) % scenes.length].replace(/\.\s*$/, '');
-}
 
 export function runArtifactSystem(world: World, cfg: SimConfig): void {
   const ents = world.query(C_ARTIFACTS);

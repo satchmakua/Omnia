@@ -584,10 +584,12 @@ export class Inspector {
     if (!r) return '';
     const parent = r.parent && store!.byId[r.parent] ? ` <span style="color:#889">⟵ ${store!.byId[r.parent].name}</span>` : '';
     const piety = r.fervor > 0.66 ? 'devout' : r.fervor > 0.4 ? 'observant' : 'lax';
+    const myth = r.myth ? `<div style="color:#9a86c0;font-size:11px;font-style:italic;margin-top:3px">“${r.myth}”</div>` : '';
     return `<hr style="${RULE}">
       <div style="${SECTION}">Faith</div>
       <div><span style="color:${r.color}">●</span> ${r.name}${parent}</div>
-      <div style="color:#9ab;font-size:11px">venerates ${r.deity} · ${r.tenets.join(', ')} · ${piety}</div>`;
+      <div style="color:#9ab;font-size:11px">venerates ${r.deity} · ${r.tenets.join(', ')} · ${piety}</div>
+      ${myth}`;
   }
 
   // Culture: the value axes that bias this person's behaviour (M7), shown as bars
@@ -667,6 +669,7 @@ export class Inspector {
       <div style="${SECTION}">Wonder</div>
       <div style="color:#e8c674">🏛 ${w.name}</div>
       <div style="color:#9ab">a town-scale work, raised by the labour of generations</div>
+      ${w.depicts ? `<div style="color:#c9a86a;font-size:11px;margin-top:2px">⚜ raised in memory of ${w.depicts}</div>` : ''}
       <div style="color:#889;font-size:11px">completed in year ${builtYear}</div>`;
   }
 

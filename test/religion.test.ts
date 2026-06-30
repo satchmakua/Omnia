@@ -8,7 +8,7 @@ import { C_AGENT, C_CLOCK, C_RELIGIONSTORE, C_POSITION } from '../src/sim/compon
 import type { Agent, Clock } from '../src/sim/components.ts';
 import { createRNG } from '../src/sim/rng.ts';
 import {
-  createReligionStore, createReligion, forkReligion, getReligion, faithFactor, pruneReligions,
+  createReligionStore, createReligion, forkReligion, getReligion, faithFactor, pruneReligions, mythFor,
 } from '../src/religion/religionStore.ts';
 import type { ReligionStoreData } from '../src/religion/religionStore.ts';
 import { runReligionSystem } from '../src/sim/systems/ReligionSystem.ts';
@@ -27,6 +27,22 @@ describe('religionStore (M18)', () => {
     expect(faithFactor(s, a, b)).toBeLessThan(1);        // different faiths → cooler
     expect(faithFactor(s, undefined, a)).toBe(1);        // an unbeliever → neutral
     expect(faithFactor(undefined, a, a)).toBe(1);        // no store → neutral
+  });
+
+  it('mythFor: a deterministic founding myth that names the deity & a tenet (M18 s2)', () => {
+    const m1 = mythFor('Khoros', ['the warrior creed', 'ancestor rites']);
+    const m2 = mythFor('Khoros', ['the warrior creed', 'ancestor rites']);
+    expect(m1).toBe(m2);                         // deterministic — same inputs, same myth (replay-safe)
+    expect(m1).toContain('Khoros');              // the god is named
+    expect(m1.endsWith('.')).toBe(true);
+    expect(/warrior creed|ancestor rites/.test(m1)).toBe(true);   // closes on one of the faith's tenets
+    expect(mythFor('Velun', ['the peaceful path'])).not.toBe(m1); // a different faith, a different story
+  });
+
+  it('createReligion mints a founding myth (M18 s2)', () => {
+    const s = createReligionStore();
+    const a = createReligion(s, 'the Faith of Oru', 'Oru', ['communal worship'], 0.7, 0);
+    expect(getReligion(s, a)!.myth).toContain('Oru');
   });
 
   it('forkReligion carries tenets + descent', () => {
@@ -86,6 +102,37 @@ describe('ReligionSystem (M18)', () => {
     const inSect = w.query(C_AGENT).filter(e => w.getComponent<Agent>(e, C_AGENT)!.religionId === sects[0].id).length;
     expect(inParent).toBeGreaterThan(0);
     expect(inSect).toBeGreaterThan(0);
+  });
+
+  it('a holy day gladdens the faithful — devotion’s payoff (M18 s2)', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'Glad Faith', 'Aa', ['rite'], 1.0, 0);   // very devout → the full lift
+    const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+    const fols = [follower(w, r), follower(w, r), follower(w, r)];            // 3 < minFaithFollowers → never schisms
+    for (const e of fols) w.getComponent<Agent>(e, C_AGENT)!.mood = 0.5;
+
+    // Run one full holy-day interval; the faith's holy day must fall exactly once within it.
+    let lifts = 0;
+    for (let d = 1; d <= cfg.holyDayIntervalDays + 1; d++) {
+      clock.tick = d * cfg.ticksPerDay;
+      const before = w.getComponent<Agent>(fols[0], C_AGENT)!.mood!;
+      runReligionSystem(w, cfg, createRNG(1));
+      if (w.getComponent<Agent>(fols[0], C_AGENT)!.mood! > before) lifts++;
+    }
+    expect(lifts).toBe(1);                                                    // exactly one holy day in the interval
+    for (const e of fols) expect(w.getComponent<Agent>(e, C_AGENT)!.mood!).toBeCloseTo(0.5 + cfg.holyDayMoodLift, 5);
+  });
+
+  it('a holy day is deterministic — no simulation RNG, identical under replay (M18 s2)', () => {
+    const run = () => {
+      const { w, store } = faithWorld(0);
+      const r = createReligion(store, 'F', 'Aa', ['rite'], 0.8, 0);
+      const e = follower(w, r); w.getComponent<Agent>(e, C_AGENT)!.mood = 0.4;
+      const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+      for (let d = 1; d <= cfg.holyDayIntervalDays + 1; d++) { clock.tick = d * cfg.ticksPerDay; runReligionSystem(w, cfg, createRNG(99)); }
+      return w.getComponent<Agent>(e, C_AGENT)!.mood!;
+    };
+    expect(run()).toBe(run());
   });
 });
 

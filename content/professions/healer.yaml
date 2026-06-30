@@ -1,0 +1,9 @@
+# A care trade (M30): the healer's house. Its folk make rounds from the infirmary, tending the
+# afflicted — chronic ills, old wounds, the frailty of age. More working healers → surer, faster
+# cures (see TreatmentSystem). Modestly paid; care is a calling, not a road to riches.
+id: "healer"
+name: "Healer"
+dailyWage: 11
+color: "#6fc6a8"
+maxEmployeesPerBusiness: 2
+tends: true

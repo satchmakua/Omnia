@@ -86,6 +86,7 @@ export function spawnBusiness(
     gathers: def.gathers ?? null,
     producesFood: def.producesFood,
     fishery: def.fishery,
+    tends: def.tends,
   });
   return e;
 }

@@ -286,11 +286,24 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // on the coast (a passable tile bordering water) so it can net the fish; if the map has no
   // coast it falls back to dry land (a degenerate, catchless fishery — rare).
   const professions = content.professions.all();          // deterministic (sorted by id)
-  if (professions.length > 0) {
-    for (let i = 0; i < scaledBusinessCount(cfg); i++) {
-      const prof = professions[i % professions.length];
+  const trades = professions.filter(p => !p.tends);        // the productive round-robin — its mix is the tuned economy
+  const carers = professions.filter(p => p.tends);         // care trades (healer's houses) — spawned separately, below
+  const tradeCount = scaledBusinessCount(cfg);
+  if (trades.length > 0) {
+    for (let i = 0; i < tradeCount; i++) {
+      const prof = trades[i % trades.length];
       const spot = (prof.fishery ? findMainlandCoastalTile(rng, tileMap, mainland) : null) ?? findMainlandTile(rng, tileMap, mainland);
       spawnBusiness(world, spot.x, spot.y, prof, cfg);
+    }
+  }
+  // Healer's houses (M30): care is a livelihood too. Spawned as a SEPARATE small set (not in the
+  // round-robin) so they don't displace the food/productive trades whose mix the economy is tuned to —
+  // their headcount tracks the town's size, not a farm slot. Their folk improve treatment (TreatmentSystem).
+  if (carers.length > 0) {
+    const houses = Math.max(1, Math.round(tradeCount * cfg.healerHouseShare));
+    for (let i = 0; i < houses; i++) {
+      const spot = findMainlandTile(rng, tileMap, mainland);
+      spawnBusiness(world, spot.x, spot.y, carers[i % carers.length], cfg);
     }
   }
 
