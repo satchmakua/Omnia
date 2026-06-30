@@ -119,7 +119,7 @@ let active: Simulation | null = null;
 let activeCfg: SimConfig = baseCfg;
 let lastSeed = baseCfg.seed;
 // The last chosen setup (seed / starting population / map size), reused by restart.
-let lastSetup: SetupOptions = { seed: baseCfg.seed, population: baseCfg.initialPopulation, mapSize: baseCfg.gridWidth, skin, temperament: asTemperament(baseCfg.storytellerTemperament) };
+let lastSetup: SetupOptions = { seed: baseCfg.seed, population: baseCfg.initialPopulation, mapSize: baseCfg.gridWidth, skin, temperament: asTemperament(baseCfg.storytellerTemperament), god: false };
 let state: 'menu' | 'running' | 'paused' = 'menu';
 let realElapsedMs = 0;   // real-world time spent watching this run (excludes paused/menu)
 
@@ -151,6 +151,9 @@ const godPanel = new GodPanel(content.powers.all(), baseCfg.ticksPerDay, (power,
 });
 // Show the panel only while god mode is on and a world is running.
 function refreshGodPanel(): void { godPanel.setActive(godMode && state === 'running' && !!active); }
+// Flip god mode in one place: the panel's visibility follows, and lastSetup remembers the live choice
+// so a Restart preserves it (god is a player session mode, not part of a save — M27).
+function setGodMode(on: boolean): void { godMode = on; lastSetup = { ...lastSetup, god: on }; refreshGodPanel(); }
 
 // Map clicks: while a targeted power is armed they cast it (on a soul); otherwise they inspect.
 renderer.setClickHandler((entity) => {
@@ -163,9 +166,15 @@ renderer.onTileClick = (x, y) => {
   if (godPanel.isActive && godPanel.armed) { godPanel.cancelArm(); return; }   // click away to cancel
   inspector.inspectTile(x, y, active.world);   // inspect bare terrain/water (M24)
 };
+renderer.onClanClick = (orgId) => {
+  if (!active) return;
+  if (godPanel.isActive && godPanel.armed) { godPanel.cancelArm(); return; }   // click away to cancel an armed power
+  inspector.inspectOrg(orgId, active.world);   // inspect the clan whose banner was clicked (M31)
+};
 
 function newSimulation(opts: SetupOptions): void {
   lastSetup = opts;
+  godMode = opts.god;                              // arm/disarm god mode as chosen on the start screen (M27)
   applySkin(opts.skin);                            // apply the chosen visual skin (M34)
   activeCfg = {
     ...baseCfg, seed: opts.seed, initialPopulation: opts.population,
@@ -192,7 +201,7 @@ function loadFromJson(json: string): void {
     renderer.configure(activeCfg);
     activeProvider = liveModel ? new OllamaProvider(OLLAMA) : stubProvider;
     lastSeed = save.config.seed;
-    lastSetup = { seed: save.config.seed, population: save.config.initialPopulation, mapSize: save.config.gridWidth, skin, temperament: asTemperament(save.config.storytellerTemperament) };
+    lastSetup = { seed: save.config.seed, population: save.config.initialPopulation, mapSize: save.config.gridWidth, skin, temperament: asTemperament(save.config.storytellerTemperament), god: godMode };
     realElapsedMs = 0;
     inspector.close();
     menu.hide();
@@ -248,7 +257,7 @@ function showPauseMenu(): void {
     onSettings: () => menu.showSettings(lastSeed, speed, liveModel, godMode, skin, {
       onApply: (seed) => { menu.hide(); newSimulation({ ...lastSetup, seed }); },
       onToggleLive: () => { liveModel = !liveModel; },
-      onToggleGod: () => { godMode = !godMode; refreshGodPanel(); },
+      onToggleGod: () => { setGodMode(!godMode); },
       onToggleSkin: () => applySkin(skin === 'emoji' ? 'lofi' : 'emoji'),   // live skin swap (M34)
       onBack: () => showPauseMenu(),
     }),
@@ -282,8 +291,8 @@ if (import.meta.env.DEV) {
     // same seam. `kind` is a power id from content/powers/*.yaml (s2 — see `powers`).
     god: {
       get on() { return godMode; },
-      enable() { godMode = true; refreshGodPanel(); },
-      disable() { godMode = false; refreshGodPanel(); },
+      enable() { setGodMode(true); },
+      disable() { setGodMode(false); },
       powers: () => content.powers.all().map(p => ({ id: p.id, name: p.name, target: p.target, blurb: p.blurb })),
       act(kind: string, target: number | null, amount?: number) {
         if (godMode && active) return enqueueIntervention(active.world, kind, target, amount);
@@ -351,7 +360,7 @@ document.addEventListener('keydown', (e) => {
   else if (master.isTabKey(e.key)) { master.openTab(e.key, active.world); e.preventDefault(); }
   else if (e.key === 'l' || e.key === 'L') { legend.toggle(); e.preventDefault(); }
   else if (e.key === 'h' || e.key === 'H') { eventFeed.toggle(); e.preventDefault(); }
-  else if (e.key === 'g' || e.key === 'G') { godMode = !godMode; refreshGodPanel(); e.preventDefault(); }   // become a god / step back (M27)
+  else if (e.key === 'g' || e.key === 'G') { setGodMode(!godMode); e.preventDefault(); }   // become a god / step back (M27)
   else if (e.key === 'ArrowLeft')  { renderer.panBy(-0.12, 0); e.preventDefault(); }
   else if (e.key === 'ArrowRight') { renderer.panBy(0.12, 0); e.preventDefault(); }
   else if (e.key === 'ArrowUp')    { renderer.panBy(0, -0.12); e.preventDefault(); }

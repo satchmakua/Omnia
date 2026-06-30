@@ -55,8 +55,9 @@ const CONTROLS: [string, string][] = [
 ];
 
 // What the start screen collects to begin a run. `skin` is presentation-only (M34); `temperament` is
-// the Storyteller — how hard the world pushes its drama (M32 s2).
-export interface SetupOptions { seed: number; population: number; mapSize: number; skin: Skin; temperament: Temperament; }
+// the Storyteller — how hard the world pushes its drama (M32 s2); `god` arms god mode before the world
+// begins (M27 — also toggleable in-game via Settings or the G key).
+export interface SetupOptions { seed: number; population: number; mapSize: number; skin: Skin; temperament: Temperament; god: boolean; }
 
 // The visual skins offered on the start screen (M34).
 export const SKINS: { id: Skin; label: string }[] = [
@@ -250,11 +251,29 @@ export class Menu {
     tempLabel.textContent = 'Storyteller'; Object.assign(tempLabel.style, { color: '#99a', margin: '2px 0 4px' } as Partial<CSSStyleDeclaration>);
     this.card.append(tempLabel, tempRow);
 
+    // God mode (M27) — arm it before the world begins, so the first soul you meet can already be
+    // smitten or blessed. Toggled in place (no re-render, so other choices aren't reset); also
+    // switchable in-game via Settings or the G key.
+    let god = defaults.god;
+    const godBtn = document.createElement('button');
+    Object.assign(godBtn.style, { display: 'block', width: '100%', padding: '8px 10px', color: '#eee',
+      border: '1px solid rgba(255,255,255,0.12)', borderRadius: '7px', font: '12px monospace', cursor: 'pointer', textAlign: 'left' } as Partial<CSSStyleDeclaration>);
+    const godHi = () => {
+      godBtn.textContent = god ? '👁  God mode: ON — the world will heed you' : '👁  God mode: off — pure observation';
+      godBtn.style.background = god ? '#46467e' : '#23233a';
+      godBtn.style.borderColor = god ? '#8a8ad0' : 'rgba(255,255,255,0.12)';
+    };
+    godBtn.addEventListener('click', () => { god = !god; godHi(); });
+    godHi();
+    const godLabel = document.createElement('div');
+    godLabel.textContent = 'God mode'; Object.assign(godLabel.style, { color: '#99a', margin: '2px 0 4px' } as Partial<CSSStyleDeclaration>);
+    this.card.append(godLabel, godBtn);
+
     const start = styledButton('▶  New simulation', true);
     start.addEventListener('click', () => {
       const seed = Math.floor(Number(seedInput.value)) || defaults.seed;
       this.hide();
-      onStart({ seed, population, mapSize, skin, temperament });
+      onStart({ seed, population, mapSize, skin, temperament, god });
     });
 
     const help = styledButton('?  How to play');

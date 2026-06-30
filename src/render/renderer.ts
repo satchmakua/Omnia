@@ -103,6 +103,7 @@ export class Renderer {
   private mapH: number;
   private onEntityClick: ((entity: EntityId) => void) | null = null;
   onTileClick: ((x: number, y: number) => void) | null = null;   // empty-tile click → inspect terrain (M24)
+  onClanClick: ((orgId: string) => void) | null = null;          // clan-banner click → inspect the clan (M31 banners aren't entities)
   private _pendingClick: { gx: number; gy: number } | null = null;
 
   // Camera: screen = world*scale + offset (world is in map pixels).
@@ -394,24 +395,47 @@ export class Renderer {
   // water (the clan's folk straddle a lake), the banner is nudged to the nearest shore so it sits on
   // solid ground rather than adrift — stable, since the seat itself only shifts once a day.
   private drawClanSeats(world: World, store: ReturnType<typeof getOrgStore>, map: TileMapData | undefined): void {
-    if (!store) return;
+    const ctx = this.ctx;
+    for (const seat of this.clanSeatPlacements(world, store, map)) {
+      this.at(seat.x, seat.y, 1, () => {
+        ctx.strokeStyle = 'rgba(15,15,24,0.7)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, -17); ctx.lineTo(0, -5); ctx.stroke();                                   // pole
+        ctx.fillStyle = seat.color;
+        ctx.beginPath(); ctx.moveTo(0.5, -17); ctx.lineTo(8.5, -14.5); ctx.lineTo(0.5, -12); ctx.closePath(); ctx.fill();   // pennant
+      });
+    }
+  }
+
+  // The on-map tile each eligible clan's banner is planted on — its seat, nudged off open water to
+  // the nearest shore. The single source of truth for banner placement, shared by the draw pass and
+  // the click hit test (clanSeatAt), so the flag you see and the flag you can click never disagree.
+  private clanSeatPlacements(world: World, store: ReturnType<typeof getOrgStore>, map: TileMapData | undefined): { id: string; x: number; y: number; color: string }[] {
+    if (!store) return [];
     const count = new Map<string, number>();
     for (const e of world.query(C_AGENT)) {
       const id = world.getComponent<Agent>(e, C_AGENT)!.orgId;
       if (id) count.set(id, (count.get(id) ?? 0) + 1);
     }
-    const ctx = this.ctx;
+    const out: { id: string; x: number; y: number; color: string }[] = [];
     for (const o of Object.values(store.byId)) {
       if (o.extinct || !o.seat || (count.get(o.id) ?? 0) < 3) continue;   // only a clan with a real hold
       let { x: sx, y: sy } = o.seat;
       if (map && isWater(map, sx, sy)) { const land = nearestLandTile(map, sx, sy); if (land) { sx = land.x; sy = land.y; } }
-      this.at(sx, sy, 1, () => {
-        ctx.strokeStyle = 'rgba(15,15,24,0.7)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(0, -17); ctx.lineTo(0, -5); ctx.stroke();                                   // pole
-        ctx.fillStyle = o.color;
-        ctx.beginPath(); ctx.moveTo(0.5, -17); ctx.lineTo(8.5, -14.5); ctx.lineTo(0.5, -12); ctx.closePath(); ctx.fill();   // pennant
-      });
+      out.push({ id: o.id, x: sx, y: sy, color: o.color });
     }
+    return out;
+  }
+
+  // Which clan's banner (if any) sits at the clicked tile. The pole's base stands on the seat tile;
+  // its pennant floats one tile above — so a click on either tile counts as hitting the flag, matching
+  // what the eye sees. Used as a fallback in consumeClick, after entities but before bare terrain.
+  private clanSeatAt(world: World, gx: number, gy: number): string | null {
+    const mapEnts = world.query(C_TILEMAP);
+    const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
+    for (const seat of this.clanSeatPlacements(world, getOrgStore(world), map)) {
+      if (seat.x === gx && (seat.y === gy || seat.y === gy + 1)) return seat.id;
+    }
+    return null;
   }
 
   // A gentle day→night colour wash (D13). Drawn over the world but under the HUD, so the map
@@ -992,8 +1016,12 @@ export class Renderer {
     };
 
     const hit = at(C_SPECIAL) ?? at(C_AGENT) ?? at(C_FAUNA) ?? at(C_WONDERSITE) ?? at(C_BUSINESS) ?? at(C_HOME) ?? at(C_CIVIC) ?? at(C_RUIN) ?? at(C_RESOURCE) ?? at(C_FISH) ?? at(C_FLORA);
-    if (hit !== null) this.onEntityClick?.(hit);
-    else this.onTileClick?.(gx, gy);   // empty tile → inspect the terrain itself (M24: water is inspectable)
-    return hit;
+    if (hit !== null) { this.onEntityClick?.(hit); return hit; }
+    // No entity here — but a clan banner (not an ECS entity) may fly on this tile. Inspect the clan
+    // if so, before falling through to the bare terrain. Keeps "everything on the map is inspectable".
+    const clan = this.clanSeatAt(world, gx, gy);
+    if (clan !== null) { this.onClanClick?.(clan); return null; }
+    this.onTileClick?.(gx, gy);   // empty tile → inspect the terrain itself (M24: water is inspectable)
+    return null;
   }
 }
