@@ -78,6 +78,10 @@ export interface SimConfig {
   religionSchismChancePerEra: number;  // per-era chance a large, loose faith fractures into a sect
   minFaithFollowers: number;           // a faith needs at least this many followers to spawn a sect
   conversionChancePerDay: number;      // daily chance a folk beside a more-devout faith adopts it (faith spreads)
+  holyDayIntervalDays: number;         // M18 s2: how often a faith celebrates a holy day (its followers' mood lifts)
+  holyDayMoodLift: number;             // the mood a holy day grants the faithful (scaled by the faith's fervour)
+  healerHouseShare: number;            // M30: healer's houses spawned as this fraction of the trade-business count (≥1)
+  healerCarePerWorker: number;         // each working healer multiplies the infirmary's cure potency by +this (capped)
   // Seasons (M19): a per-season abundance multiplier on plant growth and the foraged
   // commons — spring/summer quicken the land, autumn cools, winter is lean. Tuned to
   // average ~1.0 over the year so the annual food balance is unchanged; within a year
@@ -302,6 +306,10 @@ export const defaultConfig: SimConfig = {
   religionSchismChancePerEra: 0.4, // faiths fracture into sects now and then over deep time
   minFaithFollowers: 8,
   conversionChancePerDay: 0.05,    // faith spreads by contact — a devout neighbour wins the odd convert
+  holyDayIntervalDays: 24,         // a faith's holy day comes ~5×/sim-year; phased per faith so they don't all fall together
+  holyDayMoodLift: 0.07,           // small & bounded — devotion gladdens, but the Storyteller still owns the drama band
+  healerHouseShare: 0.2,           // ~1 healer's house per 5 trade businesses — a separate set, so the food trades aren't diluted
+  healerCarePerWorker: 0.12,       // each working healer makes the infirmary's cures surer (capped at +0.6, like a strong medicine tech)
   seasonGrowthSpring: 1.3,         // the lush season — plants surge, foraging is easy
   seasonGrowthSummer: 1.2,
   seasonGrowthAutumn: 0.9,

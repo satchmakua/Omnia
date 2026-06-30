@@ -5,10 +5,12 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
-import { C_AGENT, C_CLOCK, C_WONDERS, C_WONDERSITE, C_TILEMAP, C_ORGSTORE } from '../src/sim/components.ts';
+import { C_AGENT, C_CLOCK, C_WONDERS, C_WONDERSITE, C_TILEMAP, C_ORGSTORE, C_CHRONICLE } from '../src/sim/components.ts';
 import type { Agent, Clock, WondersData, WonderSite } from '../src/sim/components.ts';
 import type { TileMapData } from '../src/world/tilemap.ts';
 import { createWonders, runWonderSystem } from '../src/sim/systems/WonderSystem.ts';
+import { createChronicle } from '../src/history/chronicle.ts';
+import type { ChronicleData } from '../src/history/chronicle.ts';
 import { createOrgStore, createOrg } from '../src/org/orgStore.ts';
 import { loadContentFromDisk } from '../src/content/fsSource.ts';
 import type { Content } from '../src/content/loader.ts';
@@ -69,6 +71,31 @@ describe('WonderSystem (M20 s3b)', () => {
     expect(data.current).toBeUndefined();               // and freed for the next
     const sites = w.query(C_WONDERSITE).map(e => w.getComponent<WonderSite>(e, C_WONDERSITE)!);
     expect(sites.some(s => s.wonderId === 'great_spire')).toBe(true);   // a landmark rose
+  });
+
+  it('a completed wonder is raised in memory of a real Chronicle event (M33 s2, S140)', () => {
+    const { w, data } = wonderWorld();
+    townAt(w, 4, 100);
+    // A loud legend in the town's past for the wonder to commemorate.
+    const ch = createChronicle();
+    ch.entries.push({ tick: 10, importance: 0.9, kind: 'war', text: 'The Clan War set the valley ablaze.' });
+    w.addComponent<ChronicleData>(w.createEntity(), C_CHRONICLE, ch);
+
+    const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+    for (let d = 1; d <= 30; d++) { clock.tick = d * cfg.ticksPerDay; runWonderSystem(w, cfg, content); }
+
+    const site = w.query(C_WONDERSITE).map(e => w.getComponent<WonderSite>(e, C_WONDERSITE)!).find(s => s.wonderId === 'great_spire')!;
+    expect(site.depicts).toBe('The Clan War set the valley ablaze');   // the loud legend, trailing '.' trimmed
+  });
+
+  it('a wonder raised in a town with no notable history depicts nothing (graceful)', () => {
+    const { w, data } = wonderWorld();
+    townAt(w, 4, 100);
+    w.addComponent<ChronicleData>(w.createEntity(), C_CHRONICLE, createChronicle());   // empty history
+    const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+    for (let d = 1; d <= 30; d++) { clock.tick = d * cfg.ticksPerDay; runWonderSystem(w, cfg, content); }
+    const site = w.query(C_WONDERSITE).map(e => w.getComponent<WonderSite>(e, C_WONDERSITE)!).find(s => s.wonderId === 'great_spire')!;
+    expect(site.depicts).toBeUndefined();
   });
 });
 

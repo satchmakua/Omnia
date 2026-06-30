@@ -8,6 +8,7 @@ import {
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB,
   C_HEALTH, C_RELATIONSHIPS, C_LINEAGE, C_TOMBSTONE,
   C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_WARD, C_ENCHANTMENT, C_AFFLICTIONS,
+  C_MEMORY, C_INVENTORY, C_CRAFTING, C_QUEST, C_EQUIPMENT,
 } from './components.ts';
 import type { Agent, SpeciesComp, Job, Lineage, Tombstone } from './components.ts';
 
@@ -17,6 +18,13 @@ const LIVING_COMPONENTS = [
   C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME,   // M13/M16 facets — strip on death too
   C_WARD, C_ENCHANTMENT,   // M26 magic: a corpse is neither warded nor wielding an enchanted blade
   C_AFFLICTIONS,           // M30: the dead carry no injuries
+  // Deep-time hygiene (S139): the remaining living-only facets — the inner life (Memory: events/
+  // utterances/summaries), carried goods (Inventory), the craft hand (Crafting), an unfinished Quest,
+  // and worn gear (Equipment). Every system that reads these queries them paired with C_AGENT, so a
+  // tombstone never exposes them — keeping them only let graves grow O(deaths) without bound (the
+  // Memory arrays the heaviest). Stripping is byte-identical (nothing reads them on the dead). The
+  // tombstone keeps the durable record (name, dates, lineage, cause); legends live on the Chronicle.
+  C_MEMORY, C_INVENTORY, C_CRAFTING, C_QUEST, C_EQUIPMENT,
 ];
 
 export function tombstoneFor(

@@ -270,6 +270,7 @@ export interface Business {
   gathers: string | null;     // resource id employees harvest from nodes, or null
   producesFood?: boolean;     // a food producer (farm) — its workforce supplies the staple market (M15)
   fishery?: boolean;          // a coastal fishing house (M24) — its food is the fish it catches, not its headcount
+  tends?: boolean;            // a healer's house (M30) — its workforce tends the afflicted (improves treatment)
   lowFundsDays?: number;      // consecutive days struggling — folds past the grace (M15 slice 2b)
 }
 
@@ -288,6 +289,8 @@ export interface Religion {
   parent?: string;     // the faith it split from (schism descent)
   extinct?: boolean;
   diedTick?: number;
+  myth?: string;       // M18 s2: a generated founding myth — the faith's origin story (deterministic, flavour only)
+  lastHolyDay?: number; // M18 s2: tick the faith last celebrated a holy day (so it fires once per occurrence)
 }
 
 // A milestone the town has reached (M17 s4) — fires once, kept forever, shown in Legends.
@@ -400,6 +403,7 @@ export interface WonderSite {
   wonderId: string;
   name: string;
   builtTick: number;
+  depicts?: string;   // M33 s2 (completed S140): a great Chronicle event this wonder commemorates, generated from history
 }
 
 // The town's staple-goods market (M15): a single price that floats with supply (what the

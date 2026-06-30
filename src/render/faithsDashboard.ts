@@ -39,6 +39,7 @@ export class FaithsDashboard extends ModalPanel {
         <div style="flex:1;min-width:0">
           <div style="color:#e6e6f0">${r.name}${parent}</div>
           <div style="color:#889;font-size:11px">venerates ${r.deity} · ${r.tenets.join(', ')} · ${piety(r.fervor)} · ${n} ${n === 1 ? 'follower' : 'followers'}</div>
+          ${r.myth ? `<div style="color:#9a86c0;font-size:11px;font-style:italic;margin-top:2px">“${r.myth}”</div>` : ''}
         </div></div>`;
     }).join('');
 

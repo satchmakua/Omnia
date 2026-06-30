@@ -106,6 +106,7 @@ export const ProfessionSchema = z.object({
   gathers: z.string().optional(),                // resource id this profession harvests (e.g. "ore")
   producesFood: z.boolean().default(false),      // a food producer — its workforce supplies the staple market (M15)
   fishery: z.boolean().default(false),           // a coastal fishing trade (M24) — placed by water; its food is the fish it catches
+  tends: z.boolean().default(false),             // a care trade (M30) — a healer's house; its workforce tends the afflicted
 }).strict();
 
 export type Profession = z.infer<typeof ProfessionSchema>;

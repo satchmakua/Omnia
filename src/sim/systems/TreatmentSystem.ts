@@ -8,8 +8,8 @@
 // damp groves and no bruisewort cannot brew the poultice). Recovery is a deterministic per-day roll
 // (hash, no sim RNG) so the world still replays identically and the predator-prey balance is safe.
 import type { World } from '../ecs.ts';
-import { C_CIVIC, C_AGENT, C_POSITION, C_AFFLICTIONS, C_CLOCK, C_FLORA } from '../components.ts';
-import type { Civic, Agent, Position, Afflictions, Clock, Flora, AfflictionKind } from '../components.ts';
+import { C_CIVIC, C_AGENT, C_POSITION, C_AFFLICTIONS, C_CLOCK, C_FLORA, C_JOB, C_BUSINESS } from '../components.ts';
+import type { Civic, Agent, Position, Afflictions, Clock, Flora, AfflictionKind, Job, Business } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import type { Content } from '../../content/loader.ts';
 import { isTreatableKind, cureAffliction, recoversUnderCare, labelOf } from '../afflictions.ts';
@@ -48,6 +48,16 @@ export function runTreatmentSystem(world: World, cfg: SimConfig, content: Conten
 
   const orgStore = getOrgStore(world);   // a tribe's medicine knowledge makes its healers surer (M30 s3)
 
+  // Working healers (M30 backlog): folk who hold the care trade — employed at a healer's house. The more
+  // of them tending, the surer & faster the infirmary's cures (a town that pays for healers heals better).
+  // Capped so a glut of healers can't make care near-instant (which would unbalance the death on-ramps).
+  let healers = 0;
+  for (const e of world.query(C_AGENT, C_JOB)) {
+    const biz = world.getComponent<Business>(world.getComponent<Job>(e, C_JOB)!.employer, C_BUSINESS);
+    if (biz?.tends) healers++;
+  }
+  const healerBoost = 1 + Math.min(0.6, cfg.healerCarePerWorker * healers);
+
   for (const e of world.query(C_AGENT, C_AFFLICTIONS, C_POSITION)) {
     const fp = world.getComponent<Position>(e, C_POSITION)!;
     const tended = infirmaries.some(inf => Math.max(Math.abs(fp.x - inf.x), Math.abs(fp.y - inf.y)) <= care);
@@ -57,7 +67,7 @@ export function runTreatmentSystem(world: World, cfg: SimConfig, content: Conten
     // Healer's teeth (M30 s3): a tribe that has studied medicine cures surer & faster (+25%/level),
     // the same knowledge that speeds its members' recovery in the HealthSystem.
     const medicine = orgStore && agent.orgId ? (orgStore.byId[agent.orgId]?.effects?.medicine ?? 0) : 0;
-    const skill = 1 + medicine * 0.25;
+    const skill = (1 + medicine * 0.25) * healerBoost;   // tribe medicine knowledge × the town's working healers
     // Snapshot the treatable kinds first — cureAffliction mutates (and may shed) the list.
     const treatable = af.list.map(a => a.kind).filter(isTreatableKind);
     for (const kind of treatable) {

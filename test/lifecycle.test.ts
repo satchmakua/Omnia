@@ -3,6 +3,7 @@ import { World } from '../src/sim/ecs.ts';
 import { defaultConfig, ticksPerYear } from '../src/sim/config.ts';
 import {
   C_AGENT, C_NEEDS, C_POSITION, C_HEALTH, C_RELATIONSHIPS, C_LINEAGE, C_TOMBSTONE, C_CLOCK,
+  C_MEMORY, C_INVENTORY, C_CRAFTING, C_QUEST, C_EQUIPMENT,
 } from '../src/sim/components.ts';
 import type {
   Agent, Needs, Health, Relationships, Lineage, Tombstone, Sex,
@@ -57,6 +58,27 @@ describe('killAgent / tombstones', () => {
 
     killAgent(w, a, 1000, 'illness', tpy);
     expect(w.getComponent<Lineage>(b, C_LINEAGE)!.partner).toBe(null);
+  });
+
+  it('strips the inner life & carried facets on death (deep-time hygiene, S139)', () => {
+    // A grave keeps only its durable record — not the soul's Memory, goods, craft, quest, or gear.
+    // Left attached, these let graves grow O(deaths) without bound (the Memory arrays the heaviest).
+    const w = new World();
+    const e = addPerson(w, { name: 'Hoarder' });
+    w.addComponent(e, C_MEMORY, { beliefs: [], events: [{ text: 'x' }], utterances: [], summaries: [], purpose: 0 });
+    w.addComponent(e, C_INVENTORY, { items: { ore: 3 } });
+    w.addComponent(e, C_CRAFTING, { skill: 5 });
+    w.addComponent(e, C_QUEST, { text: 'slay the beast', kind: 'slay', targetTick: 9999 });
+    w.addComponent(e, C_EQUIPMENT, { weapon: 2, armour: 0 });
+
+    killAgent(w, e, 5000, 'old age', tpy);
+
+    expect(w.hasComponent(e, C_TOMBSTONE)).toBe(true);    // the record remains
+    expect(w.hasComponent(e, C_MEMORY)).toBe(false);
+    expect(w.hasComponent(e, C_INVENTORY)).toBe(false);
+    expect(w.hasComponent(e, C_CRAFTING)).toBe(false);
+    expect(w.hasComponent(e, C_QUEST)).toBe(false);
+    expect(w.hasComponent(e, C_EQUIPMENT)).toBe(false);
   });
 
   it('records the dead’s lineage in the tombstone', () => {
