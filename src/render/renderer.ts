@@ -51,6 +51,19 @@ const NEIGH8: readonly [number, number][] = [
   [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1],
 ];
 
+// The nearest non-water tile to (x,y), searched in expanding rings (M31 s2 — keeps a clan banner on
+// solid ground when its seat falls on open water). Returns null if none within `maxR`.
+function nearestLandTile(map: TileMapData, x: number, y: number, maxR = 24): { x: number; y: number } | null {
+  for (let r = 1; r <= maxR; r++) {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;   // only this ring's edge
+      const nx = x + dx, ny = y + dy;
+      if (nx >= 0 && ny >= 0 && nx < map.width && ny < map.height && !isWater(map, nx, ny)) return { x: nx, y: ny };
+    }
+  }
+  return null;
+}
+
 const MIN_SCALE = 1;
 const MAX_SCALE = 9;
 
@@ -368,7 +381,7 @@ export class Renderer {
       this.iconFolk(gx, gy, child, st);
     }
 
-    this.drawClanSeats(world, orgStore);   // a banner at each clan's seat — its hold on the ground (M31 s2)
+    this.drawClanSeats(world, orgStore, map);   // a banner at each clan's seat — its hold on the ground (M31 s2)
     this.drawCombatFx(world, elapsedMs);   // fading clash/death marks (still in world space)
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -377,8 +390,10 @@ export class Renderer {
   }
 
   // A small banner at each clan's seat — the centroid of its folk, its hold on the ground (M31 s2
-  // territory), flown in the clan's own colour. A pure read; render-only.
-  private drawClanSeats(world: World, store: ReturnType<typeof getOrgStore>): void {
+  // territory), flown in the clan's own colour. A pure read; render-only. If the seat falls on open
+  // water (the clan's folk straddle a lake), the banner is nudged to the nearest shore so it sits on
+  // solid ground rather than adrift — stable, since the seat itself only shifts once a day.
+  private drawClanSeats(world: World, store: ReturnType<typeof getOrgStore>, map: TileMapData | undefined): void {
     if (!store) return;
     const count = new Map<string, number>();
     for (const e of world.query(C_AGENT)) {
@@ -388,7 +403,9 @@ export class Renderer {
     const ctx = this.ctx;
     for (const o of Object.values(store.byId)) {
       if (o.extinct || !o.seat || (count.get(o.id) ?? 0) < 3) continue;   // only a clan with a real hold
-      this.at(o.seat.x, o.seat.y, 1, () => {
+      let { x: sx, y: sy } = o.seat;
+      if (map && isWater(map, sx, sy)) { const land = nearestLandTile(map, sx, sy); if (land) { sx = land.x; sy = land.y; } }
+      this.at(sx, sy, 1, () => {
         ctx.strokeStyle = 'rgba(15,15,24,0.7)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(0, -17); ctx.lineTo(0, -5); ctx.stroke();                                   // pole
         ctx.fillStyle = o.color;
