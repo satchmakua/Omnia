@@ -2,7 +2,7 @@ import { World } from './ecs.ts';
 import { createRNG, rngFloat } from './rng.ts';
 import {
   C_CLOCK, C_TILEMAP, C_CHRONICLE, C_EVENTLOG, C_CONVOLOG, C_WORLDSTATS, C_STORYTELLER, C_CULTURESTORE, C_LANGUAGESTORE,
-  C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_ORGSTORE, C_MARKET, C_ACHIEVEMENTS,
+  C_AIRECORD, C_AGENT, C_LINEAGE, C_RELATIONSHIPS, C_BUSINESS, C_POSITION, C_ORGSTORE, C_MARKET, C_GOODSMARKET, C_ACHIEVEMENTS,
   C_RELIGIONSTORE, C_FIGURES, C_ARTIFACTS, C_WONDERS, C_INTERVENTIONS,
 } from './components.ts';
 import type { Clock, Agent, Lineage, Relationships, AIRecord, Position } from './components.ts';
@@ -37,6 +37,7 @@ import type { LanguageStoreData } from '../lang/languageStore.ts';
 import { createOrgStore, createOrg, getOrgStore } from '../org/orgStore.ts';
 import { createReligionStore, createReligion, getReligionStore } from '../religion/religionStore.ts';
 import { createMarket } from './market.ts';
+import { createGoodsMarket } from './goodsMarket.ts';
 import { createAchievements } from './systems/AchievementSystem.ts';
 import { createFigures } from '../history/figures.ts';
 import { createArtifacts } from '../history/artifacts.ts';
@@ -269,6 +270,7 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   world.addComponent(world.createEntity(), C_ORGSTORE, createOrgStore());   // tribes/factions (M14)
   world.addComponent(world.createEntity(), C_RELIGIONSTORE, createReligionStore()); // faiths (M18)
   world.addComponent(world.createEntity(), C_MARKET, createMarket(cfg));     // staple-goods market (M15)
+  world.addComponent(world.createEntity(), C_GOODSMARKET, createGoodsMarket(content)); // crafted-goods market (M36)
   world.addComponent(world.createEntity(), C_ACHIEVEMENTS, createAchievements()); // milestones (M17)
   world.addComponent(world.createEntity(), C_FIGURES, createFigures());     // historical figures (M20)
   world.addComponent(world.createEntity(), C_ARTIFACTS, createArtifacts()); // legendary artifacts (M20 s2)
@@ -287,23 +289,25 @@ export function createSimulation(cfg: SimConfig, content: Content): Simulation {
   // coast it falls back to dry land (a degenerate, catchless fishery — rare).
   const professions = content.professions.all();          // deterministic (sorted by id)
   const trades = professions.filter(p => !p.tends);        // the productive round-robin — its mix is the tuned economy
-  const carers = professions.filter(p => p.tends);         // care trades (healer's houses) — spawned separately, below
-  const tradeCount = scaledBusinessCount(cfg);
-  if (trades.length > 0) {
-    for (let i = 0; i < tradeCount; i++) {
-      const prof = trades[i % trades.length];
-      const spot = (prof.fishery ? findMainlandCoastalTile(rng, tileMap, mainland) : null) ?? findMainlandTile(rng, tileMap, mainland);
-      spawnBusiness(world, spot.x, spot.y, prof, cfg);
-    }
-  }
-  // Healer's houses (M30): care is a livelihood too. Spawned as a SEPARATE small set (not in the
-  // round-robin) so they don't displace the food/productive trades whose mix the economy is tuned to —
-  // their headcount tracks the town's size, not a farm slot. Their folk improve treatment (TreatmentSystem).
+  const carers = professions.filter(p => p.tends);         // care trades (healer's houses) — a separate small set
+  // Healer's houses (M30): care is a livelihood too. A SEPARATE small set (not in the round-robin, so they
+  // don't displace the food/productive trades whose mix the economy is tuned to), sized to the town's
+  // PEOPLE rather than its land — and spawned FIRST so hiring actually staffs them (employers fill in
+  // creation order, and openings outnumber workers, so a healer's house placed last would stand empty —
+  // a hollow profession). A handful of healers out of the workforce is a modest, deliberate draw.
   if (carers.length > 0) {
-    const houses = Math.max(1, Math.round(tradeCount * cfg.healerHouseShare));
+    const houses = Math.max(1, Math.round(cfg.initialPopulation * cfg.healerHousePerPop));
     for (let i = 0; i < houses; i++) {
       const spot = findMainlandTile(rng, tileMap, mainland);
       spawnBusiness(world, spot.x, spot.y, carers[i % carers.length], cfg);
+    }
+  }
+  // The productive trades (the tuned round-robin), placed after the healer's houses.
+  if (trades.length > 0) {
+    for (let i = 0; i < scaledBusinessCount(cfg); i++) {
+      const prof = trades[i % trades.length];
+      const spot = (prof.fishery ? findMainlandCoastalTile(rng, tileMap, mainland) : null) ?? findMainlandTile(rng, tileMap, mainland);
+      spawnBusiness(world, spot.x, spot.y, prof, cfg);
     }
   }
 

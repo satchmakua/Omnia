@@ -8,7 +8,7 @@
 // enchantments — it sweeps expired wards/curses each tick (even when no mages remain).
 import type { World, EntityId } from '../ecs.ts';
 import {
-  C_MAGIC, C_POSITION, C_AGENT, C_FAUNA, C_HEALTH, C_NEEDS, C_CLOCK, C_WARD, C_CURSE, C_FLORA, C_SPECIAL, C_EQUIPMENT, C_ENCHANTMENT,
+  C_MAGIC, C_POSITION, C_AGENT, C_FAUNA, C_HEALTH, C_NEEDS, C_CLOCK, C_WARD, C_CURSE, C_FLORA, C_SPECIAL, C_EQUIPMENT, C_ENCHANTMENT, C_COMBAT,
 } from '../components.ts';
 import type { Magic, Position, Agent, Fauna, Health, Needs, Clock, Ward, Curse, Flora, Special, Equipment, Enchantment } from '../components.ts';
 import type { SimConfig } from '../config.ts';
@@ -23,6 +23,13 @@ const WARD_DURATION = 80;     // ticks a ward shields its bearer (~1/3 day at 24
 const CURSE_DURATION = 80;    // ticks a curse saps its victim
 const SUMMON_DURATION = 240;  // ticks a conjured guardian endures before fading (~a day)
 const WEATHER_RADIUS = 2;     // tiles a druid's quickening rain reaches
+// M26 visibility (S140): the battle-mages reach a little further than touch, so their magic actually
+// *reads* in play (the effects were correct but almost never fired). An abjurer shields an ally within
+// WARD_RADIUS — proactively warding a nearby fighter in peacetime, not only the endangered; a maleficent
+// hexes a predator within CURSE_RADIUS, not only one underfoot. The elementalist's killing BOLT stays
+// touch-range (it removes predators → its reach is the lever on the tuned predator-prey balance).
+const WARD_RADIUS = 2;
+const CURSE_RADIUS = 2;
 const OFF = [-1, 0, 1];
 
 export function runMagicSystem(world: World, cfg: SimConfig, _rng: unknown): void {
@@ -61,6 +68,16 @@ export function runMagicSystem(world: World, cfg: SimConfig, _rng: unknown): voi
       yield (p.y + dy) * cfg.gridWidth + (p.x + dx);
     }
   };
+  // Tile keys within a square radius r of p (excluding p itself) — the broader reach for ward/curse.
+  const tilesInRadius = function* (p: Position, r: number): Generator<number> {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      yield (p.y + dy) * cfg.gridWidth + (p.x + dx);
+    }
+  };
+  // A fighter worth a proactive ward: a blooded veteran (M16 Combat) or one bearing a weapon (M23).
+  const isFighter = (f: EntityId): boolean =>
+    world.hasComponent(f, C_COMBAT) || (world.getComponent<Equipment>(f, C_EQUIPMENT)?.weapon ?? 0) > 0;
   // Is this folk in immediate danger — a predator on one of its eight neighbours?
   const inDanger = (e: EntityId): boolean => {
     const p = world.getComponent<Position>(e, C_POSITION);
@@ -149,26 +166,32 @@ export function runMagicSystem(world: World, cfg: SimConfig, _rng: unknown): voi
         }
       }
     } else if (school.signature === 'ward') {
-      // Shield the neighbour in most danger (one beside a predator); failing that, the wounded.
-      let target: EntityId | null = null, fallback: EntityId | null = null;
-      for (const k of neighbourKeys(pos)) {
+      // Shield the ally most worth shielding within reach: one in a predator's jaws first, then the
+      // wounded, then — proactively, in peacetime — a nearby fighter (a warded veteran reads as a
+      // visible blessing; M26 legibility). A ward only soaks harm to folk, so a broader reach can't
+      // perturb the predator-prey balance — it's freely widened.
+      let danger: EntityId | null = null, wounded: EntityId | null = null, fighter: EntityId | null = null;
+      for (const k of tilesInRadius(pos, WARD_RADIUS)) {
         const f = folkAt.get(k);
         if (f === undefined || f === e || world.hasComponent(f, C_WARD)) continue;
-        if (inDanger(f)) { target = f; break; }
-        if (fallback === null) {
-          const h = world.getComponent<Health>(f, C_HEALTH);
-          if (h && h.value < 0.6) fallback = f;
-        }
+        // Classify each ally into its highest-priority need; an endangered ally is the best target,
+        // so the first one found ends the search.
+        if (inDanger(f)) { danger = f; break; }
+        const h = world.getComponent<Health>(f, C_HEALTH);
+        if (h && h.value < 0.6) { if (wounded === null) wounded = f; continue; }
+        if (fighter === null && isFighter(f)) fighter = f;
       }
-      const ally = target ?? fallback;
+      const ally = danger ?? wounded ?? fighter;
       if (ally !== null) {
         magic.mana -= SPELL_COST;
         world.addComponent<Ward>(ally, C_WARD, { soak: 2 + mastery, expiresTick: tick + WARD_DURATION });
         emitEvent(world, 'magic', `${name} shielded ${world.getComponent<Agent>(ally, C_AGENT)!.name} with ${spell.name}.`, pos);
       }
     } else if (school.signature === 'curse') {
-      // Hex a marauding beast beside the mage so it strikes weaker — support, not the kill.
-      for (const k of neighbourKeys(pos)) {
+      // Hex a marauding beast within sight (not only one underfoot) so the folk can cut it down —
+      // support, not the kill. Predation-sensitive (a weaker predator tilts the balance), so kept to a
+      // tight radius + the existing modest, capped weaken, and soak/predation-verified.
+      for (const k of tilesInRadius(pos, CURSE_RADIUS)) {
         const beast = predatorAt.get(k);
         if (beast !== undefined && world.hasComponent(beast, C_FAUNA) && !world.hasComponent(beast, C_CURSE)) {
           magic.mana -= SPELL_COST;

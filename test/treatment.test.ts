@@ -7,14 +7,15 @@ import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_POSITION, C_AFFLICTIONS, C_CIVIC, C_CLOCK, C_FLORA, C_ORGSTORE,
+  C_AGENT, C_POSITION, C_AFFLICTIONS, C_CIVIC, C_CLOCK, C_FLORA, C_ORGSTORE, C_JOB, C_BUSINESS,
 } from '../src/sim/components.ts';
-import type { Agent, Position, Afflictions, Civic, Clock, Flora, AfflictionKind } from '../src/sim/components.ts';
+import type { Agent, Position, Afflictions, Civic, Clock, Flora, AfflictionKind, Job, Business } from '../src/sim/components.ts';
 import type { OrgStoreData } from '../src/org/orgStore.ts';
 import {
   isPermanent, isTreatableKind, isAfflictionKind, cureAffliction, recoversUnderCare, addAffliction,
 } from '../src/sim/afflictions.ts';
 import { runTreatmentSystem } from '../src/sim/systems/TreatmentSystem.ts';
+import { createSimulation } from '../src/sim/world.ts';
 import { testContent } from './helpers.ts';
 
 const cfg = defaultConfig;
@@ -173,5 +174,57 @@ describe('a tribe that studies medicine heals surer (M30 s3 — the healer gains
 
   it('cures more of its sick within the same span than a town with no medicine', () => {
     expect(townCuredBy(8, 4)).toBeGreaterThan(townCuredBy(0, 4));
+  });
+});
+
+describe('the healer profession heals the town surer (M30 backlog — working healers)', () => {
+  // A town of 40 chronically-ill folk tended at one infirmary, staffed by `healers` working healers
+  // (employed at a healer's house). Count how many are cured within `days`.
+  function townCuredByHealers(healers: number, days: number): number {
+    const w = new World();
+    w.addComponent<Clock>(w.createEntity(), C_CLOCK, { tick: 0, day: 0, hour: 0, isDay: true });
+    const inf = w.createEntity();
+    w.addComponent<Position>(inf, C_POSITION, { x: 10, y: 10 });
+    w.addComponent<Civic>(inf, C_CIVIC, { kind: 'infirmary', name: 'Infirmary', effect: 'heal', radius: 5 });
+    const herb = w.createEntity();
+    w.addComponent<Position>(herb, C_POSITION, { x: 30, y: 30 });
+    w.addComponent<Flora>(herb, C_FLORA, { speciesId: 'bruisewort', name: 'Bruisewort', color: '#9a6fd0', maturity: 1, growthPerTick: 0, edibleAt: 0.55, foodYield: 0.55, spreadChancePerTick: 0 });
+    if (healers > 0) {
+      const house = w.createEntity();
+      w.addComponent<Position>(house, C_POSITION, { x: 12, y: 12 });
+      w.addComponent<Business>(house, C_BUSINESS, {
+        professionId: 'healer', professionName: 'Healer', color: '#6fc6a8', balance: 1000,
+        maxEmployees: 99, wagePerTick: 0.05, revenuePerWorkerPerTick: 0.06, requiresAptitude: false, gathers: null, tends: true,
+      });
+      for (let i = 0; i < healers; i++) {
+        const h = w.createEntity();
+        w.addComponent<Position>(h, C_POSITION, { x: 12, y: 12 });
+        w.addComponent<Agent>(h, C_AGENT, { name: `H${h}`, action: 'work', ticksAlive: 9000, wealthGoal: 50, sex: 'female', lifespanTicks: 1e9 });
+        w.addComponent<Job>(h, C_JOB, { professionId: 'healer', professionName: 'Healer', employer: house, wagePerTick: 0.05, gathers: null });
+      }
+    }
+    const sick: EntityId[] = [];
+    for (let i = 0; i < 40; i++) {
+      const e = w.createEntity();
+      w.addComponent<Position>(e, C_POSITION, { x: 11, y: 11 });
+      w.addComponent<Agent>(e, C_AGENT, { name: `S${e}`, action: 'wander', ticksAlive: 5000, wealthGoal: 50, sex: 'male', lifespanTicks: 1e9 });
+      addAffliction(w, e, 'chronic_illness', 0);
+      sick.push(e);
+    }
+    const clk = w.query(C_CLOCK)[0];
+    for (let d = 1; d <= days; d++) { w.getComponent<Clock>(clk, C_CLOCK)!.tick = d * tpd; runTreatmentSystem(w, cfg, content); }
+    return sick.filter(e => !w.getComponent(e, C_AFFLICTIONS)).length;
+  }
+
+  it('a town staffed with working healers cures more of its sick than one with none', () => {
+    expect(townCuredByHealers(5, 4)).toBeGreaterThan(townCuredByHealers(0, 4));
+  });
+
+  it('ships a Healer (tends) profession and seeds the town with at least one healer’s house', () => {
+    const healer = content.professions.all().find(p => p.id === 'healer');
+    expect(healer?.tends).toBe(true);
+    const { world } = createSimulation({ ...cfg, seed: 3 }, content);
+    const houses = world.query(C_BUSINESS).filter(e => world.getComponent<Business>(e, C_BUSINESS)!.tends).length;
+    expect(houses).toBeGreaterThan(0);   // care is a livelihood — a healer's house stands
   });
 });

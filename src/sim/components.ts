@@ -40,6 +40,7 @@ export const C_ORGSTORE   = 'OrgStore';   // singleton: live organizations / tri
 export const C_LANGUAGESTORE = 'LanguageStore'; // singleton: live languages (src/lang/languageStore.ts)
 export const C_RELIGIONSTORE = 'ReligionStore'; // singleton: live religions / faiths (src/religion/religionStore.ts) (M18)
 export const C_MARKET     = 'Market';     // singleton: the staple-goods market — price floats with supply/demand (M15)
+export const C_GOODSMARKET = 'GoodsMarket'; // singleton: the crafted-goods market — each good's price floats with supply (M36)
 export const C_ACHIEVEMENTS = 'Achievements'; // singleton: civ + agent milestones that have fired (M17 s4)
 export const C_FIGURES      = 'Figures';      // singleton: historical figures enshrined by their deeds (M20)
 export const C_ARTIFACTS    = 'Artifacts';    // singleton: named legendary items with histories (M20 s2)
@@ -416,6 +417,16 @@ export interface Market {
   demand: number;       // provisions demanded per day (last computed)
   history: number[];    // bounded recent daily prices, for the chart
   fishCatch?: number;   // provisions from yesterday's fish catch (M24) — fed into supply; fish-limited
+}
+
+// The crafted-goods market (M36 s1): each good has its own price that floats around its base value
+// with how much of it the town is making. `avgSupply` is a slow EMA of each good's daily supply — so
+// the price self-centres on the base value (long-run price = cost) and only DEVIATIONS from a good's
+// own norm move it (a glut cheapens, a shortfall dears). Pure arithmetic; no RNG → replay-safe.
+export interface GoodsMarket {
+  prices: Record<string, number>;     // good id → current price in gold
+  avgSupply: Record<string, number>;  // good id → slow EMA of daily supply (the self-calibrating baseline)
+  supply: Record<string, number>;     // good id → quantity made/held this day (last computed, for the view)
 }
 
 // A dwelling an agent built and owns (M11). Homes are static (no brain) — they mark

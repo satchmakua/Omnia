@@ -268,6 +268,23 @@ describe('battle magic — wards (M26 s2)', () => {
     expect(w.hasComponent(stale, C_WARD)).toBe(false);
     expect(w.hasComponent(fresh, C_WARD)).toBe(true);
   });
+
+  it('proactively shields a nearby fighter in peacetime — within reach, no danger (S140 visibility)', () => {
+    const w = mageWorld();
+    castMage(w, 5, 5, 'abjuration', 3);
+    const fighter = plainFolk(w, 7, 5);                       // two tiles off — beyond touch, within WARD_RADIUS
+    w.addComponent<Equipment>(fighter, C_EQUIPMENT, { weapon: 2, armour: 0 });   // armed → worth warding
+    runMagicSystem(w, cfg, noRng);                            // no predator, no wounds anywhere
+    expect(w.getComponent<Ward>(fighter, C_WARD)).toBeDefined();   // the abjurer's magic actually fires
+  });
+
+  it('does not waste a ward on an unarmed, unhurt, safe bystander', () => {
+    const w = mageWorld();
+    castMage(w, 5, 5, 'abjuration', 3);
+    const bystander = plainFolk(w, 7, 5);                     // in reach but no danger, no wound, no arms
+    runMagicSystem(w, cfg, noRng);
+    expect(w.hasComponent(bystander, C_WARD)).toBe(false);
+  });
 });
 
 describe('battle magic — curses (M26 s2)', () => {
@@ -281,6 +298,22 @@ describe('battle magic — curses (M26 s2)', () => {
     expect(curse!.weaken).toBeGreaterThan(0);
     expect(w.isAlive(b)).toBe(true);                       // hexed, not slain (unlike a bolt)
     expect(w.getComponent<Magic>(m, C_MAGIC)!.mana).toBeLessThan(80);
+  });
+
+  it('hexes a beast two tiles off, not only one underfoot (S140 visibility)', () => {
+    const w = mageWorld();
+    castMage(w, 5, 5, 'maleficence', 3);
+    const b = predator(w, 7, 5);                           // distance 2 — beyond touch, within CURSE_RADIUS
+    runMagicSystem(w, cfg, noRng);
+    expect(w.getComponent<Curse>(b, C_CURSE)).toBeDefined();
+  });
+
+  it('does not reach a beast beyond the curse radius (predation balance protected)', () => {
+    const w = mageWorld();
+    castMage(w, 5, 5, 'maleficence', 3);
+    const far = predator(w, 9, 5);                         // distance 4 — out of reach
+    runMagicSystem(w, cfg, noRng);
+    expect(w.hasComponent(far, C_CURSE)).toBe(false);
   });
 
   it("a cursed beast's blows land softer — the folk it mauls keeps more health", () => {

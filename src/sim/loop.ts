@@ -16,6 +16,7 @@ import { runCraftSystem }    from './systems/CraftSystem.ts';
 import { runMentorSystem }   from './systems/MentorSystem.ts';
 import { runEquipSystem }    from './systems/EquipSystem.ts';
 import { runTradeSystem }    from './systems/TradeSystem.ts';
+import { runGoodsMarketSystem } from './systems/GoodsMarketSystem.ts';
 import { runVoyageSystem }   from './systems/VoyageSystem.ts';
 import { runFishingSystem }  from './systems/FishingSystem.ts';
 import { runMarketSystem }   from './systems/MarketSystem.ts';
@@ -76,7 +77,8 @@ export function tick(
   runCraftSystem(world, cfg, content);   // crafters turn carried materials into goods, skill-gated (M23)
   runMentorSystem(world, cfg, content);  // a master crafter teaches an apprentice — skill + a bond (M29 s3)
   runEquipSystem(world, cfg, content);   // denormalise best carried weapon/armour for combat (M23 s3)
-  runTradeSystem(world, cfg, content);   // sell crafted goods for gold — crafting feeds wealth (M25 s2)
+  runGoodsMarketSystem(world, cfg, content); // price each good by today's supply BEFORE it sells (M36 s1)
+  runTradeSystem(world, cfg, content);   // sell crafted goods for gold at the day's market price (M25 s2 / M36)
   runFishingSystem(world, cfg);          // coastal fisheries net fish → food (fish-limited) (M24)
   runMarketSystem(world, cfg);           // staple market: price floats with supply/demand (sets the cost of living)
   runEconomySystem(world, cfg);          // hiring, wages, cost of living (at the market price)
