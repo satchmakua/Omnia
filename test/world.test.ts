@@ -222,7 +222,10 @@ describe('createSimulation with terrain', () => {
   it('places businesses and employs agents within a few ticks', () => {
     const cfg = { ...defaultConfig, seed: 11 };
     const sim = createSimulation(cfg, content);
-    expect(sim.world.query(C_BUSINESS).length).toBe(cfg.businessCount);
+    // The tuned count governs the trade businesses; healer's houses (M30) are a separate set on top.
+    const trades = sim.world.query(C_BUSINESS).filter(e => !(sim.world.getComponent(e, C_BUSINESS) as { tends?: boolean }).tends);
+    expect(trades.length).toBe(cfg.businessCount);
+    expect(sim.world.query(C_BUSINESS).length).toBeGreaterThan(cfg.businessCount);   // + at least one healer's house
     runTicks(sim.world, sim.rng, cfg, sim.clockEntity, content, 5);
     // With ample openings, every working-age adult should hold a job (children don't work — the
     // Kids Pass; and a birth may already have occurred by now).

@@ -14,6 +14,9 @@ import { getOrgStore } from '../src/org/orgStore.ts';
 import { testContent } from './helpers.ts';
 
 const count = (w: World, comp: string) => w.query(comp).length;
+// The tuned business count governs the *trade* (productive) businesses; healer's houses (M30) are a
+// separate small set spawned on top, so they're excluded when checking the round-robin scaling.
+const tradeBiz = (w: World) => w.query(C_BUSINESS).filter(e => !(w.getComponent(e, C_BUSINESS) as { tends?: boolean }).tends).length;
 
 describe('big configurable map (M8)', () => {
   it('world-gen scales with area: ~10× the tiles ⇒ proportionally more of everything', () => {
@@ -34,10 +37,13 @@ describe('big configurable map (M8)', () => {
     expect(count(big.world, C_FAUNA)).toBeGreaterThan(count(base.world, C_FAUNA) * 4);
     expect(count(big.world, C_RESOURCE)).toBeGreaterThan(count(base.world, C_RESOURCE) * 4);
 
-    // Employers scale with area; the base map keeps its tuned count.
-    expect(count(base.world, C_BUSINESS)).toBe(defaultConfig.businessCount);
-    expect(count(big.world, C_BUSINESS)).toBe(scaledBusinessCount(bigCfg));
-    expect(count(big.world, C_BUSINESS)).toBeGreaterThan(defaultConfig.businessCount);
+    // Trade employers scale with area; the base map keeps its tuned count (healer's houses excluded).
+    expect(tradeBiz(base.world)).toBe(defaultConfig.businessCount);
+    expect(tradeBiz(big.world)).toBe(scaledBusinessCount(bigCfg));
+    expect(tradeBiz(big.world)).toBeGreaterThan(defaultConfig.businessCount);
+    // …while healer's houses track the PEOPLE, not the land — so a bigger map with the same starting
+    // population raises the same number of them (care scales with the town, not the acreage).
+    expect(count(big.world, C_BUSINESS) - tradeBiz(big.world)).toBe(count(base.world, C_BUSINESS) - tradeBiz(base.world));
 
     // Multiple biomes actually appear across the big map.
     const biomesSeen = new Set(map.biomeIndex);
