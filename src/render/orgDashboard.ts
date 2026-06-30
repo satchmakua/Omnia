@@ -32,8 +32,8 @@ export class OrgDashboard extends ModalPanel {
       `<div style="color:#8b8b9e;font-size:11px;line-height:1.5;margin-bottom:8px">
         Kin-bands that hold together, govern themselves, and split as they grow. Each clan has its own
         colour — that's the tint on its folk out on the map — and a government that emerges from its values.
-        As the eras turn they forge <span style="color:#7fd6b0">alliances</span>, fall into
-        <span style="color:#e0a0a0">rivalry</span>, and the weak may <span style="color:#d9b878">swear fealty</span> to a dominant power.</div>`;
+        As the eras turn they forge <span style="color:#7fd6b0">alliances</span> (and trade by caravan along them),
+        fall into <span style="color:#e0a0a0">rivalry</span>, and the weak may <span style="color:#d9b878">swear fealty</span> to a dominant power.</div>`;
 
     const rows = living.map((o) => {
       const n = members.get(o.id) ?? 0;

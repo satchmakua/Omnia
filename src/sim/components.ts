@@ -77,6 +77,7 @@ export interface Wallet {
 // Bounded per item by `inventoryMaxPerItem`, so it stays tenable. See src/sim/inventory.ts.
 export interface Inventory {
   items: Record<string, number>;
+  quality?: Record<string, number>;   // M33: the best craft-quality tier (0..5) carried of each good id
 }
 
 // A crafter's skill (M23 slice 2): grows by practice (learn-by-doing), gating the recipes
@@ -89,8 +90,12 @@ export interface Crafting {
 // carries, recomputed daily (EquipSystem) from their inventory + the goods content, so the
 // hot combat path reads cheap numbers (like a tribe's `arms`). Carrying = wielding.
 export interface Equipment {
-  weapon: number;   // best carried weapon power → attack
-  armour: number;   // best carried armour power → soak
+  weapon: number;   // best carried weapon power (× its quality) → attack
+  armour: number;   // best carried armour power (× its quality) → soak
+  weaponId?: string;      // M33: the good wielded, and its quality tier (0..5) — for legibility
+  weaponQuality?: number;
+  armourId?: string;
+  armourQuality?: number;
 }
 
 export type AgentAction = 'wander' | 'seek_food' | 'sleep' | 'work' | 'socialize' | 'relax';
@@ -323,6 +328,9 @@ export interface Artifact {
   forgedBy: string;      // the maker's name
   forgedTick: number;
   deeds: string;         // a one-line history ("a master smith's blade · 9 foes slain")
+  depicts?: string;      // M33 s2: a masterwork's engraving — a real Chronicle scene graven into it
+  heir?: number;         // M33 s3: the bearer's designated heir (a living child), to inherit it on death
+  generations?: number;  // M33 s3: how many times this heirloom has passed down a lineage
   lost?: boolean;
   lostTick?: number;
   ruined?: boolean;        // a cairn has been placed for this lost relic (M20 s2b) — placed once

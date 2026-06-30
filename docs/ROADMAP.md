@@ -452,7 +452,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD ✅:** a serious wound leaves a **lasting, mechanically-real effect** that can be treated/recovered; healers treat the afflicted; the inspector shows specific afflictions; no death-spiral; determinism + soak hold.
 
-**✨ Milestone 30 COMPLETE (s1/s2/s3).** Backlog polish: a map badge for the afflicted/disabled (currently legible via the inspector + feed, not a glyph on the map); a dedicated healer *profession* (beyond the medicine tech) that earns from tending.
+**✨ Milestone 30 COMPLETE (s1/s2/s3).** Backlog: ~~a map badge for the afflicted/disabled~~ ✅ (s138 — the ⚕ afflicted badge); a dedicated healer *profession* (beyond the medicine tech) that earns from tending.
 
 ## Milestone 31 — Geopolitics: Diplomacy, Territory & the Fate of Nations  *(Kenshi + RimWorld + DF)*
 
@@ -464,7 +464,7 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD ✅:** orgs form **alliances and vassalages** (not only wars) and wars can end in conquest; a hegemon or balance-of-power **emerges** over deep time; the Heritage/Conflict views show it; determinism + soak hold (no runaway, no collapse).
 
-**✨ Milestone 31 COMPLETE (s1 diplomacy · s2 caravans & territory · s3 conquest).** Organizations now relate in alliance, rivalry, vassalage, tribute, trade & conquest — the rise and fall of clans is real, legible history. Backlog: a map banner at each clan's seat (territory is legible via the dashboard + caravans, not yet a map glyph); a physical traveling caravan entity (currently an abstract gold flow, to keep determinism).
+**✨ Milestone 31 COMPLETE (s1 diplomacy · s2 caravans & territory · s3 conquest).** Organizations now relate in alliance, rivalry, vassalage, tribute, trade & conquest — the rise and fall of clans is real, legible history. Backlog: ~~a map banner at each clan's seat~~ ✅ (s138 — a clan pennant flies at each seat); a physical traveling caravan entity (currently an abstract gold flow, to keep determinism).
 
 ## Milestone 32 — The Storyteller: an Adaptive Event Director  *(RimWorld; reuses the M27 seam)*
 
@@ -475,17 +475,24 @@ Each milestone ships its **own content + its own inspector view**; M18 (bestiary
 
 **DoD ✅:** event pacing **demonstrably adapts** to world-state (calm → escalation, crisis → relief — tested over a run), keeping the town in a bounded "drama band"; deterministic; soak-stable.
 
-**✨ Milestone 32 COMPLETE (s1 the Director · s2 selectable temperaments).** Drama is now *paced*, not random — an adaptive director keeps the world interesting-but-survivable, with a RimWorld-style storyteller knob. Backlog: a "world tension" HUD indicator for the director's calm; wiring the director through the M27 recorded-Intervention seam (currently deterministic-from-state, which is simpler & replay-safe).
+**✨ Milestone 32 COMPLETE (s1 the Director · s2 selectable temperaments).** Drama is now *paced*, not random — an adaptive director keeps the world interesting-but-survivable, with a RimWorld-style storyteller knob. Backlog: ~~a "world tension" indicator for the director's calm~~ ✅ (s138 — the Storyteller section in the Events view); wiring the director through the M27 recorded-Intervention seam (currently deterministic-from-state, which is simpler & replay-safe).
 
 ## Milestone 33 — Things That Remember: Art, Craft & Embodied History  *(Dwarf Fortress)*
 
 **Goal:** objects and places **carry the town's history** — masterworks that depict events, heirlooms passed down — deepening the "history matters" pillar into the physical world.
 
-- [ ] **Quality tiers** on crafted goods (shoddy → masterwork, from skill) — quality affects value & combat power.
-- [ ] **Engravings / depictions:** a masterwork or wonder **commemorates a real Chronicle event** ("a shield depicting the Founding Cataclysm"), generated from the durable history, no authoring.
-- [ ] **Heirlooms:** an artifact **inherited down a lineage**, accruing history each generation — ties M20 artifacts + M23 crafting + the Chronicle.
+- [x] **Quality tiers** on crafted goods (shoddy → masterwork, from skill) — quality affects value & combat power. *(M33 s1: `src/sim/quality.ts` — six tiers; a good's quality is fixed at crafting from the maker's skill (`qualityFromSkill`), kept per-good-id on the `Inventory`. It scales **trade value** and (for arms, via the `Equipment` denormalise) **combat power**. Both are **bonus-only** — fine/superior/masterwork are worth more & hit harder, but shoddy/poor/plain sit at the journeyman baseline — because penalising common work quietly cut crafter income / weakened arms and tipped the economy + predator-prey equilibria off their tuned points (a soak + predation finding). The inspector reads "a masterwork blade (+4.3)". Masterworks (skill ≥ 8) are a rare master's mark — the hook for s2/s3. Deterministic.)*
+- [x] **Engravings / depictions:** a masterwork or wonder **commemorates a real Chronicle event** ("a shield depicting the Founding Cataclysm"), generated from the durable history, no authoring. *(M33 s2: when a smith's craft ripens to a true **masterwork** (M33 s1 quality), the ArtifactSystem **recognises their signature work as one and graves it** with a scene drawn from the town's own Chronicle — its loudest legends + compressed ages (`depictableScene`, generated not authored, deterministic/hash-keyed → no sim RNG). The engraving + the masterwork honour accrue onto the *existing* artifact later in its life (the seed of an heirloom's accruing history, s3). Shown in the feed/Chronicle + the Legends panel ("⚜ depicting Gek Olo the Slayer — slew 8 foes"). Rare — the apex of a master's work.)*
+- [x] **Heirlooms:** an artifact **inherited down a lineage**, accruing history each generation — ties M20 artifacts + M23 crafting + the Chronicle. *(M33 s3: a living bearer names their eldest living child as **heir** (daily); when the bearer dies, a borne relic **passes down** to that heir as an **heirloom** — `bearer` reassigned, a `generation` accrued, the feed/Chronicle remembering the passing — instead of being lost; it is lost only when **the line ends** (no living heir → the M20 relic/archaeology path). The Legends panel shows "⚱ heirloom (N gens)". Deterministic (RNG-free; an artifact never feeds the sim). Verified: heirlooms arise across seeds; the A→B→C multi-generation accrual is unit-tested.)*
 
-**DoD:** a masterwork **depicts a real historical event** and is inherited/remembered across generations; quality affects value & combat; legible in inspector + Legends; determinism + soak hold.
+**DoD ✅:** a masterwork **depicts a real historical event** and is inherited/remembered across generations; quality affects value & combat; legible in inspector + Legends; determinism + soak hold.
+
+**✨ Milestone 33 COMPLETE (s1 quality tiers · s2 masterwork engravings · s3 heirlooms).** Objects now carry the town's history — a master's masterwork is graven with a real Chronicle scene and passed down a lineage, accruing its own legend each generation. Backlog: a wonder depicting an event (the "or wonder" half of s2); ~~the heirloom/engraving on the inspector's bearer view~~ ✅ (s138 — the bearer's relic now shows in the inspector).
+
+---
+
+## 🏁 The roadmap (M0–M33) is complete.
+Every milestone from the founding simulation through the inner-life trio (M28–M30), geopolitics (M31), the adaptive storyteller (M32), and embodied history (M33) is built, tested, soak-stable and deterministic. Future work lives in the per-milestone **Backlog** notes above and any new ideas appended below.
 
 ---
 

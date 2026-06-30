@@ -61,6 +61,8 @@ export class Legend {
       entryRow(swatch('folk', folk, 0.6), 'Child', 'too young to work, court, or bear children') +
       entryRow(glyphCell('✦', '#c79bf0'), 'Magic spark', 'born with a rare magic aptitude') +
       entryRow(glyphCell('✚', '#e06666'), 'Ill', 'sick — at higher risk of death') +
+      entryRow(glyphCell('▂', '#ff5050'), 'Wounded', 'badly hurt — a red bar at the feet (combat or illness)') +
+      entryRow(glyphCell('✚', '#d9a0a0'), 'Afflicted', 'a lasting disability or chronic illness — a maimed limb, a lost eye, the frailty of age') +
       entryRow(glyphCell('|||', '#ffd24a'), 'Seeking food', 'hungry — off to forage or hunt') +
       entryRow(glyphCell('⊥', '#ffd24a'), 'Working', 'at a job, earning gold') +
       entryRow(glyphCell('☾', '#9fb6d9'), 'Sleeping', 'resting to recover energy') +
@@ -70,6 +72,7 @@ export class Legend {
       entryRow(glyphCell('⚑', '#ffd278'), 'On a quest', 'pursuing a goal — to hunt, avenge, or explore') +
       entryRow(glyphCell('⚔', '#d6dae4'), 'Veteran', 'has fought — scars or kills to their name') +
       entryRow(glyphCell('⚖', '#ff7a7a'), 'Outlaw', 'a known criminal — theft, assault, or worse') +
+      entryRow(glyphCell('⚐', '#9ab'), 'Clan banner', 'flies at each clan’s seat — the heart of its territory, in the clan’s colour') +
       entryRow(glyphCell('☀', '#ffe08a'), 'Day / night', '☀ daytime · ☾ night');
 
     this.body.innerHTML =
