@@ -427,6 +427,7 @@ export interface GoodsMarket {
   prices: Record<string, number>;     // good id → current price in gold
   avgSupply: Record<string, number>;  // good id → slow EMA of daily supply (the self-calibrating baseline)
   supply: Record<string, number>;     // good id → quantity made/held this day (last computed, for the view)
+  demandIndex: number;                // M36 s2: mean price÷base across goods — >1 when goods are broadly scarce (dear), <1 on a glut; scales non-food business revenue (mean ≈ 1, so the baseline economy is unchanged)
 }
 
 // A dwelling an agent built and owns (M11). Homes are static (no brain) — they mark
