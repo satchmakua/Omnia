@@ -19,7 +19,7 @@ const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.m
 export function createGoodsMarket(content: Content): GoodsMarket {
   const prices: Record<string, number> = {};
   for (const g of content.goods.all()) prices[g.id] = g.value;
-  return { prices, avgSupply: {}, supply: {} };
+  return { prices, avgSupply: {}, supply: {}, demandIndex: 1 };
 }
 
 export function getGoodsMarket(world: World): GoodsMarket | undefined {
@@ -54,6 +54,7 @@ export function measureGoodsSupply(world: World, content: Content): Record<strin
 // (first-day price = base) then tracks supply slowly. Pure; mutates the passed market.
 export function updateGoodsPrices(market: GoodsMarket, supply: Record<string, number>, content: Content, cfg: SimConfig): void {
   const a = cfg.goodsSupplyEmaRate;
+  let ratioSum = 0, n = 0;
   for (const g of content.goods.all()) {
     const s = supply[g.id] ?? 0;
     const prevAvg = market.avgSupply[g.id];
@@ -66,5 +67,10 @@ export function updateGoodsPrices(market: GoodsMarket, supply: Record<string, nu
     const target = clamp(g.value * ratio, g.value * cfg.goodsPriceMinMult, g.value * cfg.goodsPriceMaxMult);
     const cur = market.prices[g.id] ?? g.value;
     market.prices[g.id] = clamp(cur + (target - cur) * cfg.goodsPriceAdjustRate, g.value * cfg.goodsPriceMinMult, g.value * cfg.goodsPriceMaxMult);
+    ratioSum += market.prices[g.id] / g.value;   // price÷base, the demand signal for the business layer (M36 s2)
+    n++;
   }
+  // The town-wide demand index: goods broadly dear (>1) ⇒ production lags demand ⇒ trades earn more;
+  // a glut (<1) ⇒ they earn less. Mean ≈ 1 (the prices self-centre), so the baseline economy holds.
+  market.demandIndex = n > 0 ? ratioSum / n : 1;
 }

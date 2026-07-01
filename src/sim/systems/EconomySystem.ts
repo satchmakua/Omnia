@@ -10,6 +10,7 @@ import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
 import { earn, spend } from '../economy.ts';
 import { getMarket } from '../market.ts';
+import { getGoodsMarket } from '../goodsMarket.ts';
 import { marketFactor } from './CivicSystem.ts';
 import { getOrgStore, maxEffect } from '../../org/orgStore.ts';
 import { C_POSITION } from '../components.ts';
@@ -24,6 +25,9 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
   // Industrial tech (engineering/machining/steam/electricity/fusion) is shared infrastructure —
   // the town's most advanced tribe sets the base, lifting every business's revenue (M25).
   const industry = 1 + INDUSTRY_BONUS * maxEffect(getOrgStore(world), 'industry');
+  // The goods-market demand index (M36 s2): scales non-food business revenue with real supply/demand.
+  // Defaults to 1 (older saves / minimal test worlds with no goods market) → the baseline economy.
+  const demandIndex = getGoodsMarket(world)?.demandIndex ?? 1;
   const clockEntsTop = world.query(C_CLOCK);
   const now = clockEntsTop.length ? world.getComponent<Clock>(clockEntsTop[0], C_CLOCK)!.tick : 0;
 
@@ -95,10 +99,12 @@ export function runEconomySystem(world: World, cfg: SimConfig): void {
       biz.balance -= job.wagePerTick;
       earn(world.getComponent<Wallet>(e, C_WALLET)!, job.wagePerTick);
     }
-    // Food producers earn from real market sales (MarketSystem), so they get no synthetic
-    // revenue — that's what lets an unprofitable farm actually go broke (M15 slice 2). Other
-    // trades still book abstract revenue until their goods get markets (a later M15 slice).
-    if (!biz.producesFood) biz.balance += biz.revenuePerWorkerPerTick * industry;
+    // Food producers earn from real market sales (MarketSystem), so they get no synthetic revenue —
+    // that's what lets an unprofitable farm actually go broke (M15 slice 2). Other trades book revenue
+    // per working hand, now scaled by the goods-market DEMAND INDEX (M36 s2): when goods are broadly
+    // dear (production lags demand) trades earn more; a glut earns them less. Mean ≈ 1, so the baseline
+    // economy is unchanged — the coupling adds responsiveness, not a systematic shift.
+    if (!biz.producesFood) biz.balance += biz.revenuePerWorkerPerTick * industry * demandIndex;
   }
 
   // ── Cost of living (once per day) ─────────────────────────────────────────────

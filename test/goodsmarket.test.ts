@@ -62,6 +62,16 @@ describe('goods market — the model (M36 s1)', () => {
   it('goodsPriceOf falls back to the base value with no market (older saves / minimal worlds)', () => {
     expect(goodsPriceOf(undefined, GOOD.id, GOOD.value)).toBe(GOOD.value);
   });
+
+  it('tracks a demand index — >1 when goods are broadly scarce, <1 on a broad glut (M36 s2)', () => {
+    const steady = createGoodsMarket(content), scarce = createGoodsMarket(content), glut = createGoodsMarket(content);
+    const at = (n: number) => Object.fromEntries(content.goods.all().map(g => [g.id, n]));
+    for (let d = 0; d < 20; d++) { updateGoodsPrices(steady, at(10), content, cfg); updateGoodsPrices(scarce, at(10), content, cfg); updateGoodsPrices(glut, at(10), content, cfg); }
+    expect(steady.demandIndex).toBeCloseTo(1, 1);        // a steady economy sits at ~1 (baseline unchanged)
+    for (let d = 0; d < 6; d++) { updateGoodsPrices(scarce, at(2), content, cfg); updateGoodsPrices(glut, at(40), content, cfg); }
+    expect(scarce.demandIndex).toBeGreaterThan(1);       // broad scarcity → trades earn more
+    expect(glut.demandIndex).toBeLessThan(1);            // broad glut → trades earn less
+  });
 });
 
 describe('goods market — the TradeSystem sells at the floating price (M36 s1)', () => {

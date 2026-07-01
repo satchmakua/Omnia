@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import { defaultConfig } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_NEEDS, C_WALLET, C_JOB, C_BUSINESS, C_POSITION, C_HEALTH,
+  C_AGENT, C_NEEDS, C_WALLET, C_JOB, C_BUSINESS, C_POSITION, C_HEALTH, C_GOODSMARKET,
 } from '../src/sim/components.ts';
-import type { Agent, Needs, Wallet, Job, Business, Health } from '../src/sim/components.ts';
+import type { Agent, Needs, Wallet, Job, Business, Health, GoodsMarket } from '../src/sim/components.ts';
 import { earn, spend, netWorth } from '../src/sim/economy.ts';
 import { gini, wealthStats } from '../src/sim/wealth.ts';
 import { runEconomySystem } from '../src/sim/systems/EconomySystem.ts';
@@ -112,7 +112,22 @@ describe('EconomySystem', () => {
     runEconomySystem(w, cfg);                 // hires a into biz
     const wallet = w.getComponent<Wallet>(a, C_WALLET)!;
     expect(wallet.gold).toBe(2);             // earned one tick of wage
-    expect(w.getComponent<Business>(biz, C_BUSINESS)!.balance).toBe(100 - 2 + 3);
+    expect(w.getComponent<Business>(biz, C_BUSINESS)!.balance).toBe(100 - 2 + 3);   // demand index defaults to 1
+  });
+
+  it('scales a trade’s revenue by the goods-market demand index (M36 s2)', () => {
+    const run = (demandIndex: number): number => {
+      const w = new World();
+      const biz = makeBusiness(w, { balance: 100, wagePerTick: 2, revenuePerWorkerPerTick: 3 });
+      w.addComponent<GoodsMarket>(w.createEntity(), C_GOODSMARKET, { prices: {}, avgSupply: {}, supply: {}, demandIndex });
+      makeAgent(w, { action: 'work' }, { gold: 0, debt: 0 });
+      runEconomySystem(w, cfg);
+      return w.getComponent<Business>(biz, C_BUSINESS)!.balance;
+    };
+    // Dear goods (index 1.5) book more revenue than a glut (index 0.5): 100 - wage + 3×index.
+    expect(run(1.5)).toBeCloseTo(100 - 2 + 3 * 1.5, 5);
+    expect(run(0.5)).toBeCloseTo(100 - 2 + 3 * 0.5, 5);
+    expect(run(1.5)).toBeGreaterThan(run(0.5));
   });
 
   it('does not pay an employee who is not working', () => {
