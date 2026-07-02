@@ -45,6 +45,14 @@ farmOperatingCostPerDay: 10
 bankruptcyThreshold: 10
 bankruptcyGraceDays: 14
 maxFarms: 8
+# M36 s3 — bankruptcy & founding for the non-food trades
+tradeOperatingCostPerDay: 5
+tradeGraceDays: 28
+tradeIdleFoldStaff: 0
+maxTradeBusinesses: 18
+maxPerTradeProfession: 4
+tradeFoundScarcityRatio: 1.15
+minTradesPerProfession: 1
 predatorAggressionChance: 0.012
 combatScarThreshold: 0.3
 maimGrievousHealth: 0.4
