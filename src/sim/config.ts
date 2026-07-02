@@ -48,6 +48,14 @@ export interface SimConfig {
   bankruptcyThreshold: number;         // a business this broke can't make ends meet — it's struggling
   bankruptcyGraceDays: number;         // consecutive struggling days a business survives before it folds
   maxFarms: number;                    // safety cap on food businesses (founding stops here)
+  // M36 s3: bankruptcy & founding for the NON-FOOD trades (food keeps its own numbers above).
+  tradeOperatingCostPerDay: number;    // daily overhead a non-food trade pays — only an idle one drains on it
+  tradeGraceDays: number;              // struggling days a trade survives before folding (longer than a farm — conservative culling)
+  tradeIdleFoldStaff: number;          // a trade folds only when its staff ≤ this (0 = only a chronically EMPTY trade dies → no employed worker is displaced)
+  maxTradeBusinesses: number;          // global cap on non-food non-special businesses (founding stops here)
+  maxPerTradeProfession: number;       // per-profession founding cap (no monoculture of one dear trade)
+  tradeFoundScarcityRatio: number;     // a trade's dearest good must be ≥ this × its base before a new one opens
+  minTradesPerProfession: number;      // never fold the last business of a profession (a craft chain never goes extinct)
   // Conflict (M16): ability-score-driven combat — predators threaten folk; folk fight back.
   predatorAggressionChance: number;    // per-tick chance a predator beside a folk strikes (kept low → a threat, not a cull)
   combatScarThreshold: number;         // a blow this hard (Health 0..1) leaves a permanent scar
@@ -285,6 +293,13 @@ export const defaultConfig: SimConfig = {
   bankruptcyThreshold: 10,     // basically broke
   bankruptcyGraceDays: 14,     // a couple of weeks of losses before folding
   maxFarms: 8,                 // founding never exceeds this many food businesses
+  tradeOperatingCostPerDay: 5, // half a farm's overhead; a full trade nets well above it, only an idle one drains
+  tradeGraceDays: 28,          // double the farm grace — cull conservatively so the trade sector doesn't thrash
+  tradeIdleFoldStaff: 0,       // fold only a chronically EMPTY loss-making trade — never displaces an employed worker
+  maxTradeBusinesses: 18,      // global cap on non-food non-special businesses (headroom over the ~12 seeded)
+  maxPerTradeProfession: 4,    // no runaway monoculture of one persistently-dear trade
+  tradeFoundScarcityRatio: 1.15, // a trade's good must be this dear to open a new one (inside the 1.4 price ceiling)
+  minTradesPerProfession: 1,   // the last business of any profession is never folded
   predatorAggressionChance: 0.012, // rare — an adjacent predator seldom actually strikes
   combatScarThreshold: 0.3,        // only a deep wound leaves a lasting scar
   maimGrievousHealth: 0.4,         // beaten below 40% Health and living — a grave wounding that can cripple

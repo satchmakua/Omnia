@@ -74,3 +74,34 @@ export function updateGoodsPrices(market: GoodsMarket, supply: Record<string, nu
   // a glut (<1) ⇒ they earn less. Mean ≈ 1 (the prices self-centre), so the baseline economy holds.
   market.demandIndex = n > 0 ? ratioSum / n : 1;
 }
+
+// The non-food TRADE profession whose own goods are currently dearest — the one a new business should
+// open in (M36 s3 demand-directed founding). Builds each tradeable profession's output goods from the
+// recipe registry and scores it by the highest price÷base over those goods (the goods market's price,
+// falling back to base when there's no market). Only NON-SPECIAL crafts qualify: food producers, healer
+// houses (tends), and the rare aptitude mage are excluded — they aren't demand-founded. Professions with
+// no recipe (merchant/artisan) have no good to price, so they're never returned. Pure & deterministic
+// (sorted iteration, ties broken by professionId); no RNG. Returns null if no eligible trade exists.
+export function scarcestTradeProfession(world: World, content: Content): { professionId: string; ratio: number } | null {
+  const market = getGoodsMarket(world);
+  const profs = new Map(content.professions.all().map(p => [p.id, p]));
+  const goodsById = new Map(content.goods.all().map(g => [g.id, g]));
+  const byProf = new Map<string, string[]>();
+  for (const r of content.recipes.all()) {
+    const prof = profs.get(r.profession);
+    if (!prof || prof.producesFood || prof.tends || prof.requiresAptitude) continue;
+    const list = byProf.get(r.profession);
+    if (list) list.push(r.output); else byProf.set(r.profession, [r.output]);
+  }
+  let best: { professionId: string; ratio: number } | null = null;
+  for (const professionId of [...byProf.keys()].sort()) {
+    let ratio = 0;
+    for (const goodId of byProf.get(professionId)!) {
+      const g = goodsById.get(goodId);
+      if (!g || g.value <= 0) continue;
+      ratio = Math.max(ratio, (market?.prices[goodId] ?? g.value) / g.value);
+    }
+    if (best === null || ratio > best.ratio) best = { professionId, ratio };
+  }
+  return best;
+}
