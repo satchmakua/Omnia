@@ -88,6 +88,26 @@ export interface SimConfig {
   conversionChancePerDay: number;      // daily chance a folk beside a more-devout faith adopts it (faith spreads)
   holyDayIntervalDays: number;         // M18 s2: how often a faith celebrates a holy day (its followers' mood lifts)
   holyDayMoodLift: number;             // the mood a holy day grants the faithful (scaled by the faith's fervour)
+  // Divine favor & grace-day boons (M18 s2b): faith accrues favor from devotion and spends it acting on the world.
+  graceIntervalDays: number;           // how often a faith may grant a boon (rarer than a holy day so favor recharges)
+  graceThreshold: number;              // minimum favor to grant a boon
+  graceCost: number;                   // favor spent when a boon lands (forces the faith to recharge)
+  favorGainPerDay: number;             // daily favor gain = this × fervor × a saturating follower factor
+  favorDecay: number;                  // daily favor decay (<1 → a hard ceiling even for a huge devout faith)
+  favorSaturationK: number;            // follower factor = n/(n+K); a bigger faith asymptotes rather than scaling forever
+  graceHealAmount: number;             // health a benevolent boon restores to its neediest follower (Math.min(1,…))
+  graceMoodLift: number;               // mood a benevolent boon grants that follower (clamp01)
+  graceWardSoak: number;               // armour a benevolent boon's ward adds (reuses the M26 Ward, swept by MagicSystem)
+  graceWardDuration: number;           // ticks the boon's ward lasts
+  graceCurseWeaken: number;            // how much a wrathful boon's curse saps a hostile neighbour (weaken-only, never health)
+  graceCurseDuration: number;          // ticks the wrathful curse lasts
+  // Living gods (M18 s3): at extreme, sustained devotion a faith's deity briefly MANIFESTS as an avatar.
+  avatarFavorThreshold: number;        // favor a faith must reach to manifest its god (well above graceThreshold)
+  avatarCost: number;                  // favor spent to manifest (most of it — a rare, momentous act)
+  avatarDurationDays: number;          // days an avatar walks the land before it fades
+  avatarGladden: number;               // mood an avatar grants nearby faithful (once/day, like a benevolent haunt)
+  avatarAwe: number;                    // mood dip an avatar visits on nearby folk of rival faiths (once/day)
+  avatarRadius: number;                // tiles the avatar's presence reaches
   healerHousePerPop: number;           // M30: healer's houses spawned ≈ this × the starting population (care scales with people, not land)
   healerCarePerWorker: number;         // each working healer multiplies the infirmary's cure potency by +this (capped)
   // Crafted-goods market (M36 s1): each good's price floats around its base value with supply.
@@ -328,6 +348,24 @@ export const defaultConfig: SimConfig = {
   conversionChancePerDay: 0.05,    // faith spreads by contact — a devout neighbour wins the odd convert
   holyDayIntervalDays: 24,         // a faith's holy day comes ~5×/sim-year; phased per faith so they don't all fall together
   holyDayMoodLift: 0.07,           // small & bounded — devotion gladdens, but the Storyteller still owns the drama band
+  graceIntervalDays: 22,           // a boon comes a little rarer than a holy day (favor must recharge between)
+  graceThreshold: 0.45,            // a faith needs real devotion behind it to act — but not near-saturation
+  graceCost: 0.45,                 // a boon spends most of the faith's favor
+  favorGainPerDay: 0.03,           // a devout faith climbs comfortably above the threshold, so its grace days land
+  favorDecay: 0.995,              // gentle decay → favor equilibrium ≈ gain/(1−decay), clamped to 1
+  favorSaturationK: 8,             // ~half-saturation at 8 followers → a big faith asymptotes, doesn't run away
+  graceHealAmount: 0.15,           // a modest heal to one wounded follower (capped at full health)
+  graceMoodLift: 0.07,             // the same small gladdening a holy day gives
+  graceWardSoak: 2,                // a light shield (like a low-mastery abjurer's ward)
+  graceWardDuration: 80,           // ~1/3 day, matching the M26 ward duration
+  graceCurseWeaken: 0.25,          // a modest sapping (weaken-only — a wrathful god harries, it does not kill)
+  graceCurseDuration: 80,          // ~1/3 day, matching the M26 curse duration
+  avatarFavorThreshold: 0.8,       // only a faith at the peak of devotion manifests its god — near the top of the favor band, so it's rare
+  avatarCost: 0.85,                // manifesting spends nearly all the accrued favor — a once-in-an-age act
+  avatarDurationDays: 2,           // the god walks among the folk for about two days, then fades
+  avatarGladden: 0.12,             // the faithful near their manifest god rejoice (once/day, bounded)
+  avatarAwe: 0.06,                 // rivals feel the awe/dread of a god not their own (a small mood dip, once/day)
+  avatarRadius: 2,                 // the divine presence reaches ~2 tiles
   healerHousePerPop: 0.035,        // ~1 healer's house per ~30 folk (pop 60 → 2 houses); care scales with people, not map area
   healerCarePerWorker: 0.12,       // each working healer makes the infirmary's cures surer (capped at +0.6, like a strong medicine tech)
   goodsPriceMinMult: 0.7,          // a glutted good fetches ~0.7× its worth — a floor on crafter income

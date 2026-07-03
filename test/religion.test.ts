@@ -4,14 +4,16 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig, ticksPerYear } from '../src/sim/config.ts';
-import { C_AGENT, C_CLOCK, C_RELIGIONSTORE, C_POSITION } from '../src/sim/components.ts';
-import type { Agent, Clock } from '../src/sim/components.ts';
+import { C_AGENT, C_CLOCK, C_RELIGIONSTORE, C_POSITION, C_HEALTH, C_WARD, C_CURSE, C_SPECIAL, C_TILEMAP } from '../src/sim/components.ts';
+import type { Agent, Clock, Health, Ward, Special } from '../src/sim/components.ts';
+import type { TileMapData } from '../src/world/tilemap.ts';
 import { createRNG } from '../src/sim/rng.ts';
 import {
-  createReligionStore, createReligion, forkReligion, getReligion, faithFactor, pruneReligions, mythFor,
+  createReligionStore, createReligion, forkReligion, getReligion, faithFactor, pruneReligions, mythFor, isWrathful,
 } from '../src/religion/religionStore.ts';
 import type { ReligionStoreData } from '../src/religion/religionStore.ts';
 import { runReligionSystem } from '../src/sim/systems/ReligionSystem.ts';
+import { runSpecialAgentSystem } from '../src/sim/systems/SpecialAgentSystem.ts';
 import { runMoodSystem, MOOD_BASELINE } from '../src/sim/systems/MoodSystem.ts';
 import { createSimulation } from '../src/sim/world.ts';
 import { testContent } from './helpers.ts';
@@ -179,6 +181,145 @@ describe('devotion comforts (M18 s2)', () => {
     w.addComponent(faithless, C_POSITION, { x: 20, y: 20 });
     runMoodSystem(w, cfg);
     expect(w.getComponent<Agent>(faithful, C_AGENT)!.mood!).toBeGreaterThan(w.getComponent<Agent>(faithless, C_AGENT)!.mood!);
+  });
+});
+
+// ── Divine favor & grace-day boons (M18 s2b) ──────────────────────────────────────────
+function healthyFollower(w: World, x: number, y: number, religionId: string, opts: { health?: number; mood?: number } = {}): EntityId {
+  const e = w.createEntity();
+  w.addComponent<Agent>(e, C_AGENT, { name: `F${e}`, action: 'wander', ticksAlive: Math.floor(25 * ticksPerYear(cfg)), wealthGoal: 50, sex: 'female', lifespanTicks: 1e9, religionId, mood: opts.mood ?? 0.7 });
+  w.addComponent(e, C_POSITION, { x, y });
+  w.addComponent<Health>(e, C_HEALTH, { value: opts.health ?? 1, ill: false });
+  return e;
+}
+// Run one full grace interval (no conversion noise); returns after the faith's single grace day has passed.
+const noConvert = (over: Partial<typeof cfg> = {}) => ({ ...cfg, conversionChancePerDay: 0, ...over });
+function runGraceInterval(w: World): void {
+  const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+  for (let d = 1; d <= cfg.graceIntervalDays + 1; d++) { clock.tick = d * cfg.ticksPerDay; runReligionSystem(w, noConvert(), createRNG(1)); }
+}
+
+describe('divine favor & grace-day boons (M18 s2b)', () => {
+  it('isWrathful: the warrior creed is wrathful, every other tenet benevolent', () => {
+    const s = createReligionStore();
+    expect(isWrathful(getReligion(s, createReligion(s, 'War', 'Aa', ['the warrior creed', 'ancestor rites'], 0.8, 0))!)).toBe(true);
+    expect(isWrathful(getReligion(s, createReligion(s, 'Peace', 'Bb', ['the peaceful path', 'communal worship'], 0.8, 0))!)).toBe(false);
+  });
+
+  it('a benevolent faith heals & shields its neediest follower on a grace day; the hale are untouched', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.9, 0);
+    store.byId[r].favor = 1;                                       // brimming with favor
+    const wounded = healthyFollower(w, 5, 5, r, { health: 0.4 });
+    const hale = healthyFollower(w, 8, 8, r, { health: 1 });
+    runGraceInterval(w);
+    expect(w.getComponent<Health>(wounded, C_HEALTH)!.value).toBeGreaterThan(0.4);   // healed
+    expect(w.hasComponent(wounded, C_WARD)).toBe(true);                             // and shielded
+    expect(w.getComponent<Ward>(wounded, C_WARD)!.soak).toBe(cfg.graceWardSoak);    // the grace ward (bounded soak)
+    expect(w.getComponent<Health>(hale, C_HEALTH)!.value).toBe(1);                  // the hale follower untouched
+    expect(w.hasComponent(hale, C_WARD)).toBe(false);
+    expect(store.byId[r].favor!).toBeLessThan(1);                                   // favor was spent
+  });
+
+  it('the grace threshold gates the boon — a favor-poor faith grants nothing', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.9, 0);
+    store.byId[r].favor = 0.1;                                     // below graceThreshold
+    const wounded = healthyFollower(w, 5, 5, r, { health: 0.4 });
+    runGraceInterval(w);
+    expect(w.getComponent<Health>(wounded, C_HEALTH)!.value).toBe(0.4);   // no heal
+    expect(w.hasComponent(wounded, C_WARD)).toBe(false);                  // no ward
+  });
+
+  it('a wrathful faith curses a rival’s neighbour — non-lethally (never touches health)', () => {
+    const { w, store } = faithWorld(0);
+    const war = createReligion(store, 'the War Faith', 'Aa', ['the warrior creed'], 0.9, 0);
+    const peace = createReligion(store, 'the Peace Faith', 'Bb', ['the peaceful path'], 0.5, 0);
+    store.byId[war].favor = 1;
+    const zealot = healthyFollower(w, 5, 5, war, { health: 1 });
+    const rival = healthyFollower(w, 6, 5, peace, { health: 1 });    // adjacent, different living faith
+    runGraceInterval(w);
+    expect(w.hasComponent(rival, C_CURSE)).toBe(true);              // hexed
+    expect(w.getComponent<Health>(rival, C_HEALTH)!.value).toBe(1); // …but unharmed — weaken-only
+    expect(w.isAlive(rival)).toBe(true);
+    expect(w.hasComponent(zealot, C_CURSE)).toBe(false);           // its own faithful are never cursed
+  });
+
+  it('a grace-day boon is deterministic — identical under different seeds (no sim RNG)', () => {
+    const run = (seed: number) => {
+      const { w, store } = faithWorld(0);
+      const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.9, 0);
+      store.byId[r].favor = 1;
+      const f = healthyFollower(w, 5, 5, r, { health: 0.4 });
+      const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+      // Suppress the era schism/drift (which legitimately draws seeded RNG) so the WHOLE outcome — favor
+      // included — is seed-independent, proving the favor+boon path itself consumes no RNG.
+      for (let d = 1; d <= cfg.graceIntervalDays + 1; d++) { clock.tick = d * cfg.ticksPerDay; runReligionSystem(w, noConvert({ evolutionIntervalDays: 100000 }), createRNG(seed)); }
+      return `${w.getComponent<Health>(f, C_HEALTH)!.value}|${w.hasComponent(f, C_WARD)}|${store.byId[r].favor}`;
+    };
+    expect(run(1)).toBe(run(9999));   // the favor + boon path draws no rng → the outcome is seed-independent
+  });
+
+  it('divine favor accrues from devotion and stays bounded in [0,1]', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 1.0, 0);
+    for (let i = 0; i < 10; i++) healthyFollower(w, i, 0, r);
+    const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+    for (let d = 1; d <= 60; d++) { clock.tick = d * cfg.ticksPerDay; runReligionSystem(w, noConvert({ graceThreshold: 2 }), createRNG(1)); }   // threshold high → favor never spent, pure accrual
+    const favor = store.byId[r].favor!;
+    expect(favor).toBeGreaterThan(0.3);          // devotion built real favor
+    expect(favor).toBeLessThanOrEqual(1);        // …but it can't run away
+  });
+});
+
+describe('living gods — avatars (M18 s3)', () => {
+  const avatarsIn = (w: World) => w.query(C_SPECIAL).filter(e => w.getComponent<Special>(e, C_SPECIAL)!.behavior === 'avatar');
+
+  it('a faith at the peak of favor manifests its god — exactly one avatar, tied to the faith', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.9, 0);
+    const r2 = createReligion(store, 'the Faith of Bb', 'Bb', ['the peaceful path'], 0.9, 0);
+    store.byId[r].favor = 1; store.byId[r2].favor = 1;                 // BOTH at the peak
+    for (let i = 0; i < cfg.minFaithFollowers; i++) healthyFollower(w, i % 8, 0, r);
+    for (let i = 0; i < cfg.minFaithFollowers; i++) healthyFollower(w, i % 8, 3, r2);
+    runGraceInterval(w);   // no SpecialAgentSystem here, so a spawned avatar persists to the end
+    const avatars = avatarsIn(w);
+    expect(avatars.length).toBe(1);                                   // singular — one god at a time
+    expect(w.getComponent<Special>(avatars[0], C_SPECIAL)!.faith === r || w.getComponent<Special>(avatars[0], C_SPECIAL)!.faith === r2).toBe(true);
+    const manifested = w.getComponent<Special>(avatars[0], C_SPECIAL)!.faith!;
+    expect(store.byId[manifested].favor!).toBeLessThan(cfg.avatarFavorThreshold);   // nearly all its favor was spent
+  });
+
+  it('a favor-poor faith does NOT manifest a god', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.9, 0);
+    store.byId[r].favor = 0.5;                                        // above the boon threshold, below the avatar threshold
+    for (let i = 0; i < cfg.minFaithFollowers; i++) healthyFollower(w, i % 8, 0, r);
+    runGraceInterval(w);
+    expect(avatarsIn(w).length).toBe(0);
+  });
+
+  it('a manifest god gladdens nearby faithful, awes rivals, and fades after its time', () => {
+    const w = new World();
+    w.addComponent<Clock>(w.createEntity(), C_CLOCK, { tick: 500, day: 2, hour: 0, isDay: true });
+    const map: TileMapData = { width: 8, height: 8, biomeIndex: new Uint16Array(64), biomeIds: ['g'], biomeNames: ['G'], colors: ['#333'], passableByBiome: [true] };
+    w.addComponent<TileMapData>(w.createEntity(), C_TILEMAP, map);
+    const av = w.createEntity();
+    w.addComponent(av, C_POSITION, { x: 4, y: 4 });
+    w.addComponent<Health>(av, C_HEALTH, { value: 1, ill: false });
+    w.addComponent<Special>(av, C_SPECIAL, { kind: 'avatar', name: 'aa made flesh', icon: 'avatar', behavior: 'avatar', faith: 'faith.0', str: 14, dex: 14, con: 14, ferocity: 1, spawnTick: 240, despawnTick: 240 + 2 * cfg.ticksPerDay });
+    const faithful = healthyFollower(w, 4, 5, 'faith.0', { mood: 0.5 });   // adjacent, same faith
+    const rival = healthyFollower(w, 3, 4, 'faith.9', { mood: 0.7 });      // adjacent, a different faith
+
+    runSpecialAgentSystem(w, cfg, createRNG(1), testContent());
+    expect(w.getComponent<Agent>(faithful, C_AGENT)!.mood!).toBeGreaterThan(0.5);   // the faithful rejoiced
+    expect(w.getComponent<Agent>(rival, C_AGENT)!.mood!).toBeLessThan(0.7);         // the rival felt its awe
+    expect(w.isAlive(av)).toBe(true);                                              // still walking
+
+    const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+    clock.tick = 240 + 2 * cfg.ticksPerDay + 1;                                     // past its time
+    runSpecialAgentSystem(w, cfg, createRNG(1), testContent());
+    expect(w.isAlive(av)).toBe(false);                                             // the god withdrew
   });
 });
 

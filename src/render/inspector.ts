@@ -14,7 +14,7 @@ import { labelOf, isTreatableKind } from '../sim/afflictions.ts';
 import { qualityName } from '../sim/quality.ts';
 import { socialClassOf } from '../sim/society.ts';
 import { schoolOf } from '../magic/schools.ts';
-import { getReligionStore, getReligion } from '../religion/religionStore.ts';
+import { getReligionStore, getReligion, isWrathful } from '../religion/religionStore.ts';
 import { biomeNameAt, inBounds, isWater } from '../world/tilemap.ts';
 import type { TileMapData } from '../world/tilemap.ts';
 import { ageInYears } from '../sim/config.ts';
@@ -585,10 +585,12 @@ export class Inspector {
     const parent = r.parent && store!.byId[r.parent] ? ` <span style="color:#889">⟵ ${store!.byId[r.parent].name}</span>` : '';
     const piety = r.fervor > 0.66 ? 'devout' : r.fervor > 0.4 ? 'observant' : 'lax';
     const myth = r.myth ? `<div style="color:#9a86c0;font-size:11px;font-style:italic;margin-top:3px">“${r.myth}”</div>` : '';
+    const temper = `<div style="color:#9ab;font-size:11px">${isWrathful(r) ? '<span style="color:#e0857a">⚔ a wrathful god</span>' : '<span style="color:#7fd6a0">✦ a benevolent god</span>'} · divine favor ${Math.round((r.favor ?? 0) * 100)}%</div>`;
     return `<hr style="${RULE}">
       <div style="${SECTION}">Faith</div>
       <div><span style="color:${r.color}">●</span> ${r.name}${parent}</div>
       <div style="color:#9ab;font-size:11px">venerates ${r.deity} · ${r.tenets.join(', ')} · ${piety}</div>
+      ${temper}
       ${myth}`;
   }
 
@@ -718,24 +720,30 @@ export class Inspector {
     const tick = clockEnts.length ? world.getComponent<Clock>(clockEnts[0], C_CLOCK)!.tick : 0;
     const daysLeft = Math.max(0, (s.despawnTick - tick) / defaultConfig.ticksPerDay);
     const guardian = s.behavior === 'guardian';
+    const avatar = s.behavior === 'avatar';
+    const friendly = guardian || avatar;   // benign beings read as "Nature", not "Menace"
+    const rstore = avatar ? getReligionStore(world) : undefined;
+    const faithName = avatar && s.faith && rstore ? getReligion(rstore, s.faith)?.name : undefined;
     const menace = guardian
       ? '<div style="color:#8fd8ff">A summoned guardian — it hunts and smites the beasts that menace its summoner\'s folk.</div>'
+      : avatar
+      ? `<div style="color:#ffe08a">A god made flesh${faithName ? ` — the deity of ${faithName}` : ''}. It walks among the faithful and gladdens them; rivals feel its awe. It draws no blood.</div>`
       : s.behavior === 'predator'
       ? '<div style="color:#ff8a8a">A predator — it hunts the folk, and a brave band must bring it down.</div>'
       : '<div style="color:#bcd">A haunt — it draws no blood, but its passing unsettles all who feel it near.</div>';
     const name = s.name.charAt(0).toUpperCase() + s.name.slice(1);
     return `
-      ${this.title(name, guardian ? 'a conjured guardian · summon' : 'a special agent · monster')}
+      ${this.title(name, guardian ? 'a conjured guardian · summon' : avatar ? 'a god made flesh · avatar' : 'a special agent · monster')}
       ${this.terrainLine(world, pos)}
       <div><b>Pos</b> (${pos.x}, ${pos.y})</div>
       <hr style="${RULE}">
-      <div style="${SECTION}">${guardian ? 'Nature' : 'Menace'}</div>
+      <div style="${SECTION}">${friendly ? 'Nature' : 'Menace'}</div>
       ${menace}
       ${health ? `<div>Vigour ${bar(health.value)}</div>` : ''}
       <hr style="${RULE}">
       <div style="${SECTION}">Nature</div>
       <div style="line-height:1.9"><span style="display:inline-block;min-width:60px">STR <b style="color:#dde">${s.str}</b></span><span style="display:inline-block;min-width:60px">DEX <b style="color:#dde">${s.dex}</b></span><span style="display:inline-block;min-width:60px">CON <b style="color:#dde">${s.con}</b></span></div>
-      <div style="color:#889">It will ${guardian ? 'endure' : 'haunt the land'} for about ${daysLeft.toFixed(1)} more days.</div>`;
+      <div style="color:#889">It will ${avatar ? 'walk among the folk' : guardian ? 'endure' : 'haunt the land'} for about ${daysLeft.toFixed(1)} more days.</div>`;
   }
 
   private _fauna(world: World, e: EntityId, pos: Position): string {

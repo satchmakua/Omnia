@@ -142,6 +142,7 @@ export function runSpecialAgentSystem(world: World, cfg: SimConfig, rng: RNG, co
     if (tick >= s.despawnTick) {
       world.destroyEntity(se);
       if (s.behavior === 'guardian') emitEvent(world, 'magic', `${capitalize(s.name)} faded back into the aether.`, pos);
+      else if (s.behavior === 'avatar') emitEvent(world, 'culture', `${capitalize(s.name)} withdrew — the god's presence faded from the land.`, pos);
       else emitEvent(world, 'paranormal', `${capitalize(s.name)} melted back into the wilds.`, pos);
       continue;
     }
@@ -161,6 +162,14 @@ export function runSpecialAgentSystem(world: World, cfg: SimConfig, rng: RNG, co
         world.destroyEntity(beast);
         emitEvent(world, 'magic', `${capitalize(s.name)} smote a ${bn}.`, pos);
       }
+      continue;
+    }
+
+    if (s.behavior === 'avatar') {
+      // A manifest god (M18 s3): it walks among the faithful, gladdening followers of its faith and awing
+      // rivals (once a day, like a benevolent haunt), then wanders on. It draws no blood and is not struck.
+      runAvatar(world, s, pos, folkGrid, tick, cfg);
+      wanderStep(pos, rng, ent, occ);
       continue;
     }
 
@@ -240,6 +249,27 @@ function runHaunt(
   if (unsettled) {
     s.lastHauntTick = tick;
     emitEvent(world, 'paranormal', `Folk felt the eerie presence of ${s.name.toLowerCase()}.`, pos);
+  }
+}
+
+// A manifest god drifts among the folk (M18 s3): once a day, the faithful nearby rejoice (a mood lift)
+// and folk of rival faiths feel its awe (a small dip). Bounded (clamp to [0,1]) and throttled to once a
+// day via the shared `lastHauntTick` timestamp — the same soak-proven cadence as a haunt. Draws no blood.
+function runAvatar(
+  world: World, s: Special, pos: Position, folkGrid: SpatialGrid, tick: number, cfg: SimConfig,
+): void {
+  if (s.lastHauntTick !== undefined && tick - s.lastHauntTick < cfg.ticksPerDay) return;
+  let touched = false;
+  for (const near of folkGrid.within(pos.x, pos.y, cfg.avatarRadius)) {
+    const a = world.getComponent<Agent>(near.id as EntityId, C_AGENT);
+    if (!a || a.mood === undefined) continue;
+    if (a.religionId === s.faith) a.mood = Math.min(1, a.mood + cfg.avatarGladden);   // its faithful rejoice
+    else a.mood = Math.max(0, a.mood - cfg.avatarAwe);                                 // rivals feel the awe of a strange god
+    touched = true;
+  }
+  if (touched) {
+    s.lastHauntTick = tick;
+    emitEvent(world, 'culture', `The faithful basked in the presence of ${s.name.toLowerCase()}.`, pos);
   }
 }
 

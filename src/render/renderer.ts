@@ -847,6 +847,7 @@ export class Renderer {
         case 'alien':   this.drawAlien(); break;
         case 'kraken':  this.drawKraken(); break;
         case 'guardian': this.drawGuardian(); break;   // a friendly summon (M26 s2b)
+        case 'avatar':  this.drawAvatar(); break;    // a manifest god (M18 s3)
         default:        this.drawMonster(); break;   // 'monster' — a dire beast
       }
       if (wounded) { ctx.strokeStyle = '#ff5050'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-4, 11.5); ctx.lineTo(4, 11.5); ctx.stroke(); }
@@ -855,6 +856,22 @@ export class Renderer {
 
   // A conjured guardian spirit (M26 s2b): a radiant wisp with a soft aura, bright core and halo —
   // benevolent, distinct from the hollow-eyed ghost.
+  // A manifest god (M18 s3): a luminous, haloed figure in a warm golden glow with radiant rays —
+  // distinct from the guardian's cool blue teardrop.
+  private drawAvatar(): void {
+    const ctx = this.ctx;
+    ctx.globalAlpha = 0.3; ctx.fillStyle = '#ffe08a';
+    ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();                          // golden glow
+    ctx.globalAlpha = 0.85; ctx.strokeStyle = '#ffd54a'; ctx.lineWidth = 1; ctx.lineCap = 'round';
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 6, Math.sin(a) * 6); ctx.lineTo(Math.cos(a) * 10.5, Math.sin(a) * 10.5); ctx.stroke(); }   // rays
+    ctx.globalAlpha = 0.97; ctx.fillStyle = '#fff6d8';
+    ctx.beginPath(); ctx.arc(0, -4, 3, 0, Math.PI * 2); ctx.fill();                          // head
+    ctx.beginPath(); ctx.moveTo(-4.5, 8); ctx.quadraticCurveTo(0, -2, 4.5, 8); ctx.closePath(); ctx.fill();   // robed body
+    ctx.globalAlpha = 0.9; ctx.strokeStyle = '#fff0b0'; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.ellipse(0, -7.5, 3.4, 1.3, 0, 0, Math.PI * 2); ctx.stroke();        // halo
+    ctx.globalAlpha = 1;
+  }
+
   private drawGuardian(): void {
     const ctx = this.ctx;
     ctx.globalAlpha = 0.28; ctx.fillStyle = '#9fe0ff';

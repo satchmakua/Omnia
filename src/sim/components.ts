@@ -292,6 +292,9 @@ export interface Religion {
   diedTick?: number;
   myth?: string;       // M18 s2: a generated founding myth — the faith's origin story (deterministic, flavour only)
   lastHolyDay?: number; // M18 s2: tick the faith last celebrated a holy day (so it fires once per occurrence)
+  favor?: number;      // M18 s2b: divine favor in [0,1], accrued from devotion, spent on a grace-day boon
+  lastGrace?: number;  // M18 s2b: tick the faith last granted a boon (once-per-occurrence guard, mirrors lastHolyDay)
+  graceGiven?: number; // M18 s2b: running tally of boons granted (dashboard + legend threshold)
 }
 
 // A milestone the town has reached (M17 s4) — fires once, kept forever, shown in Legends.
@@ -379,9 +382,10 @@ export interface Special {
   kind: string;          // the monster's content id (e.g. "dragon", "vampire")
   name: string;          // display name ("a dragon")
   icon: string;          // which creature glyph to draw
-  behavior: 'predator' | 'haunt' | 'guardian';  // guardian: a friendly summon that smites beasts (M26 s2b)
+  behavior: 'predator' | 'haunt' | 'guardian' | 'avatar';  // guardian: a friendly summon (M26 s2b); avatar: a manifest deity (M18 s3)
   aquatic?: boolean;     // a sea-beast (M24): lives in the water, menacing the coast
   owner?: number;        // a guardian's summoner (EntityId) — for the one-per-mage cap & flavour (M26 s2b)
+  faith?: string;        // M18 s3: an avatar's religionId — whose faithful it gladdens (and whose rivals it awes)
   str: number;
   dex: number;
   con: number;

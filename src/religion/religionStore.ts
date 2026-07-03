@@ -80,10 +80,17 @@ export function createReligion(store: ReligionStoreData, name: string, deity: st
   store.byId[id] = {
     id, name, deity, color: faithColor(store.created),
     tenets: [...tenets], fervor: clamp01(fervor), cohesion: 0.6, founded: tick,
-    myth: mythFor(deity, tenets),
+    myth: mythFor(deity, tenets), favor: 0,
   };
   store.created++;
   return id;
+}
+
+// A faith's temper (M18 s2b): the warrior-creed faiths are WRATHFUL — their grace-day boon is a curse on
+// a rival's follower; every other faith is BENEVOLENT — it heals & shields its own neediest. An exact
+// match on the fixed tenet vocabulary seeded in world.ts (no fuzzy parsing), so it's stable & pure.
+export function isWrathful(r: Religion): boolean {
+  return r.tenets.includes('the warrior creed');
 }
 
 // A sect breaks away on schism: it keeps the parent's tenets, takes a new name/deity and a
@@ -95,7 +102,7 @@ export function forkReligion(store: ReligionStoreData, parentId: string, name: s
     id, name, deity, color: faithColor(store.created),
     tenets: [...parent.tenets], fervor: clamp01(parent.fervor + (rng() * 2 - 1) * 0.3),
     cohesion: clamp01(parent.cohesion + 0.1), founded: tick, parent: parentId,
-    myth: mythFor(deity, parent.tenets),
+    myth: mythFor(deity, parent.tenets), favor: 0,
   };
   store.created++;
   return id;
