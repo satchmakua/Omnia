@@ -24,8 +24,9 @@ import { getLanguageStore, getLanguage } from '../lang/languageStore.ts';
 import { getOrgStore, getOrg, vassalsOf } from '../org/orgStore.ts';
 
 function bar(v: number): string {
-  const filled = Math.max(0, Math.min(10, Math.round(v * 10)));
-  return '█'.repeat(filled) + '░'.repeat(10 - filled) + ` ${Math.round(v * 100)}%`;
+  const p = Number.isFinite(v) ? v : 0;   // never let a NaN/Infinity reach '█'.repeat (a RangeError crash)
+  const filled = Math.max(0, Math.min(10, Math.round(p * 10)));
+  return '█'.repeat(filled) + '░'.repeat(10 - filled) + ` ${Math.round(p * 100)}%`;
 }
 
 const SECTION = 'color:#aac;font-size:11px;text-transform:uppercase;letter-spacing:1px';

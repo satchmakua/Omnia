@@ -127,6 +127,17 @@ export class Renderer {
   private interp = new Map<EntityId, { px: number; py: number; cx: number; cy: number }>();
   private lastTintTick = -1;   // for damping the day/night wash at fast-forward (no strobe)
 
+  // Perf: the biome terrain is immutable per world, so it's rasterised ONCE to an offscreen canvas and
+  // blitted each frame (a single drawImage instead of W×H fillRects — ~16k on a big map). Rebuilt only
+  // when the map reference or cell size changes. Pure render.
+  private terrainCanvas: HTMLCanvasElement | null = null;
+  private terrainMap: TileMapData | null = null;
+  private terrainCell = 0;
+  // Perf: clan-seat banner placements only shift ~once a day (the OrgSystem moves seats daily), so the
+  // O(agents) centroid recompute is cached and reused across frames + the click hit test.
+  private seatCache: { id: string; x: number; y: number; color: string }[] | null = null;
+  private seatCacheTick = -1;
+
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private cfg: SimConfig,
@@ -153,6 +164,8 @@ export class Renderer {
     this.flashes = [];
     this.lastFxTick = -1;
     this.interp.clear();
+    this.terrainCanvas = null;   // force a terrain rebuild for the new (possibly different-sized) world
+    this.seatCache = null;
     this.clampOffset();
   }
 
@@ -175,6 +188,35 @@ export class Renderer {
     for (const e of this.interp.keys()) if (!seen.has(e)) this.interp.delete(e);
   }
   clearInterp(): void { this.interp.clear(); }
+
+  // Rasterise the immutable biome terrain once to an offscreen canvas (world-pixel space). Blitted each
+  // frame in render(); rebuilt only when the map or cell size changes.
+  private buildTerrain(map: TileMapData): void {
+    const cs = this.cellSize;
+    const cnv = document.createElement('canvas');
+    cnv.width = Math.max(1, map.width * cs);
+    cnv.height = Math.max(1, map.height * cs);
+    const tctx = cnv.getContext('2d')!;
+    for (let y = 0; y < map.height; y++) {
+      for (let x = 0; x < map.width; x++) {
+        tctx.fillStyle = map.colors[map.biomeIndex[y * map.width + x]];
+        tctx.fillRect(x * cs, y * cs, cs + 0.5, cs + 0.5);
+      }
+    }
+    this.terrainCanvas = cnv; this.terrainMap = map; this.terrainCell = cs;
+  }
+
+  // The visible tile window under the current camera (screen = world*scale + offset; world = tile*cell),
+  // padded by a 2-tile margin so entities/banners drawn slightly outside their tile aren't clipped.
+  private visibleTileBounds(): { minX: number; minY: number; maxX: number; maxY: number } {
+    const cs = this.cellSize, s = this.scale, M = 2;
+    return {
+      minX: Math.floor((-this.offsetX / s) / cs) - M,
+      minY: Math.floor((-this.offsetY / s) / cs) - M,
+      maxX: Math.ceil(((this.canvas.width - this.offsetX) / s) / cs) + M,
+      maxY: Math.ceil(((this.canvas.height - this.offsetY) / s) / cs) + M,
+    };
+  }
 
   setClickHandler(cb: (entity: EntityId) => void): void { this.onEntityClick = cb; }
 
@@ -263,74 +305,86 @@ export class Renderer {
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.setTransform(this.scale, 0, 0, this.scale, this.offsetX, this.offsetY);
 
-    // Biome terrain.
+    // Biome terrain — blitted from the cached offscreen canvas (rebuilt only when the map/cell changes),
+    // and clipped by the browser to the visible viewport, so it costs one drawImage instead of W×H fills.
     const mapEnts = world.query(C_TILEMAP);
     const map = mapEnts.length ? world.getComponent<TileMapData>(mapEnts[0], C_TILEMAP) : undefined;
     if (map) {
-      for (let y = 0; y < map.height; y++) {
-        for (let x = 0; x < map.width; x++) {
-          ctx.fillStyle = map.colors[map.biomeIndex[y * map.width + x]];
-          ctx.fillRect(x * cellSize, y * cellSize, cellSize + 0.5, cellSize + 0.5);
-        }
-      }
+      if (this.terrainCanvas === null || this.terrainMap !== map || this.terrainCell !== cellSize) this.buildTerrain(map);
+      ctx.drawImage(this.terrainCanvas!, 0, 0);
     }
+
+    // Viewport culling: only entities within (a margin of) the visible tile window are drawn — at a
+    // zoomed-in camera the vast majority are off-screen, so this skips their (costly) icon draws.
+    const vb = this.visibleTileBounds();
+    const off = (x: number, y: number): boolean => x < vb.minX || x > vb.maxX || y < vb.minY || y > vb.maxY;
 
     const emoji = isEmoji();   // M34: the emoji skin draws each entity as a system emoji glyph
     for (const e of world.query(C_FLORA, C_POSITION)) {
-      const f = world.getComponent<Flora>(e, C_FLORA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;
+      const f = world.getComponent<Flora>(e, C_FLORA)!;
       if (emoji) this.drawEmoji(p.x, p.y, floraEmoji(f.speciesId, f.maturity >= f.edibleAt));
       else this.iconPlant(p.x, p.y, f.color, f.maturity, f.maturity >= f.edibleAt);
     }
     for (const e of world.query(C_RESOURCE, C_POSITION)) {
-      const r = world.getComponent<Resource>(e, C_RESOURCE)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;
+      const r = world.getComponent<Resource>(e, C_RESOURCE)!;
       const kind = resourceIcon(r.typeId);
       if (emoji) this.drawEmoji(p.x, p.y, EMOJI[kind]);
       else this.iconResource(p.x, p.y, kind, r.color, r.amount);
     }
     for (const e of world.query(C_BUSINESS, C_POSITION)) {
-      const biz = world.getComponent<Business>(e, C_BUSINESS)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;
+      const biz = world.getComponent<Business>(e, C_BUSINESS)!;
       if (emoji) this.drawEmoji(p.x, p.y, EMOJI[biz.fishery ? 'dock' : 'building']);
       else if (biz.fishery) this.iconDock(p.x, p.y); else this.iconBuilding(p.x, p.y, biz.color);
     }
     for (const e of world.query(C_HOME, C_POSITION)) {     // owned homes — the town's growth (M11)
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;
       if (emoji) this.drawEmoji(p.x, p.y, EMOJI.home);
       else this.iconBuilding(p.x, p.y, CATEGORY_COLOR.home);
     }
     for (const e of world.query(C_CIVIC, C_POSITION)) {     // civic buildings — landmarks + functional (M11/M21)
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;
       const civic = world.getComponent<Civic>(e, C_CIVIC)!;
       if (emoji) this.drawEmoji(p.x, p.y, EMOJI[civic.icon ?? 'civic'] ?? EMOJI.civic);
       else this.iconCivicBuilding(p.x, p.y, civic.icon ?? 'civic');
     }
     for (const e of world.query(C_RUIN, C_POSITION)) {       // ruins of the past (M20 s2b)
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;
       const ruin = world.getComponent<Ruin>(e, C_RUIN)!;
       if (emoji) this.drawEmoji(p.x, p.y, EMOJI.ruin);
       else this.iconRuin(p.x, p.y, ruin.discovered);
     }
     for (const e of world.query(C_WONDERSITE, C_POSITION)) {  // great wonders (M20 s3b)
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;
       if (emoji) this.drawEmoji(p.x, p.y, EMOJI.wonder);
       else this.iconWonder(p.x, p.y);
     }
     for (const e of world.query(C_FISH, C_POSITION)) {        // aquatic life in the water (M24)
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;
       if (emoji) this.drawEmoji(drawX(e, p.x), drawY(e, p.y), EMOJI.fish);
       else this.iconFish(drawX(e, p.x), drawY(e, p.y));
     }
     for (const e of world.query(C_FAUNA, C_POSITION)) {
-      const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;
+      const fa = world.getComponent<Fauna>(e, C_FAUNA)!;
       if (emoji) this.drawEmoji(drawX(e, p.x), drawY(e, p.y), faunaEmoji(fa.speciesId, fa.diet));
       else this.iconAnimal(drawX(e, p.x), drawY(e, p.y), fa.color, fa.size);   // species colour + size
     }
     for (const e of world.query(C_SPECIAL, C_POSITION)) {   // monsters & uncanny visitors (M21)
-      const sp = world.getComponent<Special>(e, C_SPECIAL)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;
+      const sp = world.getComponent<Special>(e, C_SPECIAL)!;
       const h = world.getComponent<Health>(e, C_HEALTH);
       if (emoji) this.drawEmoji(drawX(e, p.x), drawY(e, p.y), EMOJI[sp.icon] ?? EMOJI.monster);
       else this.iconSpecial(drawX(e, p.x), drawY(e, p.y), sp.icon, !!h && h.value < 0.55);
@@ -350,8 +404,9 @@ export class Renderer {
 
     const orgStore = getOrgStore(world);   // tribe colours tint the folk (M14)
     for (const e of world.query(C_AGENT, C_POSITION)) {
-      const agent = world.getComponent<Agent>(e, C_AGENT)!;
       const p = world.getComponent<Position>(e, C_POSITION)!;
+      if (off(p.x, p.y)) continue;   // cull off-screen folk (the expensive per-folk draw is skipped)
+      const agent = world.getComponent<Agent>(e, C_AGENT)!;
       const child = ageInYears(agent.ticksAlive, cfg) < cfg.adultAgeYears;
       const health = world.getComponent<Health>(e, C_HEALTH);
       const cmb = world.getComponent<Combat>(e, C_COMBAT);
@@ -411,6 +466,11 @@ export class Renderer {
   // the click hit test (clanSeatAt), so the flag you see and the flag you can click never disagree.
   private clanSeatPlacements(world: World, store: ReturnType<typeof getOrgStore>, map: TileMapData | undefined): { id: string; x: number; y: number; color: string }[] {
     if (!store) return [];
+    // Seats only shift ~once a day (the OrgSystem recomputes them daily), so cache per sim-day and reuse
+    // across every frame's draw + the click hit test — skipping the O(agents) centroid recount otherwise.
+    const ce = world.query(C_CLOCK);
+    const day = ce.length ? Math.floor(world.getComponent<Clock>(ce[0], C_CLOCK)!.tick / this.cfg.ticksPerDay) : 0;
+    if (this.seatCache !== null && this.seatCacheTick === day) return this.seatCache;
     const count = new Map<string, number>();
     for (const e of world.query(C_AGENT)) {
       const id = world.getComponent<Agent>(e, C_AGENT)!.orgId;
@@ -423,6 +483,7 @@ export class Renderer {
       if (map && isWater(map, sx, sy)) { const land = nearestLandTile(map, sx, sy); if (land) { sx = land.x; sy = land.y; } }
       out.push({ id: o.id, x: sx, y: sy, color: o.color });
     }
+    this.seatCache = out; this.seatCacheTick = day;
     return out;
   }
 

@@ -350,8 +350,8 @@ export const defaultConfig: SimConfig = {
   holyDayMoodLift: 0.07,           // small & bounded — devotion gladdens, but the Storyteller still owns the drama band
   graceIntervalDays: 22,           // a boon comes a little rarer than a holy day (favor must recharge between)
   graceThreshold: 0.45,            // a faith needs real devotion behind it to act — but not near-saturation
-  graceCost: 0.45,                 // a boon spends most of the faith's favor
-  favorGainPerDay: 0.03,           // a devout faith climbs comfortably above the threshold, so its grace days land
+  graceCost: 0.3,                  // a boon spends part of the faith's favor (leaving devout faiths room to build toward manifesting a god)
+  favorGainPerDay: 0.05,           // a devout faith climbs high — enough that the very devout reach the avatar tier
   favorDecay: 0.995,              // gentle decay → favor equilibrium ≈ gain/(1−decay), clamped to 1
   favorSaturationK: 8,             // ~half-saturation at 8 followers → a big faith asymptotes, doesn't run away
   graceHealAmount: 0.15,           // a modest heal to one wounded follower (capped at full health)

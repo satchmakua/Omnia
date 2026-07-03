@@ -14,9 +14,11 @@ import { ModalPanel, SECTION } from './modalPanel.ts';
 function priceSparkline(history: number[], min: number, max: number): string {
   if (history.length < 2) return '';
   const W = 180, H = 28, n = history.length;
+  const span = max - min;
   const pts = history.map((p, i) => {
     const x = (i / (n - 1)) * W;
-    const y = H - ((p - min) / Math.max(max - min, 1e-6)) * H;
+    // A flat window (all prices equal, span≈0) draws a clean mid-line, not a spike from dividing by ~0.
+    const y = span < 1e-6 ? H / 2 : H - ((p - min) / span) * H;
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
   return `<svg width="${W}" height="${H}" style="display:block;margin-top:4px">

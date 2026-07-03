@@ -295,7 +295,9 @@ describe('living gods — avatars (M18 s3)', () => {
     const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.9, 0);
     store.byId[r].favor = 0.5;                                        // above the boon threshold, below the avatar threshold
     for (let i = 0; i < cfg.minFaithFollowers; i++) healthyFollower(w, i % 8, 0, r);
-    runGraceInterval(w);
+    // Hold accrual off so favor stays below the avatar threshold across the interval (it grants boons, not a god).
+    const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+    for (let d = 1; d <= cfg.graceIntervalDays + 1; d++) { clock.tick = d * cfg.ticksPerDay; runReligionSystem(w, noConvert({ favorGainPerDay: 0 }), createRNG(1)); }
     expect(avatarsIn(w).length).toBe(0);
   });
 

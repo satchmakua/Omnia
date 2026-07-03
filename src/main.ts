@@ -330,13 +330,15 @@ function loop(now: number) {
   if (active) {
     if (!smoothMotion) renderer.clearInterp();
     renderer.render(active.world, active.clockEntity, realElapsedMs, smoothMotion ? tickAccumulator : 1);
-    renderer.consumeClick(active.world);
-    inspector.update(active.world);
+    renderer.consumeClick(active.world);       // a click renders its panel immediately via inspect()
     eventFeed.render(active.world);
     godPanel.update(active.world);    // god mode: regen favour + refresh power states (no-op when inactive)
-    bestiary.observe(active.world);   // track "last seen" every frame, even with the tab closed (M22)
-    // Keep the open master tab's figures live (cheap; throttled).
-    if (frame++ % 20 === 0) master.refresh(active.world);
+    // Per-frame render work that doesn't need 60 Hz is throttled — the panels stay live at a lower cadence
+    // for a big saving at high population (each of these does O(agents) world queries).
+    const f = frame++;
+    if (f % 6 === 0) inspector.update(active.world);   // keep the open inspector's bars live (~10 Hz)
+    if (f % 12 === 0) bestiary.observe(active.world);  // "last seen" tally — only changes on births/deaths
+    if (f % 20 === 0) master.refresh(active.world);    // keep the open master tab's figures live
   }
   requestAnimationFrame(loop);
 }
