@@ -228,12 +228,29 @@ export function runReligionSystem(world: World, cfg: SimConfig, rng: RNG): void 
       if (!f || f.length < cfg.minFaithFollowers) continue;
       if (rng() >= cfg.religionSchismChancePerEra * (1 - r.cohesion)) continue;
       const deity = coinDeity(world, store, f[0], `god-${store.created}`);
-      const sect = forkReligion(store, id, `the Order of ${deity}`, deity, tick, rng);
+      // Cults (M18 s3b): a schism from a very DEVOUT parent ruptures as a fanatical CULT rather than an
+      // orderly sect — zealots who found even the mainstream too tepid, burning hotter and more brittle.
+      // (Devout faiths are the ones that grow enough to schism, so this is where cults arise.) A PURE
+      // classification (a function of the parent's fervour), so it adds ZERO new rng draws — only the cult's
+      // values differ; forkReligion's rng nudge is untouched.
+      const cult = r.fervor >= cfg.cultParentFervorMin;
+      const name = cult ? `the Cult of ${deity}` : `the Order of ${deity}`;
+      const sect = forkReligion(store, id, name, deity, tick, rng);
+      if (cult) {
+        const sr = store.byId[sect];
+        sr.cult = true;
+        sr.fervor = clamp01(Math.max(sr.fervor, cfg.cultFervor));   // burns hotter than the fork nudge alone
+        sr.cohesion = cfg.cultCohesion;                             // …but brittle — prone to re-splitting
+      }
       const sorted = [...f].sort((a, b) => a - b);
       const half = Math.ceil(sorted.length / 2);
       for (const e of sorted.slice(half)) world.getComponent<Agent>(e, C_AGENT)!.religionId = sect;
-      emitEvent(world, 'culture', `The Order of ${deity} broke away from ${r.name}.`);
-      if (ch) chronicleAdd(ch, { tick, importance: 0.66, kind: 'religion', text: `A sect, the Order of ${deity}, split from ${r.name}.` }, cfg.chronicleImportanceThreshold);
+      emitEvent(world, 'culture', cult
+        ? `A fervent cult, ${name}, broke away from ${r.name} — zealots who found even it too tepid.`
+        : `${name} broke away from ${r.name}.`);
+      if (ch) chronicleAdd(ch, { tick, importance: cult ? 0.7 : 0.66, kind: 'religion', text: cult
+        ? `A cult, ${name}, split from the devout ${r.name} — fanatics burning brighter than the faith that bred them.`
+        : `A sect, ${name}, split from ${r.name}.` }, cfg.chronicleImportanceThreshold);
     }
   }
 

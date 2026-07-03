@@ -295,6 +295,7 @@ export interface Religion {
   favor?: number;      // M18 s2b: divine favor in [0,1], accrued from devotion, spent on a grace-day boon
   lastGrace?: number;  // M18 s2b: tick the faith last granted a boon (once-per-occurrence guard, mirrors lastHolyDay)
   graceGiven?: number; // M18 s2b: running tally of boons granted (dashboard + legend threshold)
+  cult?: boolean;      // M18 s3b: a secretive, fervent breakaway from a lax parent — hotter & more brittle than a plain sect
 }
 
 // A milestone the town has reached (M17 s4) — fires once, kept forever, shown in Legends.

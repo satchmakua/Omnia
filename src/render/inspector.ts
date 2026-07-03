@@ -586,10 +586,10 @@ export class Inspector {
     const parent = r.parent && store!.byId[r.parent] ? ` <span style="color:#889">⟵ ${store!.byId[r.parent].name}</span>` : '';
     const piety = r.fervor > 0.66 ? 'devout' : r.fervor > 0.4 ? 'observant' : 'lax';
     const myth = r.myth ? `<div style="color:#9a86c0;font-size:11px;font-style:italic;margin-top:3px">“${r.myth}”</div>` : '';
-    const temper = `<div style="color:#9ab;font-size:11px">${isWrathful(r) ? '<span style="color:#e0857a">⚔ a wrathful god</span>' : '<span style="color:#7fd6a0">✦ a benevolent god</span>'} · divine favor ${Math.round((r.favor ?? 0) * 100)}%</div>`;
+    const temper = `<div style="color:#9ab;font-size:11px">${r.cult ? '<span style="color:#c86ad0">⛧ a cult</span> · ' : ''}${isWrathful(r) ? '<span style="color:#e0857a">⚔ a wrathful god</span>' : '<span style="color:#7fd6a0">✦ a benevolent god</span>'} · divine favor ${Math.round((r.favor ?? 0) * 100)}%</div>`;
     return `<hr style="${RULE}">
       <div style="${SECTION}">Faith</div>
-      <div><span style="color:${r.color}">●</span> ${r.name}${parent}</div>
+      <div><span style="color:${r.color}">●</span> ${r.cult ? '<span style="color:#c86ad0">⛧</span> ' : ''}${r.name}${parent}</div>
       <div style="color:#9ab;font-size:11px">venerates ${r.deity} · ${r.tenets.join(', ')} · ${piety}</div>
       ${temper}
       ${myth}`;

@@ -86,6 +86,11 @@ export interface SimConfig {
   religionSchismChancePerEra: number;  // per-era chance a large, loose faith fractures into a sect
   minFaithFollowers: number;           // a faith needs at least this many followers to spawn a sect
   conversionChancePerDay: number;      // daily chance a folk beside a more-devout faith adopts it (faith spreads)
+  // Cults (M18 s3b): a schism from a very DEVOUT faith births a fanatical cult — zealots who found even the
+  // mainstream too tepid. (Devout faiths are the ones that grow enough to schism, so this is where cults arise.)
+  cultParentFervorMin: number;         // a schism from a parent at least this devout yields a cult, not a plain sect
+  cultFervor: number;                  // a cult's fervour — burns hot (draws converts hard)
+  cultCohesion: number;                // a cult's cohesion — low, so it's brittle & prone to re-splitting into sub-cults
   holyDayIntervalDays: number;         // M18 s2: how often a faith celebrates a holy day (its followers' mood lifts)
   holyDayMoodLift: number;             // the mood a holy day grants the faithful (scaled by the faith's fervour)
   // Divine favor & grace-day boons (M18 s2b): faith accrues favor from devotion and spends it acting on the world.
@@ -346,6 +351,9 @@ export const defaultConfig: SimConfig = {
   religionSchismChancePerEra: 0.4, // faiths fracture into sects now and then over deep time
   minFaithFollowers: 8,
   conversionChancePerDay: 0.05,    // faith spreads by contact — a devout neighbour wins the odd convert
+  cultParentFervorMin: 0.7,        // a schism from a faith this devout breeds a cult — fanatics who found even it too tepid
+  cultFervor: 0.85,                // a cult burns hot — its zeal wins converts and, briefly, holy-day/boon favour
+  cultCohesion: 0.2,               // …but it's brittle: low cohesion means it readily fractures again into sub-cults
   holyDayIntervalDays: 24,         // a faith's holy day comes ~5×/sim-year; phased per faith so they don't all fall together
   holyDayMoodLift: 0.07,           // small & bounded — devotion gladdens, but the Storyteller still owns the drama band
   graceIntervalDays: 22,           // a boon comes a little rarer than a holy day (favor must recharge between)

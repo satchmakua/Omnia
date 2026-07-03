@@ -106,6 +106,32 @@ describe('ReligionSystem (M18)', () => {
     expect(inSect).toBeGreaterThan(0);
   });
 
+  // A schism produces a CULT vs a plain sect purely from the parent's fervour (no new RNG) — M18 s3b.
+  const schismFrom = (parentFervor: number) => {
+    const era = cfg.evolutionIntervalDays * cfg.ticksPerDay;
+    const { w, store } = faithWorld(era);
+    const r = createReligion(store, 'the Faith', 'Aa', ['rite'], parentFervor, 0);
+    store.byId[r].cohesion = 0;                       // schism-prone
+    for (let i = 0; i < 12; i++) follower(w, r);
+    runReligionSystem(w, { ...cfg, religionSchismChancePerEra: 1, minFaithFollowers: 8 }, createRNG(1));
+    return Object.values(store.byId).find(x => x.parent === r)!;
+  };
+
+  it('a schism from a very DEVOUT faith births a fanatical, brittle CULT (M18 s3b)', () => {
+    const sect = schismFrom(0.85);                    // parent fervour ≥ cultParentFervorMin (zealots want more)
+    expect(sect).toBeDefined();
+    expect(sect.cult).toBe(true);
+    expect(sect.name).toContain('Cult');
+    expect(sect.fervor).toBeGreaterThanOrEqual(cfg.cultFervor - 1e-9);   // burns hot
+    expect(sect.cohesion).toBe(cfg.cultCohesion);                        // …but brittle
+  });
+
+  it('a schism from a moderately-devout faith is a plain sect, not a cult (M18 s3b)', () => {
+    const sect = schismFrom(0.5);                     // parent fervour < cultParentFervorMin
+    expect(sect.cult).toBeFalsy();
+    expect(sect.name).toContain('Order');
+  });
+
   it('a holy day gladdens the faithful — devotion’s payoff (M18 s2)', () => {
     const { w, store } = faithWorld(0);
     const r = createReligion(store, 'Glad Faith', 'Aa', ['rite'], 1.0, 0);   // very devout → the full lift
