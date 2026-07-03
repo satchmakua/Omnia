@@ -8,7 +8,7 @@ import { defaultConfig } from '../src/sim/config.ts';
 import { C_AGENT, C_INVENTORY, C_WALLET, C_CLOCK, C_GOODSMARKET } from '../src/sim/components.ts';
 import type { Agent, Inventory, Wallet, Clock, GoodsMarket } from '../src/sim/components.ts';
 import {
-  createGoodsMarket, getGoodsMarket, goodsPriceOf, measureGoodsSupply, updateGoodsPrices,
+  createGoodsMarket, getGoodsMarket, goodsPriceOf, measureGoodsSupply, updateGoodsPrices, scarcestTradeProfession,
 } from '../src/sim/goodsMarket.ts';
 import { runTradeSystem } from '../src/sim/systems/TradeSystem.ts';
 import { testContent } from './helpers.ts';
@@ -71,6 +71,25 @@ describe('goods market — the model (M36 s1)', () => {
     for (let d = 0; d < 6; d++) { updateGoodsPrices(scarce, at(2), content, cfg); updateGoodsPrices(glut, at(40), content, cfg); }
     expect(scarce.demandIndex).toBeGreaterThan(1);       // broad scarcity → trades earn more
     expect(glut.demandIndex).toBeLessThan(1);            // broad glut → trades earn less
+  });
+
+  it('scarcestTradeProfession picks the trade whose goods are dearest, excluding special/recipe-less trades (M36 s3)', () => {
+    const w = new World();
+    const m = createGoodsMarket(content);
+    for (const g of content.goods.all()) m.prices[g.id] = g.value * (['blade', 'fine_tool', 'tool'].includes(g.id) ? 1.4 : 1);
+    w.addComponent<GoodsMarket>(w.createEntity(), C_GOODSMARKET, m);
+    const scarce = scarcestTradeProfession(w, content);
+    expect(scarce).not.toBeNull();
+    expect(scarce!.professionId).toBe('miner');          // miner crafts blade/fine_tool/tool — the dear ones
+    expect(scarce!.ratio).toBeGreaterThan(1);
+  });
+
+  it('scarcestTradeProfession is a base-ratio pick with no market, and never a special/recipe-less trade', () => {
+    const w = new World();   // no goods market
+    const scarce = scarcestTradeProfession(w, content);
+    expect(scarce).not.toBeNull();
+    expect(['laborer', 'miner']).toContain(scarce!.professionId);   // only the tradeable crafts — never farmer/healer/mage/merchant/artisan
+    expect(scarce!.ratio).toBeCloseTo(1, 5);
   });
 });
 

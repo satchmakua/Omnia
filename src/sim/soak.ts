@@ -149,6 +149,8 @@ for (let t = 0; t < SOAK_TICKS; t++) {
     const mkt = world.getComponent<Market>(world.query(C_MARKET)[0], C_MARKET);
     const bizEnts = world.query(C_BUSINESS);
     const foodBiz = bizEnts.filter(e => (world.getComponent(e, C_BUSINESS) as { producesFood?: boolean }).producesFood).length;
+    // Non-food, non-special trades — the sector M36 s3 folds/founds. Should stay bounded, not runaway/collapse.
+    const tradeBiz = bizEnts.filter(e => { const b = world.getComponent(e, C_BUSINESS) as { producesFood?: boolean; tends?: boolean; requiresAptitude?: boolean }; return !b.producesFood && !b.tends && !b.requiresAptitude; }).length;
     let vets = 0, scars = 0, kills = 0;
     for (const e of world.query(C_COMBAT)) {
       const c = world.getComponent<Combat>(e, C_COMBAT)!; vets++; scars += c.scars; kills += c.kills;
@@ -164,7 +166,7 @@ for (let t = 0; t < SOAK_TICKS; t++) {
       `  yr=${(clock.tick / (cfg.ticksPerDay * cfg.daysPerYear)).toFixed(0).padStart(2)}  ` +
       `folk=${String(agents.length).padStart(2)} [${mix}] avgAge=${avgAge}  ` +
       `married=${married} born=${born} graves=${graves} mages=${mages} reflective=${beliefs} utters=${utters} summ=${summ}  ` +
-      `${season.padEnd(6)} fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) tribes=${tribes}(wars=${wars}) tech=T${maxTier}/${maxTechs} faiths=${faiths} drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt} food=${mkt ? mkt.price.toFixed(1) : '—'}g(s/d ${mkt ? mkt.supply.toFixed(0) : '?'}/${mkt ? mkt.demand.toFixed(0) : '?'}) biz=${bizEnts.length}(farm=${foodBiz}) vets=${vets}(scars=${scars} kills=${kills}) crime=${outlaws}out(t=${thefts} a=${assaults} m=${murders})  invalid=${inv}${marker}`,
+      `${season.padEnd(6)} fauna=${fauna} nodes=${nodes} homes=${homes} eras=${eras} samples=${samples} cultures=${cultureSet.size} tongues=${tongues}(${lostTongues} lost) tribes=${tribes}(wars=${wars}) tech=T${maxTier}/${maxTechs} faiths=${faiths} drifts=${drifts}  gini=${wlth.gini.toFixed(2)} debt=${wlth.inDebt} food=${mkt ? mkt.price.toFixed(1) : '—'}g(s/d ${mkt ? mkt.supply.toFixed(0) : '?'}/${mkt ? mkt.demand.toFixed(0) : '?'}) biz=${bizEnts.length}(farm=${foodBiz},trade=${tradeBiz}) vets=${vets}(scars=${scars} kills=${kills}) crime=${outlaws}out(t=${thefts} a=${assaults} m=${murders})  invalid=${inv}${marker}`,
     );
   }
 }

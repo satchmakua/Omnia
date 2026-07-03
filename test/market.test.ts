@@ -5,12 +5,14 @@ import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig, ticksPerYear, seasonGrowthFactor } from '../src/sim/config.ts';
 import {
-  C_AGENT, C_WALLET, C_JOB, C_BUSINESS, C_POSITION, C_CLOCK, C_MARKET,
+  C_AGENT, C_WALLET, C_JOB, C_BUSINESS, C_POSITION, C_CLOCK, C_MARKET, C_TILEMAP, C_GOODSMARKET,
 } from '../src/sim/components.ts';
-import type { Agent, Wallet, Business, Clock, Market } from '../src/sim/components.ts';
+import type { Agent, Wallet, Business, Clock, Market, GoodsMarket } from '../src/sim/components.ts';
+import type { TileMapData } from '../src/world/tilemap.ts';
 import {
   createMarket, getMarket, measureSupplyDemand, clearingPrice, foodSalesGold, foodBusinessWorkers,
 } from '../src/sim/market.ts';
+import { createGoodsMarket } from '../src/sim/goodsMarket.ts';
 import { runMarketSystem } from '../src/sim/systems/MarketSystem.ts';
 import { runEconomySystem } from '../src/sim/systems/EconomySystem.ts';
 import { runBusinessSystem } from '../src/sim/systems/BusinessSystem.ts';
@@ -264,16 +266,99 @@ describe('business turnover (M15 slice 2b)', () => {
     expect(w.getComponent<Business>(biz, C_BUSINESS)!.lowFundsDays).toBe(0);
   });
 
-  it('a non-food business pays no operating cost and never folds', () => {
-    const w = town();
+  // ── M36 s3: bankruptcy & founding for the non-food trades ──
+  function trade(w: World, professionId: string, balance: number, workers: number, extra: Partial<Business> = {}): EntityId {
     const b = w.createEntity();
     w.addComponent<Business>(b, C_BUSINESS, {
-      professionId: 'miner', professionName: 'Miner', color: '#909',
-      balance: 0, maxEmployees: 4, wagePerTick: 0.04, revenuePerWorkerPerTick: 0.05,
-      requiresAptitude: false, gathers: 'ore',
+      professionId, professionName: professionId, color: '#909',
+      balance, maxEmployees: 4, wagePerTick: 0.04, revenuePerWorkerPerTick: 0.05,
+      requiresAptitude: false, gathers: null, ...extra,
     });
-    advance(w, cfg.bankruptcyGraceDays + 5);
-    expect(w.isAlive(b)).toBe(true);
+    for (let i = 0; i < workers; i++) {
+      const e = adult(w);
+      w.addComponent(e, C_JOB, { professionId, professionName: professionId, employer: b, wagePerTick: 0.04, gathers: null });
+    }
+    return b;
+  }
+  const miners = (w: World) => w.query(C_BUSINESS).filter(e => w.getComponent<Business>(e, C_BUSINESS)!.professionId === 'miner').length;
+
+  it('a chronically idle, broke non-food trade now pays overhead and folds past the trade grace', () => {
+    const w = town();
+    trade(w, 'miner', 500, 0);                 // a well-funded miner keeps the profession alive (floor)…
+    const dying = trade(w, 'miner', 0, 0);     // …so this idle, broke one can fold
+    advance(w, cfg.tradeGraceDays + 2);
+    expect(w.isAlive(dying)).toBe(false);      // folded — trades are no longer immortal (M36 s3)
+    expect(miners(w)).toBe(1);                 // exactly one miner remains
+  });
+
+  it('never folds the LAST business of a trade, even idle & broke (the floor)', () => {
+    const w = town();
+    const only = trade(w, 'miner', 0, 0);      // the sole miner — broke & empty
+    advance(w, cfg.tradeGraceDays + 5);
+    expect(w.isAlive(only)).toBe(true);        // spared by minTradesPerProfession
+    const b = w.getComponent<Business>(only, C_BUSINESS)!;
+    expect(b.balance).toBeLessThan(0);         // …but it DID pay overhead (no longer cost-free)
+    expect(b.lowFundsDays!).toBeLessThanOrEqual(cfg.tradeGraceDays);   // its clock keeps resetting when spared → never folds
+  });
+
+  it('a STAFFED non-food trade is never folded, even broke — no employed worker is displaced', () => {
+    const w = town();
+    const idle = trade(w, 'miner', 0, 0);      // empty & broke → will fold
+    const staffed = trade(w, 'miner', 0, 2);   // broke but has workers → spared
+    advance(w, cfg.tradeGraceDays + 3);
+    expect(w.isAlive(idle)).toBe(false);
+    expect(w.isAlive(staffed)).toBe(true);     // staff (>tradeIdleFoldStaff) protects it
+  });
+
+  it('never folds the SPECIAL trades — a healer house or the rare mage employer', () => {
+    const w = town();
+    const healer = trade(w, 'healer', 0, 0, { tends: true });
+    const mage = trade(w, 'hedge_witch', 0, 0, { requiresAptitude: true });
+    advance(w, cfg.tradeGraceDays + 10);
+    expect(w.isAlive(healer)).toBe(true);      // tends → exempt (M30 staffing preserved)
+    expect(w.isAlive(mage)).toBe(true);        // aptitude → exempt (the rare-mage economy preserved)
+  });
+
+  // A minimal world with the map + market + goods market that founding needs.
+  function foundingWorld(): World {
+    const w = town();
+    const map: TileMapData = { width: 8, height: 8, biomeIndex: new Uint16Array(64), biomeIds: ['g'], biomeNames: ['G'], colors: ['#333'], passableByBiome: [true] };
+    w.addComponent<TileMapData>(w.createEntity(), C_TILEMAP, map);
+    w.addComponent<Market>(w.createEntity(), C_MARKET, createMarket(cfg));   // supply 0 == demand 0 → food never dear
+    w.addComponent<GoodsMarket>(w.createEntity(), C_GOODSMARKET, createGoodsMarket(testContent()));
+    return w;
+  }
+  // Make miner goods dear (ratio ≥ tradeFoundScarcityRatio) so miner is the scarcest trade.
+  function dearMinerGoods(w: World): void {
+    const gm = w.getComponent<GoodsMarket>(w.query(C_GOODSMARKET)[0], C_GOODSMARKET)!;
+    for (const g of testContent().goods.all()) {
+      const minerGood = ['blade', 'fine_tool', 'tool'].includes(g.id);
+      gm.prices[g.id] = g.value * (minerGood ? cfg.goodsPriceMaxMult : 1);
+    }
+  }
+
+  it('founds a new business in the trade whose goods are dearest, when that trade is full', () => {
+    const w = foundingWorld();
+    trade(w, 'miner', 300, 4);                  // one FULL miner (maxEmployees 4, 4 workers)
+    dearMinerGoods(w);
+    expect(miners(w)).toBe(1);
+    runBusinessSystem(w, cfg, createRNG(1), testContent());
+    expect(miners(w)).toBe(2);                  // a new miner opened — its wares are dear
+  });
+
+  it('does NOT found a trade when its goods are not dear', () => {
+    const w = foundingWorld();
+    trade(w, 'miner', 300, 4);                  // full, but goods at base value → ratio 1 < threshold
+    runBusinessSystem(w, cfg, createRNG(1), testContent());
+    expect(miners(w)).toBe(1);                  // no founding without a scarcity signal
+  });
+
+  it('does NOT found while an existing business of that trade has a vacancy', () => {
+    const w = foundingWorld();
+    trade(w, 'miner', 300, 1);                  // a miner with room (1/4) → grow into it, don't found
+    dearMinerGoods(w);
+    runBusinessSystem(w, cfg, createRNG(1), testContent());
+    expect(miners(w)).toBe(1);
   });
 
   it('founds a new farm when food is dear and the existing farms are all full', () => {
