@@ -3,6 +3,9 @@
 // **schism** — a sect breaks away with a new deity, a coined name, and a nudged fervour,
 // gathering half the faithful. Mirrors the schism machinery of cultures/tongues/tribes. The
 // faith's fervour also drifts a touch each era. Runs daily; schism evaluates per era.
+// Faith also has an exit and a re-entry (M18 s4): chronic misery matures into APOSTASY (the
+// wretched forsake their god, at a further mood cost), and a holy-day festival REDEEMS the
+// mended faithless standing beside it — the only door into faith for the churchless.
 import type { World, EntityId } from '../ecs.ts';
 import { C_AGENT, C_CLOCK, C_CHRONICLE, C_POSITION, C_HEALTH, C_WARD, C_CURSE, C_SPECIAL } from '../components.ts';
 import type { Agent, Clock, Position, Health, Ward, Curse, Special } from '../components.ts';
@@ -59,6 +62,13 @@ export function runReligionSystem(world: World, cfg: SimConfig, rng: RNG): void 
   const day = Math.floor(tick / cfg.ticksPerDay);
   const interval = Math.max(1, Math.round(cfg.holyDayIntervalDays));
   const ch0 = world.getComponent<ChronicleData>(world.query(C_CHRONICLE)[0], C_CHRONICLE);
+  const W = cfg.gridWidth;
+  const folkAt = new Map<number, EntityId>();
+  for (const e of world.query(C_AGENT, C_POSITION)) {
+    const p = world.getComponent<Position>(e, C_POSITION)!;
+    folkAt.set(p.y * W + p.x, e);
+  }
+  const OFF = [-1, 0, 1];
   for (const [id, list] of followers) {
     const r = store.byId[id];
     if (!r || r.extinct || list.length === 0) continue;
@@ -76,18 +86,30 @@ export function runReligionSystem(world: World, cfg: SimConfig, rng: RNG): void 
     if (ch0 && r.fervor > 0.7 && list.length >= cfg.minFaithFollowers) {
       chronicleAdd(ch0, { tick, importance: 0.5, kind: 'religion', text: `The devout of ${r.name} kept the holy day of ${r.deity}.` }, cfg.chronicleImportanceThreshold);
     }
+    // Redemption (M18 s4): the festival draws in the lost. A FAITHLESS soul standing beside the
+    // celebration — whose spirits have since mended (mood ≥ apostasyReturnMood) — is won into the
+    // faith and shares the holy-day gladness. Deterministic (adjacency + a fixed schedule, no RNG);
+    // this is also the only door INTO faith for the churchless (apostates, and children born to them).
+    for (const e of list) {
+      const p = world.getComponent<Position>(e, C_POSITION); if (!p) continue;
+      for (const dy of OFF) for (const dx of OFF) {
+        if (dx === 0 && dy === 0) continue;
+        const o = folkAt.get((p.y + dy) * W + (p.x + dx));
+        if (o === undefined) continue;
+        const oa = world.getComponent<Agent>(o, C_AGENT)!;
+        if (oa.religionId !== undefined || (oa.mood ?? 0) < cfg.apostasyReturnMood) continue;
+        oa.religionId = id;
+        if (oa.mood !== undefined) oa.mood = clamp01(oa.mood + lift);
+        r.redeemed = (r.redeemed ?? 0) + 1;
+        emitEvent(world, 'culture', `${oa.name} was drawn into ${r.name} at the festival of ${r.deity}.`);
+      }
+    }
   }
 
   // Conversion (M18 s2): faith spreads by contact — a folk standing beside a *more devout*
   // faith may adopt it. Most keep their faith; the gate (more fervent) means devout faiths
   // win converts and grow (until they schism). One roll per folk per day → bounded RNG.
-  const W = cfg.gridWidth;
-  const folkAt = new Map<number, EntityId>();
-  for (const e of world.query(C_AGENT, C_POSITION)) {
-    const p = world.getComponent<Position>(e, C_POSITION)!;
-    folkAt.set(p.y * W + p.x, e);
-  }
-  const OFF = [-1, 0, 1];
+  // (The folkAt index is built above, before the holy-day block, which also uses it.)
 
   // Divine favor & grace-day boons (M18 s2b): faith now ACTS on the world. Each living faith accrues a
   // bounded, decaying `favor` from its followers' devotion (fervour × a saturating follower factor), and
@@ -251,6 +273,33 @@ export function runReligionSystem(world: World, cfg: SimConfig, rng: RNG): void 
       if (ch) chronicleAdd(ch, { tick, importance: cult ? 0.7 : 0.66, kind: 'religion', text: cult
         ? `A cult, ${name}, split from the devout ${r.name} — fanatics burning brighter than the faith that bred them.`
         : `A sect, ${name}, split from ${r.name}.` }, cfg.chronicleImportanceThreshold);
+    }
+  }
+
+  // Apostasy (M18 s4): grief and despair break faith. A follower accrues `doubt` from despairing
+  // days (mood below the threshold) and from untimely kin deaths (killAgent plants it — losing a
+  // child the heaviest); a better day drains one. When doubt matures they FORSAKE their faith —
+  // mood crashes further, and they lose the FAITH_COMFORT mood target (so the wound lasts). In a
+  // thriving town this means clustered griefs (two kin lost within days) or grief atop misery —
+  // rare and momentous; in a starving one it cascades, as gods are abandoned with the granaries.
+  // Only a holy-day festival can win the faithless back (see redemption above). Runs LAST so
+  // today's holy-day lift can save a wavering soul, and a same-tick schism never re-enrols
+  // someone who just walked away. Pure state → ZERO RNG (replay/save-safe).
+  for (const e of world.query(C_AGENT)) {
+    const a = world.getComponent<Agent>(e, C_AGENT)!;
+    if (!a.religionId || a.mood === undefined) continue;
+    if (a.mood < cfg.apostasyMoodThreshold) a.doubt = (a.doubt ?? 0) + 1;
+    else if (a.doubt) a.doubt -= 1;                       // a better day drains doubt
+    if ((a.doubt ?? 0) < cfg.apostasyDoubtDays) continue;
+    const r = store.byId[a.religionId];
+    a.religionId = undefined;
+    a.doubt = 0;
+    a.mood = clamp01(a.mood - cfg.apostasyMoodCrash);
+    if (!r) continue;   // a dangling faith id — the departure alone is the fix
+    r.apostates = (r.apostates ?? 0) + 1;
+    emitEvent(world, 'culture', `${a.name} forsook ${r.name} — grief and despair broke their faith.`);
+    if (ch0 && (followers.get(r.id)?.length ?? 0) >= cfg.minFaithFollowers) {
+      chronicleAdd(ch0, { tick, importance: 0.5, kind: 'religion', text: `${a.name} turned from ${r.deity} and forsook ${r.name}.` }, cfg.chronicleImportanceThreshold);
     }
   }
 

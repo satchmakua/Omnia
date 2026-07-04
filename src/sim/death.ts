@@ -55,6 +55,16 @@ export function tombstoneFor(
   };
 }
 
+// Grief shakes faith (M18 s4): an UNTIMELY death plants doubt in the bereaved faithful — losing
+// one's own child is the heaviest blow of all ("how could my god allow this?"). Doubt matures into
+// apostasy in the ReligionSystem; a better day drains it, so only clustered griefs — or grief atop
+// despair — break faith. A death of old age is the natural order and shakes no one. Hardcoded
+// weights, like the MoodSystem's circumstance couplings (D26). Deterministic (no RNG — the death
+// already happened); killAgent is the single choke point, so battle, murder, plague, starvation,
+// beasts, and feuds all grieve alike.
+const GRIEF_DOUBT = 2;        // losing a partner or a parent before their time
+const CHILD_GRIEF_DOUBT = 3;  // outliving your own child — the heaviest grief (M10 s3)
+
 // Kill an agent: free a widowed partner, strip living components, attach the
 // tombstone. The entity stays in the world as a record.
 export function killAgent(
@@ -67,6 +77,18 @@ export function killAgent(
   if (lin?.partner != null) {
     const partnerLin = world.getComponent<Lineage>(lin.partner, C_LINEAGE);
     if (partnerLin && partnerLin.partner === e) partnerLin.partner = null;
+  }
+
+  // An untimely end sows doubt among the faithful bereaved (M18 s4).
+  if (cause !== 'old age' && lin) {
+    const shake = (kin: EntityId | null, amount: number): void => {
+      if (kin === null) return;
+      const ka = world.getComponent<Agent>(kin, C_AGENT);
+      if (ka?.religionId) ka.doubt = (ka.doubt ?? 0) + amount;
+    };
+    shake(lin.partner, GRIEF_DOUBT);
+    for (const c of lin.children) shake(c, GRIEF_DOUBT);
+    for (const p of lin.parents) shake(p, CHILD_GRIEF_DOUBT);
   }
 
   for (const c of LIVING_COMPONENTS) world.removeComponent(e, c);

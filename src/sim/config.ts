@@ -113,6 +113,11 @@ export interface SimConfig {
   avatarGladden: number;               // mood an avatar grants nearby faithful (once/day, like a benevolent haunt)
   avatarAwe: number;                    // mood dip an avatar visits on nearby folk of rival faiths (once/day)
   avatarRadius: number;                // tiles the avatar's presence reaches
+  // Apostasy & redemption (M18 s4): grief & despair break faith; a holy-day festival wins the faithless back.
+  apostasyMoodThreshold: number;       // a faithful day below this mood counts as despair (doubt accrues; a better day drains one)
+  apostasyDoubtDays: number;           // doubt at which a follower forsakes their faith (fed by despair-days + untimely kin deaths)
+  apostasyMoodCrash: number;           // the further mood drop when faith breaks (losing one's god wounds)
+  apostasyReturnMood: number;          // a faithless soul must have mended to at least this mood to be won at a festival
   healerHousePerPop: number;           // M30: healer's houses spawned ≈ this × the starting population (care scales with people, not land)
   healerCarePerWorker: number;         // each working healer multiplies the infirmary's cure potency by +this (capped)
   // Crafted-goods market (M36 s1): each good's price floats around its base value with supply.
@@ -374,6 +379,10 @@ export const defaultConfig: SimConfig = {
   avatarGladden: 0.12,             // the faithful near their manifest god rejoice (once/day, bounded)
   avatarAwe: 0.06,                 // rivals feel the awe/dread of a god not their own (a small mood dip, once/day)
   avatarRadius: 2,                 // the divine presence reaches ~2 tiles
+  apostasyMoodThreshold: 0.55,     // despair relative to THIS world: 40k-run probes show the faithful bottom out at ~0.43–0.6, so sub-0.55 days are the true wretched tail (~0.2% of faithful agent-days)
+  apostasyDoubtDays: 5,            // doubt to break faith: ~a week of unbroken misery, clustered griefs (2 kin lost within days), or grief atop despair
+  apostasyMoodCrash: 0.1,          // forsaking one's god wounds further (and the lost FAITH_COMFORT makes it lasting)
+  apostasyReturnMood: 0.65,        // only a soul mended ABOVE the baseline is drawn back by a festival — no revolving door with the despair threshold
   healerHousePerPop: 0.035,        // ~1 healer's house per ~30 folk (pop 60 → 2 houses); care scales with people, not map area
   healerCarePerWorker: 0.12,       // each working healer makes the infirmary's cures surer (capped at +0.6, like a strong medicine tech)
   goodsPriceMinMult: 0.7,          // a glutted good fetches ~0.7× its worth — a floor on crafter income

@@ -131,6 +131,9 @@ export interface Agent {
                         // → withdraws, anger → lashes out, elation → celebrates. Overrides ordinary
                         // behaviour (but never survival) while it lasts. See MentalStateSystem.
   mentalUntil?: number; // the tick the current mental state passes (then it clears with a little catharsis).
+  doubt?: number;       // M18 s4: religious doubt, accrued from despairing days and untimely kin deaths
+                        // (grief, planted by killAgent) while faithful; a better day drains one.
+                        // Matured doubt breaks faith — apostasy. See ReligionSystem.
 }
 
 // A procedural mental break (M28 s2), triggered by mood reaching an extreme. Deterministic, never
@@ -296,6 +299,8 @@ export interface Religion {
   lastGrace?: number;  // M18 s2b: tick the faith last granted a boon (once-per-occurrence guard, mirrors lastHolyDay)
   graceGiven?: number; // M18 s2b: running tally of boons granted (dashboard + legend threshold)
   cult?: boolean;      // M18 s3b: a secretive, fervent breakaway from a lax parent — hotter & more brittle than a plain sect
+  apostates?: number;  // M18 s4: running tally of followers who forsook this faith in despair (dashboard legibility)
+  redeemed?: number;   // M18 s4: running tally of the faithless its holy-day festival drew (back) into the fold
 }
 
 // A milestone the town has reached (M17 s4) — fires once, kept forever, shown in Legends.

@@ -39,7 +39,7 @@ export class FaithsDashboard extends ModalPanel {
         <div style="flex:1;min-width:0">
           <div style="color:#e6e6f0">${r.cult ? '<span style="color:#c86ad0">⛧</span> ' : ''}${r.name}${parent}</div>
           <div style="color:#889;font-size:11px">venerates ${r.deity} · ${r.tenets.join(', ')} · ${piety(r.fervor)} · ${n} ${n === 1 ? 'follower' : 'followers'}</div>
-          <div style="color:#889;font-size:11px">${r.cult ? '<span style="color:#c86ad0">⛧ a cult</span> · ' : ''}${isWrathful(r) ? '<span style="color:#e0857a">⚔ wrathful</span>' : '<span style="color:#7fd6a0">✦ benevolent</span>'} · divine favor ${Math.round((r.favor ?? 0) * 100)}%${r.graceGiven ? ` · ${r.graceGiven} ${r.graceGiven === 1 ? 'boon' : 'boons'} granted` : ''}</div>
+          <div style="color:#889;font-size:11px">${r.cult ? '<span style="color:#c86ad0">⛧ a cult</span> · ' : ''}${isWrathful(r) ? '<span style="color:#e0857a">⚔ wrathful</span>' : '<span style="color:#7fd6a0">✦ benevolent</span>'} · divine favor ${Math.round((r.favor ?? 0) * 100)}%${r.graceGiven ? ` · ${r.graceGiven} ${r.graceGiven === 1 ? 'boon' : 'boons'} granted` : ''}${r.apostates ? ` · <span style="color:#b08a7a">${r.apostates} forsook it</span>` : ''}${r.redeemed ? ` · <span style="color:#8fc79a">${r.redeemed} won at festivals</span>` : ''}</div>
           ${r.myth ? `<div style="color:#9a86c0;font-size:11px;font-style:italic;margin-top:2px">“${r.myth}”</div>` : ''}
         </div></div>`;
     }).join('');

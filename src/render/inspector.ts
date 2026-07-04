@@ -587,11 +587,14 @@ export class Inspector {
     const piety = r.fervor > 0.66 ? 'devout' : r.fervor > 0.4 ? 'observant' : 'lax';
     const myth = r.myth ? `<div style="color:#9a86c0;font-size:11px;font-style:italic;margin-top:3px">“${r.myth}”</div>` : '';
     const temper = `<div style="color:#9ab;font-size:11px">${r.cult ? '<span style="color:#c86ad0">⛧ a cult</span> · ' : ''}${isWrathful(r) ? '<span style="color:#e0857a">⚔ a wrathful god</span>' : '<span style="color:#7fd6a0">✦ a benevolent god</span>'} · divine favor ${Math.round((r.favor ?? 0) * 100)}%</div>`;
+    // Apostasy brews (M18 s4): grief and despair are eroding this soul's faith.
+    const wavering = (agent.doubt ?? 0) > 0 ? `<div style="color:#b08a7a;font-size:11px">✝ their faith wavers — doubt gnaws at them (${agent.doubt})</div>` : '';
     return `<hr style="${RULE}">
       <div style="${SECTION}">Faith</div>
       <div><span style="color:${r.color}">●</span> ${r.cult ? '<span style="color:#c86ad0">⛧</span> ' : ''}${r.name}${parent}</div>
       <div style="color:#9ab;font-size:11px">venerates ${r.deity} · ${r.tenets.join(', ')} · ${piety}</div>
       ${temper}
+      ${wavering}
       ${myth}`;
   }
 

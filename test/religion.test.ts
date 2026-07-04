@@ -4,8 +4,9 @@ import { describe, it, expect } from 'vitest';
 import { World } from '../src/sim/ecs.ts';
 import type { EntityId } from '../src/sim/ecs.ts';
 import { defaultConfig, ticksPerYear } from '../src/sim/config.ts';
-import { C_AGENT, C_CLOCK, C_RELIGIONSTORE, C_POSITION, C_HEALTH, C_WARD, C_CURSE, C_SPECIAL, C_TILEMAP } from '../src/sim/components.ts';
-import type { Agent, Clock, Health, Ward, Special } from '../src/sim/components.ts';
+import { C_AGENT, C_CLOCK, C_RELIGIONSTORE, C_POSITION, C_HEALTH, C_WARD, C_CURSE, C_SPECIAL, C_TILEMAP, C_LINEAGE } from '../src/sim/components.ts';
+import type { Agent, Clock, Health, Ward, Special, Lineage } from '../src/sim/components.ts';
+import { killAgent } from '../src/sim/death.ts';
 import type { TileMapData } from '../src/world/tilemap.ts';
 import { createRNG } from '../src/sim/rng.ts';
 import {
@@ -137,7 +138,7 @@ describe('ReligionSystem (M18)', () => {
     const r = createReligion(store, 'Glad Faith', 'Aa', ['rite'], 1.0, 0);   // very devout → the full lift
     const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
     const fols = [follower(w, r), follower(w, r), follower(w, r)];            // 3 < minFaithFollowers → never schisms
-    for (const e of fols) w.getComponent<Agent>(e, C_AGENT)!.mood = 0.5;
+    for (const e of fols) w.getComponent<Agent>(e, C_AGENT)!.mood = 0.6;      // content — below apostasyMoodThreshold they'd doubt & leave (M18 s4)
 
     // Run one full holy-day interval; the faith's holy day must fall exactly once within it.
     let lifts = 0;
@@ -148,7 +149,7 @@ describe('ReligionSystem (M18)', () => {
       if (w.getComponent<Agent>(fols[0], C_AGENT)!.mood! > before) lifts++;
     }
     expect(lifts).toBe(1);                                                    // exactly one holy day in the interval
-    for (const e of fols) expect(w.getComponent<Agent>(e, C_AGENT)!.mood!).toBeCloseTo(0.5 + cfg.holyDayMoodLift, 5);
+    for (const e of fols) expect(w.getComponent<Agent>(e, C_AGENT)!.mood!).toBeCloseTo(0.6 + cfg.holyDayMoodLift, 5);
   });
 
   it('a holy day is deterministic — no simulation RNG, identical under replay (M18 s2)', () => {
@@ -165,7 +166,7 @@ describe('ReligionSystem (M18)', () => {
 });
 
 // ── Conversion + faith→mood (M18 slice 2) ─────────────────────────────────────────────
-function placedFollower(w: World, x: number, y: number, religionId: string, mood = MOOD_BASELINE): EntityId {
+function placedFollower(w: World, x: number, y: number, religionId: string | undefined, mood = MOOD_BASELINE): EntityId {
   const e = w.createEntity();
   w.addComponent<Agent>(e, C_AGENT, { name: `F${e}`, action: 'wander', ticksAlive: Math.floor(25 * ticksPerYear(cfg)), wealthGoal: 50, sex: 'female', lifespanTicks: 1e9, religionId, mood });
   w.addComponent(e, C_POSITION, { x, y });
@@ -348,6 +349,106 @@ describe('living gods — avatars (M18 s3)', () => {
     clock.tick = 240 + 2 * cfg.ticksPerDay + 1;                                     // past its time
     runSpecialAgentSystem(w, cfg, createRNG(1), testContent());
     expect(w.isAlive(av)).toBe(false);                                             // the god withdrew
+  });
+});
+
+// ── Apostasy & redemption (M18 s4) ────────────────────────────────────────────────────
+describe('apostasy & redemption (M18 s4)', () => {
+  // Run the daily religion tick for `days` days (no conversion noise, era schism suppressed).
+  function runDays(w: World, days: number, from = 1): void {
+    const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+    for (let d = from; d < from + days; d++) {
+      clock.tick = d * cfg.ticksPerDay;
+      runReligionSystem(w, noConvert({ evolutionIntervalDays: 100000 }), createRNG(1));
+    }
+  }
+
+  it('chronic misery breaks faith — a wretched follower forsakes it after the doubt matures', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.6, 0);
+    const wretch = placedFollower(w, 5, 5, r, 0.1);                    // far below apostasyMoodThreshold
+    runDays(w, cfg.apostasyDoubtDays + 1);
+    const a = w.getComponent<Agent>(wretch, C_AGENT)!;
+    expect(a.religionId).toBeUndefined();                              // faith broke
+    expect(a.mood!).toBeLessThan(0.35);                                // and the loss wounded further
+    expect(store.byId[r].apostates).toBe(1);                           // the faith counts its lost
+  });
+
+  it('a content follower never doubts; better days drain doubt, so broken misery never matures', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.6, 0);
+    const content = placedFollower(w, 2, 2, r, 0.7);
+    const waverer = placedFollower(w, 8, 8, r, 0.1);
+    // Two despairing days, two better days, repeated — doubt saws 1,2,1,0,… and never matures.
+    const wa = w.getComponent<Agent>(waverer, C_AGENT)!;
+    for (let d = 1; d <= 12; d++) {
+      wa.mood = d % 4 === 1 || d % 4 === 2 ? 0.1 : 0.7;
+      runDays(w, 1, d);
+    }
+    expect(w.getComponent<Agent>(content, C_AGENT)!.religionId).toBe(r);
+    expect(w.getComponent<Agent>(content, C_AGENT)!.doubt ?? 0).toBe(0);
+    expect(wa.religionId).toBe(r);                                     // interrupted doubt never matured
+    expect(store.byId[r].apostates ?? 0).toBe(0);
+  });
+
+  it('grief shakes faith — two children lost within days break a parent, even a contented one', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.8, 0);
+    const mother = placedFollower(w, 5, 5, r, 0.9);                    // thriving — grief alone must be able to break
+    const c1 = placedFollower(w, 6, 5, r, 0.9);
+    const c2 = placedFollower(w, 7, 5, r, 0.9);
+    for (const c of [c1, c2]) w.addComponent<Lineage>(c, C_LINEAGE, { partner: null, parents: [mother], children: [], reproCooldownTicks: 0 });
+    const tpy = ticksPerYear(cfg);
+    killAgent(w, c1, 10, 'illness', tpy);                              // an untimely death — doubt planted
+    const ma = w.getComponent<Agent>(mother, C_AGENT)!;
+    expect(ma.doubt).toBe(3);                                          // outliving your child, the heaviest grief
+    killAgent(w, c2, 20, 'slain by a wolf', tpy);                      // a second loss, days later
+    expect(ma.doubt).toBe(6);
+    runDays(w, 1);                                                     // the next daily reckoning
+    expect(ma.religionId).toBeUndefined();                             // her faith broke
+    expect(store.byId[r].apostates).toBe(1);
+  });
+
+  it('a death of old age is the natural order — it shakes no faith', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.8, 0);
+    const child = placedFollower(w, 5, 5, r, 0.9);
+    const elder = placedFollower(w, 6, 5, r, 0.9);
+    w.addComponent<Lineage>(elder, C_LINEAGE, { partner: null, parents: [], children: [child], reproCooldownTicks: 0 });
+    killAgent(w, elder, 10, 'old age', ticksPerYear(cfg));
+    expect(w.getComponent<Agent>(child, C_AGENT)!.doubt ?? 0).toBe(0); // mourned, but faith unshaken
+    expect(store.byId[r]).toBeDefined();
+  });
+
+  it('a holy-day festival redeems a MENDED faithless neighbour — the miserable are not won', () => {
+    const { w, store } = faithWorld(0);
+    const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.8, 0);
+    placedFollower(w, 5, 5, r, 0.7);                                   // the celebrant
+    const mended = placedFollower(w, 6, 5, undefined, 0.7);            // faithless, spirits mended
+    const broken = placedFollower(w, 4, 5, undefined, 0.2);            // faithless, still wretched
+    runDays(w, cfg.holyDayIntervalDays + 1);                           // exactly one holy day falls inside
+    expect(w.getComponent<Agent>(mended, C_AGENT)!.religionId).toBe(r);            // drawn into the faith
+    expect(w.getComponent<Agent>(broken, C_AGENT)!.religionId).toBeUndefined();    // despair keeps them out
+    expect(store.byId[r].redeemed).toBe(1);
+  });
+
+  it('apostasy & redemption are deterministic — identical under different seeds (no sim RNG)', () => {
+    const run = (seed: number) => {
+      const { w, store } = faithWorld(0);
+      const r = createReligion(store, 'the Faith of Aa', 'Aa', ['the peaceful path'], 0.8, 0);
+      placedFollower(w, 5, 5, r, 0.7);
+      const wretch = placedFollower(w, 8, 8, r, 0.1);
+      const lost = placedFollower(w, 6, 5, undefined, 0.7);
+      const clock = w.getComponent<Clock>(w.query(C_CLOCK)[0], C_CLOCK)!;
+      for (let d = 1; d <= cfg.holyDayIntervalDays + 1; d++) {
+        clock.tick = d * cfg.ticksPerDay;
+        runReligionSystem(w, noConvert({ evolutionIntervalDays: 100000 }), createRNG(seed));
+      }
+      const wa = w.getComponent<Agent>(wretch, C_AGENT)!;
+      const la = w.getComponent<Agent>(lost, C_AGENT)!;
+      return `${wa.religionId}|${wa.mood}|${la.religionId}|${la.mood}|${store.byId[r].apostates}|${store.byId[r].redeemed}`;
+    };
+    expect(run(1)).toBe(run(9999));
   });
 });
 
