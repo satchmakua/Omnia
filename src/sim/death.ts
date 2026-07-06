@@ -10,7 +10,7 @@ import {
   C_BODY, C_ALIGNMENT, C_PERSONALITY, C_COMBAT, C_CRIME, C_WARD, C_ENCHANTMENT, C_AFFLICTIONS,
   C_MEMORY, C_INVENTORY, C_CRAFTING, C_QUEST, C_EQUIPMENT,
 } from './components.ts';
-import type { Agent, SpeciesComp, Job, Lineage, Tombstone } from './components.ts';
+import type { Agent, SpeciesComp, Job, Lineage, Tombstone, Alignment } from './components.ts';
 
 const LIVING_COMPONENTS = [
   C_AGENT, C_NEEDS, C_WALLET, C_POSITION, C_SPECIES, C_MAGIC, C_JOB,
@@ -64,6 +64,12 @@ export function tombstoneFor(
 // beasts, and feuds all grieve alike.
 const GRIEF_DOUBT = 2;        // losing a partner or a parent before their time
 const CHILD_GRIEF_DOUBT = 3;  // outliving your own child — the heaviest grief (M10 s3)
+// Grief also EMBITTERS (M13 s2): an untimely loss nudges the bereaved's `good` a shade darker —
+// the sim's one steady downward flow on the moral axis. Without it the reflection drift (warm
+// lives lean good) ratcheted whole towns into Neutral Good and the villainous wing died out;
+// with it, tragedy keeps the full nine-cell grid alive. Small beside the reflection drift, and
+// clamped — grief alone never makes a monster, but a life of graves leaves its mark.
+const GRIEF_EMBITTER = 0.02;
 
 // Kill an agent: free a widowed partner, strip living components, attach the
 // tombstone. The entity stays in the world as a record.
@@ -79,12 +85,15 @@ export function killAgent(
     if (partnerLin && partnerLin.partner === e) partnerLin.partner = null;
   }
 
-  // An untimely end sows doubt among the faithful bereaved (M18 s4).
+  // An untimely end sows doubt among the faithful bereaved (M18 s4) — and embitters (M13 s2).
   if (cause !== 'old age' && lin) {
     const shake = (kin: EntityId | null, amount: number): void => {
       if (kin === null) return;
       const ka = world.getComponent<Agent>(kin, C_AGENT);
-      if (ka?.religionId) ka.doubt = (ka.doubt ?? 0) + amount;
+      if (!ka) return;
+      if (ka.religionId) ka.doubt = (ka.doubt ?? 0) + amount;
+      const al = world.getComponent<Alignment>(kin, C_ALIGNMENT);
+      if (al) al.good = Math.max(-1, al.good - GRIEF_EMBITTER);
     };
     shake(lin.partner, GRIEF_DOUBT);
     for (const c of lin.children) shake(c, GRIEF_DOUBT);

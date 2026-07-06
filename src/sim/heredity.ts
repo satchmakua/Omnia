@@ -64,16 +64,22 @@ const clampPN = (x: number): number => Math.max(-1, Math.min(1, x));
 // "True Neutral") and almost never reached Evil. This gives a benevolent lean on good —
 // more saints than villains, but real villains exist — and a FULL lawful↔chaotic spread,
 // so towns show the whole alignment chart (~1/3 True Neutral, the rest a real mix).
+// (M13 s2 probe finding: at ±0.55 with a +0.08 lean the EVIL wing was ~1% of real
+// populations and died out entirely over deep time — widened so villains truly found.)
 export function rollAlignment(rng: RNG): Alignment {
-  return { good: clampPN(0.08 + (rng() * 2 - 1) * 0.55), law: clampPN((rng() * 2 - 1) * 0.6) };
+  return { good: clampPN(0.05 + (rng() * 2 - 1) * 0.6), law: clampPN((rng() * 2 - 1) * 0.6) };
 }
 
 // A child inherits the parental lean (+ variation) on both axes — enough variation that a
-// lineage still spreads across the grid rather than collapsing to one cell.
+// lineage still spreads across the grid rather than collapsing to one cell. The noise MUST
+// clear the ±0.33 pole fence (M13 s2 probe finding): at the old ±0.25/±0.3, two neutral
+// parents could NEVER throw a saint, a zealot, a rogue, or a villain, so the poles bled out
+// generation by generation and the town converged on Neutral Good. Now every cell of the
+// grid regenerates: an ordinary house can raise an extraordinary child.
 export function inheritAlignment(rng: RNG, a: Alignment, b: Alignment): Alignment {
   return {
-    good: clampPN((a.good + b.good) / 2 + (rng() * 2 - 1) * 0.25),
-    law: clampPN((a.law + b.law) / 2 + (rng() * 2 - 1) * 0.3),
+    good: clampPN((a.good + b.good) / 2 + (rng() * 2 - 1) * 0.4),
+    law: clampPN((a.law + b.law) / 2 + (rng() * 2 - 1) * 0.45),
   };
 }
 
@@ -83,6 +89,21 @@ export function alignmentName(al: Alignment): string {
   const l = al.law > 0.33 ? 'Lawful' : al.law < -0.33 ? 'Chaotic' : 'Neutral';
   return g === 'Neutral' && l === 'Neutral' ? 'True Neutral' : `${l} ${g}`;
 }
+
+// The nine-cell KEY for the same grid (same ±0.33 thresholds as alignmentName — one
+// convention, two spellings): 'LG' 'NG' 'CG' / 'LN' 'TN' 'CN' / 'LE' 'NE' 'CE'.
+// The inner-life tables (vows, dreams, sayings — the alignment voice) key on this,
+// and the vow-rider mechanics read its poles. A pure, stable classification.
+export type AlignKey = 'LG' | 'NG' | 'CG' | 'LN' | 'TN' | 'CN' | 'LE' | 'NE' | 'CE';
+export function alignKey(al: Alignment): AlignKey {
+  const g = al.good > 0.33 ? 'G' : al.good < -0.33 ? 'E' : 'N';
+  const l = al.law > 0.33 ? 'L' : al.law < -0.33 ? 'C' : 'N';
+  return (l + g === 'NN' ? 'TN' : l + g) as AlignKey;
+}
+/** The good-axis pole of a nine-cell key ('G' | 'N' | 'E'). */
+export const goodPole = (k: AlignKey): string => k === 'TN' ? 'N' : k[1];
+/** The law-axis pole of a nine-cell key ('L' | 'N' | 'C'). */
+export const lawPole = (k: AlignKey): string => k === 'TN' ? 'N' : k[0];
 
 // Good folk cooperate — they warm to others faster; the wicked, slower (D26). Centred on
 // neutral (0) so it's a no-op for the average soul; bounded.

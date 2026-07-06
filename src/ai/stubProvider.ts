@@ -70,6 +70,96 @@ const RESOLVES: Record<string, string[]> = {
     'resolved to need less and notice more', 'swore to find the good in an ordinary day'],
 };
 
+// ── The alignment voice (M13 s2) ─────────────────────────────────────────────────────
+// Nine-cell pools: when a prompt carries the soul cue ("Their soul leans lawful good."),
+// about half an aligned soul's lines speak in its MORAL register rather than its life-theme —
+// a Lawful Good dream is not a Chaotic Evil one. Chosen by hash (deterministic, replay-safe).
+// The cue is embedded by memory.ts's builders, so a live model conditions on the same words.
+const ALIGN_DREAMS: Record<string, string[]> = {
+  LG: ['dreamed of a city where no door needed locks', 'dreamed of holding a shield over sleeping children',
+    'dreamed of courts where every wrong was righted', 'dreamed of a bright order to things, and their place in it',
+    'dreamed of walls they built standing long after them'],
+  NG: ['dreamed of strangers fed at their own table', 'dreamed of binding a stranger’s wound',
+    'dreamed of a harvest shared out to the last measure', 'dreamed of lifting someone from a river, laughing with relief',
+    'dreamed of a town where no one went without'],
+  CG: ['dreamed of tearing down a fence and planting flowers in the gap', 'dreamed of flying low over the fields, whooping',
+    'dreamed of freeing caged birds by the hundred', 'dreamed of a feast with no head of table',
+    'dreamed of roads that went everywhere and belonged to no one'],
+  LN: ['dreamed of scales that balanced to the grain', 'dreamed of a ledger where every line came true',
+    'dreamed of the seasons keeping perfect time', 'dreamed of an oath carved in standing stone',
+    'dreamed of a procession that never missed a step'],
+  TN: ['dreamed of a still pond that held the whole sky', 'dreamed of standing at the exact centre of a turning wheel',
+    'dreamed of weighing two stones and finding them equal', 'dreamed of a river neither rising nor falling',
+    'dreamed of two armies laying down arms, owing neither'],
+  CN: ['dreamed of dice that never landed', 'dreamed of changing shape with every step',
+    'dreamed of a map that redrew itself nightly', 'dreamed of dancing on a rooftop in a storm',
+    'dreamed of a door to anywhere, and no reason to choose'],
+  LE: ['dreamed of a throne built from every debt owed them', 'dreamed of the whole town signing their book',
+    'dreamed of an iron law with their name on it', 'dreamed of servants who never met their eyes',
+    'dreamed of collecting the last coin of a long contract'],
+  NE: ['dreamed of a purse that filled as their neighbour’s emptied', 'dreamed of eating well behind a locked door while it rained',
+    'dreamed of being owed favours by everyone worth knowing', 'dreamed of watching a rival stumble and feeling only warmth',
+    'dreamed of a ladder pulled up after them'],
+  CE: ['dreamed of the town alight, and themselves laughing', 'dreamed of teeth — their own — growing longer',
+    'dreamed of a storm that spared only them', 'dreamed of every slight repaid a hundredfold',
+    'dreamed of a world with nothing left to tell them no'],
+};
+const ALIGN_BELIEFS: Record<string, string[]> = {
+  LG: ['believes order exists to shelter the weak', 'holds that a promise kept is the truest prayer',
+    'believes right must be done even when it costs', 'trusts that good laws make good neighbours'],
+  NG: ['believes kindness is never wasted', 'holds that everyone deserves a second chance',
+    'believes a full table should be shared', 'trusts that small mercies mend the world'],
+  CG: ['believes no rule outranks a conscience', 'holds that freedom is the first kindness',
+    'believes rules bend where people matter', 'trusts the open road over the high wall'],
+  LN: ['believes the law is owed, liked or not', 'holds that order outlasts intention',
+    'believes a thing done properly is done once', 'trusts custom over cleverness'],
+  TN: ['believes all things find their balance', 'holds that neither pan of a scale is holy',
+    'believes the middle road wears best', 'trusts the turning of the seasons over any creed'],
+  CN: ['believes tomorrow owes today nothing', 'holds that plans are just guesses in good clothes',
+    'believes whim is as good a compass as any', 'trusts luck more than ledgers'],
+  LE: ['believes power kept in order is power kept', 'holds that fear collects better than kindness',
+    'believes every favour is a debt to be called', 'trusts the contract, never the man'],
+  NE: ['believes charity begins and ends at home', 'holds that the world takes, so take first',
+    'believes soft hearts make thin purses', 'trusts no one who works for free'],
+  CE: ['believes the strong owe the weak nothing', 'holds that ruin is honester than order',
+    'believes wanting a thing is claim enough', 'trusts appetite over argument'],
+};
+const ALIGN_RESOLVES: Record<string, string[]> = {
+  LG: ['swore to guard the weak while they draw breath', 'resolved to right what wrongs they can reach',
+    'vowed to hold the line others retreat from', 'resolved to serve the town before themselves'],
+  NG: ['resolved to help whoever crosses their path in need', 'vowed to share what fortune grants',
+    'chose gentleness, again, whatever it costs', 'resolved to leave every soul a little better off'],
+  CG: ['vowed to answer to their conscience alone', 'resolved to break any rule that cages a friend',
+    'chose the open road and the open hand', 'swore no law would make them cruel'],
+  LN: ['resolved to keep every word they give', 'vowed to do their duty to the letter',
+    'chose the old ways, tested and true', 'resolved to bring order where they stand'],
+  TN: ['resolved to keep their balance whatever tips', 'vowed to take the middle way',
+    'chose to watch, and weigh, and then decide', 'resolved to let the seasons set the pace'],
+  CN: ['resolved to follow the next whim wholeheartedly', 'vowed nothing, and meant it',
+    'chose to let the wind pick the way', 'resolved to be surprised by their own life'],
+  LE: ['resolved to collect every debt owed them', 'vowed to climb, whoever serves as rungs',
+    'chose fear over affection — it keeps better', 'resolved to bind their betters with their own rules'],
+  NE: ['resolved to look after their own hide first', 'vowed to give nothing they cannot bill',
+    'chose the sure coin over the kind word', 'resolved to be owed, never owing'],
+  CE: ['swore to repay every slight with interest', 'resolved to take what the timid leave unguarded',
+    'vowed to bow to no one and break what bows them', 'chose ruin for their rivals, and said so smiling'],
+};
+/** The alignment-voiced pools, exported for content-coverage tests. */
+export const ALIGN_TABLES: Readonly<Partial<Record<Mode, Record<string, string[]>>>> = {
+  dream: ALIGN_DREAMS, belief: ALIGN_BELIEFS, decide: ALIGN_RESOLVES,
+};
+
+const ALIGN_NAME_TO_KEY: Record<string, string> = {
+  'lawful good': 'LG', 'neutral good': 'NG', 'chaotic good': 'CG',
+  'lawful neutral': 'LN', 'true neutral': 'TN', 'chaotic neutral': 'CN',
+  'lawful evil': 'LE', 'neutral evil': 'NE', 'chaotic evil': 'CE',
+};
+// The soul cue a prompt may carry (embedded by memory.ts's soulCue) → the nine-cell key.
+function soulKey(prompt: string): string | null {
+  const m = prompt.toLowerCase().match(/soul leans ([a-z]+ [a-z]+)/);
+  return m ? (ALIGN_NAME_TO_KEY[m[1]] ?? null) : null;
+}
+
 const TABLES: Record<Mode, Record<string, string[]>> = {
   belief: BELIEFS, dream: DREAMS, say: SAYINGS, decide: RESOLVES,
 };
@@ -113,7 +203,15 @@ export class StubProvider implements AIProvider {
   readonly name = 'stub';
 
   completeSync(prompt: string): string {
-    const table = TABLES[promptMode(prompt)];
+    const mode = promptMode(prompt);
+    // The alignment voice (M13 s2): an aligned soul speaks about half its lines in its own
+    // moral register — the rest still follow the life-themes, so identity and biography mix.
+    const key = soulKey(prompt);
+    const aligned = key ? ALIGN_TABLES[mode]?.[key] : undefined;
+    if (aligned && hashString(prompt + '|soul') % 2 === 0) {
+      return aligned[hashString(prompt) % aligned.length];
+    }
+    const table = TABLES[mode];
     const theme = dominantTheme(prompt);
     const options = table[theme] ?? table.quiet;
     return options[hashString(prompt) % options.length];

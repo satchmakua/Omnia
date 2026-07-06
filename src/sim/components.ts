@@ -601,8 +601,11 @@ export interface Belief {
 }
 
 // A generated line of inner/outer life (M5 part 2): a spoken line ('say'), a dream
-// ('dream'), or a resolution at a turning point ('decide'). Pure flavour — recorded
-// for replay, never fed back into the simulation's mechanical trajectory.
+// ('dream'), or a resolution at a turning point ('decide'). The recorded TEXT is flavour
+// (replay-exact via AIRecord) — but the moments it narrates now ACT (M13 s2): the systems
+// derive small, bounded effects from durable STATE at the same moment (a dream tilts the
+// waking mood & firms the soul's poles; talk touches both speakers), never from the words
+// themselves — so a live model and the stub steer the trajectory identically.
 export type UtteranceKind = 'say' | 'dream' | 'decide';
 export interface Utterance {
   tick: number;
@@ -637,6 +640,9 @@ export interface Memory {
   // The drive biases behaviour (ActionSystem); the LLM beliefs above stay pure flavour.
   purpose?: number;
   vow?: string;
+  vowAlign?: string;   // the nine-cell AlignKey the vow was SWORN under (M13 s2) — a durable oath,
+                       // not live alignment: its poles drive the vow riders (alms / malice /
+                       // steadfast / free spirit) until the next reflection re-swears it.
 }
 
 // Singleton: every LLM response recorded so a replay reproduces a run exactly

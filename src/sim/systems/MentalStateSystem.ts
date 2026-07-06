@@ -11,10 +11,11 @@
 // ecology/combat streams (the predator–prey equilibrium is bistable and RNG-sensitive — D32). Breaks
 // are deliberately rare, so they read as notable events, not a constant background.
 import type { World, EntityId } from '../ecs.ts';
-import { C_AGENT, C_PERSONALITY, C_ALIGNMENT, C_CLOCK } from '../components.ts';
-import type { Agent, Personality, Alignment, Clock, MentalState } from '../components.ts';
+import { C_AGENT, C_PERSONALITY, C_ALIGNMENT, C_CLOCK, C_MEMORY } from '../components.ts';
+import type { Agent, Personality, Alignment, Clock, MentalState, Memory } from '../components.ts';
 import type { SimConfig } from '../config.ts';
-import { traitAggressive, traitBreakFactor } from '../heredity.ts';
+import { traitAggressive, traitBreakFactor, lawPole } from '../heredity.ts';
+import type { AlignKey } from '../heredity.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 
 const DESPAIR_AT = 0.20;   // mood ≤ this → misery may break the soul (rare — a thriving town seldom sinks here)
@@ -72,7 +73,11 @@ export function runMentalStateSystem(world: World, cfg: SimConfig): void {
     let kind: MentalState | null = null;
     // Temperament colours how readily a soul cracks under misery (M28 s3): the tough resist, the
     // volatile break easily. (Elation isn't a hardship break, so it's left unscaled.)
-    if (a.mood <= DESPAIR_AT && roll01(e, day) < BREAK_CHANCE * traitBreakFactor(world.getComponent<Personality>(e, C_PERSONALITY))) {
+    // A LAWFUL-sworn vow is a spine (M13 s2): the oath-keeping crack less easily — the break
+    // roll is a deterministic hash, so the factor perturbs no RNG stream.
+    const sworn = world.getComponent<Memory>(e, C_MEMORY)?.vowAlign;
+    const steadfast = sworn && lawPole(sworn as AlignKey) === 'L' ? cfg.lawVowBreakFactor : 1;
+    if (a.mood <= DESPAIR_AT && roll01(e, day) < BREAK_CHANCE * steadfast * traitBreakFactor(world.getComponent<Personality>(e, C_PERSONALITY))) {
       kind = proneToAnger(world, e) ? 'anger' : 'despair';
     } else if (a.mood >= ELATION_AT && roll01(e, day) < ELATION_CHANCE) kind = 'elation';
     if (!kind) continue;

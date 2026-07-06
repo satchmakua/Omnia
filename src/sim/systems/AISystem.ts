@@ -6,7 +6,13 @@
 //   • an async live model (Ollama) has no `completeSync`, so the prompt is submitted
 //     to the AIRunner off the hot path (M7.5) and the result is applied + recorded on
 //     a later tick — never blocking the tick, falling back to the stub on timeout.
-// Either way the output is pure flavour: nothing here feeds the mechanical trajectory.
+// The generated TEXT stays flavour — but the inner life it narrates now ACTS (M13 s2,
+// D26): a dream tilts the waking mood and consolidates the soul's poles; a vow is sworn
+// under an alignment whose riders bias behaviour (alms / malice / steadfast / free
+// spirit, read by VowSystem / CrimeSystem / MentalStateSystem / ActionSystem); and a
+// conversation touches the pair — gladdening friends, stinging rivals, cooling or
+// inflaming feuds by the speaker's law pole. Every effect derives from durable STATE
+// (never from the generated words), so a live model and the stub steer identically.
 import type { World, EntityId } from '../ecs.ts';
 import { C_AGENT, C_MEMORY, C_POSITION, C_RELATIONSHIPS, C_CLOCK, C_AIRUNNER, C_ALIGNMENT, C_PERSONALITY } from '../components.ts';
 import type { Agent, Memory, Position, Relationships, Clock, Alignment, Personality } from '../components.ts';
@@ -17,14 +23,30 @@ import { hashString } from '../../ai/provider.ts';
 import { stubProvider } from '../../ai/stubProvider.ts';
 import { AIRunner } from '../../ai/aiRunner.ts';
 import {
-  retrieve, distill, remember, CHILD_VOW_SET,
+  retrieve, distill, remember, CHILD_VOW_SET, soulCue,
   buildReflectionPrompt, buildDreamPrompt, buildDecisionPrompt,
 } from '../../ai/memory.ts';
 import { recordResponse } from '../../ai/recording.ts';
 import { generateConversation } from '../../ai/dialogue.ts';
 import type { Relationship } from '../../ai/dialogue.ts';
+import { alignKey, alignmentName, goodPole, lawPole } from '../heredity.ts';
 import { emitEvent } from '../../history/eventlog.ts';
 import { logConversation } from '../../history/conversation.ts';
+
+const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
+const clampPN = (x: number): number => Math.max(-1, Math.min(1, x));
+
+// Where sleep's consolidation pulls a held pole (M13 s2): a stable ARCHETYPE at ±0.6, not the
+// rim. Hardcoded like the MoodSystem circumstance weights — the dreamAlignDrift rate in config
+// scales how fast souls settle onto it.
+const POLE_ANCHOR = 0.6;
+
+// The soul cue for a prompt, from the agent's alignment (absent → no cue, theme voice only).
+function soulOf(world: World, e: EntityId): { cue: string; key?: ReturnType<typeof alignKey> } {
+  const al = world.getComponent<Alignment>(e, C_ALIGNMENT);
+  if (!al) return { cue: '' };
+  return { cue: soulCue(alignmentName(al).toLowerCase()), key: alignKey(al) };
+}
 
 // Persists across ticks for the async (live-model) path: the queue and the pending
 // jobs whose results we still need to apply.
@@ -108,15 +130,23 @@ function reflectPass(env: Env): void {
     // (ActionSystem reads `purpose`). Children distil an age-appropriate vow (the Kids
     // Pass); a changed vow is a turning point worth a feed line — and a child vow giving
     // way to an adult one is a coming-of-age, a remembered milestone of growing up.
+    // A grown vow is sworn in the soul's own register (M13 s2): the nine-cell alignment
+    // picks the wording, and the key is RECORDED (`vowAlign`) — its poles drive the vow
+    // riders (alms / malice / steadfast / free spirit) until the next reflection.
     const isChild = ageInYears(agent.ticksAlive, cfg) < cfg.adultAgeYears;
     const prevVow = mem.vow;
-    const d = distill(mem.events, isChild);
+    const soul = soulOf(world, e);
+    const d = distill(mem.events, isChild, soul.key ?? 'TN');
     mem.purpose = d.purpose;
     mem.vow = d.vow;
+    mem.vowAlign = isChild ? undefined : soul.key;   // a child's vow carries no rider — the soul is still forming
     // Alignment drifts with the life lived (M13): bonds & resilience (purpose > 0) lean toward
     // good; loss & withdrawal (purpose < 0) harden toward self-interest. Small + deterministic.
+    // DAMPED toward the rim (M13 s2): × (1 − |good|), so a warm life mellows a soul but no
+    // longer saturates the whole town into Neutral Good over a lifetime of reflections — a
+    // born villain in a kind town softens toward neutral, it doesn't flip to sainthood.
     const align = world.getComponent<Alignment>(e, C_ALIGNMENT);
-    if (align && d.purpose !== 0) align.good = Math.max(-1, Math.min(1, align.good + Math.sign(d.purpose) * 0.04));
+    if (align && d.purpose !== 0) align.good = Math.max(-1, Math.min(1, align.good + Math.sign(d.purpose) * 0.04 * (1 - Math.abs(align.good))));
     // Mid-life trauma reshapes personality (M13): a life sunk in loss hardens the soul.
     const pers = world.getComponent<Personality>(e, C_PERSONALITY);
     if (pers && d.purpose < -0.2 && pers.trait !== 'hardened') {
@@ -133,7 +163,7 @@ function reflectPass(env: Env): void {
     }
 
     const top = retrieve(mem, `${name}'s life`, env.provider, cfg.reflectMemories);
-    const prompt = buildReflectionPrompt(name, tick, top);
+    const prompt = buildReflectionPrompt(name, tick, top, soul.cue);
     mem.lastReflectTick = tick;
 
     dispatch(env, e, prompt, (text, at) => {
@@ -170,8 +200,31 @@ function dreamPass(env: Env, interval: number, budget: number): number {
     if (tick - mem.lastDreamTick < interval) continue;
 
     const top = retrieve(mem, `${agent.name}'s dream`, env.provider, cfg.reflectMemories);
-    const prompt = buildDreamPrompt(agent.name, tick, top);
+    const soul = soulOf(world, e);
+    const prompt = buildDreamPrompt(agent.name, tick, top, soul.cue);
     mem.lastDreamTick = tick;
+
+    // Dreams ACT (M13 s2, D26) — applied SYNCHRONOUSLY at the prompt tick, like reflectPass's
+    // causal parts, because they derive from durable state and never from the generated words.
+    // (Inside the dispatch callback they'd land at the async live-model's drain tick — a wall-
+    // clock-dependent moment — and live runs would stop replaying exactly. Only the TEXT, which
+    // is recorded, belongs in the callback.)
+    // (1) The night's rest tilts the waking mood: a grief-laden life (purpose < 0) dreams
+    // troubled and wakes lower — unless the soul is EVIL, which relishes the dark and wakes
+    // whetted. (2) Sleep consolidates who you are: a pole the soul holds (|axis| > 0.33) is
+    // drawn toward the POLE ANCHOR (±0.6) — an archetype, not the rim. The pull is two-sided
+    // (a soul at −1 eases back toward −0.6), so no alignment state is ever absorbing, and near
+    // the ±0.33 fence it stays weaker than the reflection drift — a warm life can still pull
+    // a villain back across (redemption remains winnable).
+    const al = world.getComponent<Alignment>(e, C_ALIGNMENT);
+    if (agent.mood !== undefined) {
+      const troubled = (mem.purpose ?? 0) < -0.05 && (al?.good ?? 0) >= -0.33;
+      agent.mood = clamp01(agent.mood + (troubled ? -cfg.dreamMoodNudge : cfg.dreamMoodNudge));
+    }
+    if (al) {
+      if (Math.abs(al.good) > 0.33) al.good = clampPN(al.good + cfg.dreamAlignDrift * (POLE_ANCHOR * Math.sign(al.good) - al.good));
+      if (Math.abs(al.law) > 0.33) al.law = clampPN(al.law + cfg.dreamAlignDrift * (POLE_ANCHOR * Math.sign(al.law) - al.law));
+    }
 
     dispatch(env, e, prompt, (text, at) => {
       const m = world.getComponent<Memory>(e, C_MEMORY);
@@ -198,7 +251,7 @@ function decisionPass(env: Env, interval: number, budget: number): number {
 
     const name = world.getComponent<Agent>(e, C_AGENT)!.name;
     const top = retrieve(mem, last.text, env.provider, cfg.reflectMemories);
-    const prompt = buildDecisionPrompt(name, last.text, tick, top);
+    const prompt = buildDecisionPrompt(name, last.text, tick, top, soulOf(world, e).cue);
     mem.lastSpokeTick = tick;
 
     dispatch(env, e, prompt, (text, at) => {
@@ -262,9 +315,10 @@ function dialoguePass(env: Env, interval: number, budget: number): number {
 
     const a = world.getComponent<Agent>(speaker, C_AGENT)!;
     const b = world.getComponent<Agent>(listener, C_AGENT)!;
+    const soulA = soulOf(world, speaker), soulB = soulOf(world, listener);
     const convo = generateConversation(
       `${speaker}.${listener}.${tick}`,
-      { name: a.name, mood: a.mood ?? 0.6 }, { name: b.name, mood: b.mood ?? 0.6 }, kind,
+      { name: a.name, mood: a.mood ?? 0.6, align: soulA.key }, { name: b.name, mood: b.mood ?? 0.6, align: soulB.key }, kind,
     );
 
     mem.lastSpokeTick = tick;
@@ -277,6 +331,30 @@ function dialoguePass(env: Env, interval: number, budget: number): number {
     emitEvent(world, 'dialogue', `${convo[0].speaker} to ${b.name === convo[0].speaker ? a.name : b.name}: “${convo[0].text}”`);
     pushUtterance(mem, cfg, tick, 'say', `“${convo[0].text}” — to ${b.name}`);
     if (lmem && convo[1]) pushUtterance(lmem, cfg, tick, 'say', `“${convo[1].text}” — to ${a.name}`);
+
+    // Talk TOUCHES the pair (M13 s2, D26) — bounded, deterministic, state-derived. A friendly
+    // exchange gladdens both (and a GOOD-pole speaker's word to a low listener lands harder —
+    // the kind console); a rival exchange stings both, and the speaker's LAW pole moves the
+    // feud itself: lawful restraint cools the grudge a notch, chaotic heat deepens it. Edges
+    // are only ever adjusted where a rivalry already stands — words never invent a feud.
+    if (kind === 'rival') {
+      if (a.mood !== undefined) a.mood = clamp01(a.mood - cfg.talkRivalSting);
+      if (b.mood !== undefined) b.mood = clamp01(b.mood - cfg.talkRivalSting);
+      const pole = soulA.key ? lawPole(soulA.key) : 'N';
+      const delta = pole === 'L' ? cfg.talkFeudDelta : pole === 'C' ? -cfg.talkFeudDelta : 0;
+      if (delta !== 0) {
+        for (const [va, vb] of [[speaker, listener], [listener, speaker]] as const) {
+          const edge = world.getComponent<Relationships>(va, C_RELATIONSHIPS)?.edges[vb];
+          if (edge && edge.type === 'rival') edge.sentiment = Math.max(-1, Math.min(1, edge.sentiment + delta));
+        }
+      }
+    } else {
+      if (a.mood !== undefined) a.mood = clamp01(a.mood + cfg.talkMoodLift);
+      if (b.mood !== undefined) {
+        const comfort = soulA.key && goodPole(soulA.key) === 'G' && b.mood < 0.5 ? cfg.talkComfort : 0;
+        b.mood = clamp01(b.mood + cfg.talkMoodLift + comfort);
+      }
+    }
     budget--;
   }
   return budget;

@@ -179,6 +179,21 @@ export interface SimConfig {
   // Dialogue / dreams / decisions (M5 part 2):
   expressionIntervalDays: number;      // min sim-days between an agent's dialogue/dream/decision
   maxExpressionsPerTick: number;       // global per-tick cap on utterances (keeps the soul rare)
+  // The inner life made causal across the alignment grid (M13 s2): dreams, vows, and talk act.
+  dreamMoodNudge: number;              // waking mood shift from a dream: restful lifts, troubled dips (the evil-souled relish the dark — sign flips)
+  dreamAlignDrift: number;             // rate a dream draws a held pole (|axis| > 0.33) toward the ±0.6 pole ANCHOR — souls consolidate onto archetypes in sleep (two-sided: the rim eases back too; never absorbing)
+  talkMoodLift: number;                // a friendly exchange leaves both a touch gladder (companionship is real)
+  talkRivalSting: number;              // a rival exchange leaves both a touch sourer (bad blood costs)
+  talkComfort: number;                 // extra lift a GOOD-pole speaker gives a low-mood listener (the kind console)
+  talkFeudDelta: number;               // rival-talk edge shift: a LAWFUL-pole speaker cools the grudge by this, a CHAOTIC-pole one deepens it
+  almsIntervalDays: number;            // how often a good-sworn vower gives alms (phased per giver, no thundering herd)
+  almsAmount: number;                  // gold an alms-giving transfers (bounded by the giver's purse)
+  almsMinGold: number;                 // a giver must hold at least this much (charity from surplus, not ruin)
+  almsPoorGold: number;                // a neighbour this poor (or in debt) is a worthy recipient
+  almsRadius: number;                  // how far (Chebyshev tiles) an alms-giver looks for the needy
+  evilVowCrimeFactor: number;          // an EVIL-sworn vow multiplies the offend chance (malice, sworn)
+  lawVowBreakFactor: number;           // a LAWFUL-sworn vow multiplies the mental-break chance (<1 — an oath steadies the soul)
+  chaosVowGoalFactor: number;          // a CHAOTIC-sworn vow multiplies the wealth goal (<1 — free spirits toil less)
   maxUtterances: number;               // recent utterances kept per agent
   decisionImportance: number;          // a memory at/above this importance is a "turning point"
   // Multi-resolution memory rollup (M6):
@@ -431,6 +446,20 @@ export const defaultConfig: SimConfig = {
   maxBeliefs: 6,
   expressionIntervalDays: 6,      // a given agent speaks/dreams/resolves rarely
   maxExpressionsPerTick: 2,       // ...and the town as a whole, at most twice a tick
+  dreamMoodNudge: 0.02,           // a night's dream tilts the waking mood a touch — real, but the day's circumstances still rule
+  dreamAlignDrift: 0.01,          // gentle: ≤0.004/night — near the ±0.33 fence it stays WEAKER than the reflection drift, so a warm life can still redeem a villain
+  talkMoodLift: 0.01,             // companionship gladdens — lightly (MoodSystem's daily claw-back still dominates)
+  talkRivalSting: 0.015,          // trading cold words costs both a little peace of mind
+  talkComfort: 0.02,              // a kind soul's word to the miserable lands harder than small talk
+  talkFeudDelta: 0.03,            // words matter to feuds: lawful restraint cools, chaotic heat inflames (clamped edge sentiment)
+  almsIntervalDays: 7,            // charity is a habit, not a firehose — about weekly per sworn giver
+  almsAmount: 3,                  // a few coins: felt by the poor, painless from surplus (≈ a day's upkeep)
+  almsMinGold: 30,                // only the comfortable give — charity never creates a new pauper
+  almsPoorGold: 5,                // the threadbare and the indebted qualify
+  almsRadius: 3,                  // the needy nearby — charity is a neighbourly act, not a postal service
+  evilVowCrimeFactor: 1.5,        // sworn malice seeks occasion (multiplies the existing chance; no new RNG draw)
+  lawVowBreakFactor: 0.75,        // the oath-keeping crack less easily under misery
+  chaosVowGoalFactor: 0.85,       // the free-spirited stop toiling sooner and live more
   maxUtterances: 8,
   decisionImportance: 0.65,       // weddings (0.7), births (0.85), bereavement (0.9) — not mundane work/illness
   memoryRollupIntervalDays: 2,    // tidy the memory thread every couple of sim-days

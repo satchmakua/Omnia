@@ -389,11 +389,17 @@ export class Inspector {
       const earlier = mem.summaries.slice(-2).reverse()
         .map(s => `<div style="color:#8a8a9a">❧ ${s.text}</div>`).join('');
       const memCount = mem.events.length + mem.summaries.reduce((n, s) => n + s.count, 0);
-      // The causal life-purpose (D26): the vow that bends how hard they strive.
+      // The causal life-purpose (D26): the vow that bends how hard they strive — and the
+      // riders its sworn alignment carries (M13 s2: alms / malice / steadfast / free spirit).
       const purpose = mem.purpose ?? 0;
       const drive = purpose > 0.05 ? ' · strives for it' : purpose < -0.05 ? ' · grief pulls them back' : '';
+      const RIDER_TAG: Record<string, string> = { G: 'alms-giving', E: 'malice-fed', L: 'steadfast', C: 'free-spirited' };
+      const riders = mem.vowAlign
+        ? [RIDER_TAG[mem.vowAlign === 'TN' ? '' : mem.vowAlign[1]], RIDER_TAG[mem.vowAlign === 'TN' ? '' : mem.vowAlign[0]]].filter(Boolean)
+        : [];
+      const sworn = riders.length ? ` · an oath ${riders.join(' & ')}` : '';
       const vowLine = mem.vow
-        ? `<div style="color:#ffd27a">⚑ vows ${mem.vow}<span style="color:#998">${drive}</span></div>` : '';
+        ? `<div style="color:#ffd27a">⚑ vows ${mem.vow}<span style="color:#998">${drive}${sworn}</span></div>` : '';
       mind = `<hr style="${RULE}">
         <div style="${SECTION}">Mind &nbsp;<span style="color:#789">${memCount} memories</span></div>
         ${vowLine}${beliefs}${said}${recent}${earlier}`;

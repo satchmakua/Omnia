@@ -5,10 +5,10 @@
 // victim defends themselves and a good neighbour may mete out rough **justice** on the spot.
 import type { World, EntityId } from '../ecs.ts';
 import {
-  C_AGENT, C_ALIGNMENT, C_WALLET, C_POSITION, C_HEALTH, C_PERSONALITY, C_RELATIONSHIPS, C_LINEAGE, C_CLOCK, C_CRIME, C_CHRONICLE,
+  C_AGENT, C_ALIGNMENT, C_WALLET, C_POSITION, C_HEALTH, C_PERSONALITY, C_RELATIONSHIPS, C_LINEAGE, C_CLOCK, C_CRIME, C_CHRONICLE, C_MEMORY,
 } from '../components.ts';
 import type {
-  Agent, Alignment, Wallet, Position, Health, Personality, Relationships, Lineage, Clock, Crime,
+  Agent, Alignment, Wallet, Position, Health, Personality, Relationships, Lineage, Clock, Crime, Memory,
 } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears, ticksPerYear } from '../config.ts';
@@ -17,7 +17,8 @@ import { earn } from '../economy.ts';
 import { opine, kinGrudge, isRivalOf } from '../relationships.ts';
 import { getOrgStore, adjustStanding } from '../../org/orgStore.ts';
 import { inflictWound } from '../afflictions.ts';
-import { lawCrimeFactor } from '../heredity.ts';
+import { lawCrimeFactor, goodPole } from '../heredity.ts';
+import type { AlignKey } from '../heredity.ts';
 import { combatantOf, rollAttack, markCombat } from '../combat.ts';
 import { killAgent } from '../death.ts';
 import { emitEvent } from '../../history/eventlog.ts';
@@ -89,8 +90,12 @@ export function runCrimeSystem(world: World, cfg: SimConfig, rng: RNG): void {
     // The lawful resist, the chaotic indulge (D26): law scales the offend chance. Under the eye
     // of a watch-house the wicked think twice (M21): `wardFactor` cuts the chance near the watch.
     // A mental rage sharply raises the odds (and can override a peaceable nature, below).
+    // An EVIL-sworn vow is malice with a schedule (M13 s2): it multiplies the chance further —
+    // a threshold change on the SAME single rng draw, so the stream's shape is untouched.
+    const sworn = world.getComponent<Memory>(e, C_MEMORY)?.vowAlign;
+    const malice = sworn && goodPole(sworn as AlignKey) === 'E' ? cfg.evilVowCrimeFactor : 1;
     const p0 = world.getComponent<Position>(e, C_POSITION)!;
-    if (rng() >= cfg.crimeChancePerDay * (wicked ? 2 : 1) * (enraged ? 3 : 1) * lawCrimeFactor(al.law) * wardFactor(world, p0.x, p0.y)) continue;
+    if (rng() >= cfg.crimeChancePerDay * (wicked ? 2 : 1) * (enraged ? 3 : 1) * malice * lawCrimeFactor(al.law) * wardFactor(world, p0.x, p0.y)) continue;
 
     // A grudge directs the violence (M29 s2): settle it with a nearby rival if one's about, else any
     // mark of opportunity. So crime preferentially falls on enemies — feuds escalate into real harm.

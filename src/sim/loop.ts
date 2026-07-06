@@ -41,6 +41,7 @@ import { runLegendSystem }    from './systems/LegendSystem.ts';
 import { runArtifactSystem }  from './systems/ArtifactSystem.ts';
 import { runArchaeologySystem } from './systems/ArchaeologySystem.ts';
 import { runQuestSystem }     from './systems/QuestSystem.ts';
+import { runVowSystem }       from './systems/VowSystem.ts';
 import { runWonderSystem }    from './systems/WonderSystem.ts';
 import { runSpecialAgentSystem } from './systems/SpecialAgentSystem.ts';
 import { runAISystem }       from './systems/AISystem.ts';
@@ -102,6 +103,7 @@ export function tick(
   runArtifactSystem(world, cfg);         // master-crafted masterworks become named artifacts (M20 s2)
   runArchaeologySystem(world, cfg);      // ruins of fallen clans / lost relics, discoverable (M20 s2b)
   runQuestSystem(world, cfg);            // folk take up & fulfil procedural goals (hunt/avenge/explore) (M20 s3)
+  runVowSystem(world, cfg);              // vow riders: the good-sworn give alms — the oath acts (M13 s2)
   runWonderSystem(world, cfg, content);  // the town raises tech-gated mega-projects (M20 s3b)
   runVoyageSystem(world, cfg, rng);      // sea trade: a merchant sails to the island → first contact + trade (M25 s3)
   runAISystem(world, cfg, provider);     // the "soul": reflection / dialogue / dreams / decisions (rare)

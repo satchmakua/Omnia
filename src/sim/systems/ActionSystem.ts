@@ -3,7 +3,8 @@ import { C_AGENT, C_NEEDS, C_JOB, C_WALLET, C_MEMORY, C_PERSONALITY } from '../c
 import type { Agent, Needs, Job, Wallet, Memory, Personality } from '../components.ts';
 import type { SimConfig } from '../config.ts';
 import { ageInYears } from '../config.ts';
-import { traitGoalFactor } from '../heredity.ts';
+import { traitGoalFactor, lawPole } from '../heredity.ts';
+import type { AlignKey } from '../heredity.ts';
 
 // Once an agent starts restoring a need, it commits until the need climbs back to
 // here — hysteresis, so folk sleep/eat/relax in long stretches instead of flipping
@@ -61,12 +62,16 @@ export function runActionSystem(world: World, cfg: SimConfig): void {
     // Comfortable: adults work if employed and below their wealth goal, else wander.
     // Their distilled life-purpose (D26) bends the goal: a vow to provide for family /
     // make something of themselves makes them strive harder; grief pulls them back.
+    // A CHAOTIC-sworn vow is a free spirit (M13 s2): the goal shrinks — they stop
+    // toiling sooner and live more (the vow rider, read off `vowAlign`).
     const adult = ageInYears(agent.ticksAlive, cfg) >= cfg.adultAgeYears;
     const job = world.getComponent<Job>(entity, C_JOB);
     const wallet = world.getComponent<Wallet>(entity, C_WALLET);
-    const purpose = world.getComponent<Memory>(entity, C_MEMORY)?.purpose ?? 0;
+    const mem = world.getComponent<Memory>(entity, C_MEMORY);
+    const purpose = mem?.purpose ?? 0;
+    const freeSpirit = mem?.vowAlign && lawPole(mem.vowAlign as AlignKey) === 'C' ? cfg.chaosVowGoalFactor : 1;
     const trait = world.getComponent<Personality>(entity, C_PERSONALITY)?.trait ?? '';
-    const goal = agent.wealthGoal * (1 + 0.5 * purpose) * traitGoalFactor(trait);
+    const goal = agent.wealthGoal * (1 + 0.5 * purpose) * traitGoalFactor(trait) * freeSpirit;
     if (adult && job && wallet && wallet.gold < goal) {
       agent.action = 'work';
     } else {
