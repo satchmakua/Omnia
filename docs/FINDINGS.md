@@ -1,0 +1,86 @@
+# FINDINGS.md — Science & Instrumentation results (M7.7, D29)
+
+What the instrumentation has actually *measured* about the simulated world. The point
+of the science track (D29): turn "it didn't crash" (verification) into "it reproduces a
+known pattern" (validation). Everything here is deterministic — reproducible from the
+listed command + seed. Measurement is a pure read of durable state (D31), so observing
+never perturbs a run.
+
+Tools: `npm run soak` (one long run + a measured "Science" block, `src/analysis/metrics.ts`),
+`npm run sweep` (parameter sweeps that locate phase transitions, `src/analysis/sweep.ts`),
+and `npm run export` (run manifests + CSV + run-diff, `src/analysis/manifest.ts`). The same
+metrics are surfaced live in the in-app **Legends view (C) → "Emergent structure"**.
+
+---
+
+## Finding 1 — Surnames are Zipfian; given names are flat *(emergent regularity)*
+
+> **Superseded by the M20 clan merge:** surnames are no longer per-lineage patrilineal
+> names — a clan's word *is* its members' surname (matrilineal), so surname vocabulary collapses
+> to the few living clans (seed 8 now: s ≈ 0.38, vocab 9). The Zipf *mechanism* below held for the
+> original patrilineal-surname model; the finding stands as a record of that model. The given-name
+> control (flat, s ≈ 0) is unchanged. (A clan-size power-law is the natural successor metric.)
+
+Measured from `npm run soak` (seed 8, 40k ticks), final state *(pre-M20 patrilineal model)*:
+
+| name kind | Zipf exponent s | r² | vocab | top share |
+|-----------|-----------------|-----|-------|-----------|
+| **surnames** | **≈ 1.15** | ≈ 0.86 | 20 | 17% |
+| given names | ≈ 0.00 | — | 75 | — |
+
+Surname frequency follows Zipf's law (freq ∝ rank⁻ˢ with s ≈ 1, the natural-language
+value) with a good log-log fit. Given names, generated per-entity-id with no inheritance,
+stay essentially uniform (flat rank-frequency, s ≈ 0).
+
+**Why it's a real finding, not a plant:** nothing in the code aims for a Zipf
+distribution. It *emerges* from the mechanism — surnames are inherited patrilineally, so a
+lineage that out-reproduces others multiplies its surname, concentrating frequency into a
+power-law tail. The given-name control (same generator, no inheritance → no concentration)
+isolates inheritance as the cause. This is the kind of statistical regularity the milestone
+DoD asks for.
+
+Reproduce: `npm run soak` → the "Science — emergent structure" block (`names:` line).
+
+---
+
+## Finding 2 — A food-scarcity survival phase transition *(located tipping point)*
+
+Measured from `npm run sweep` (seeds 1, 2, 8; 4000 ticks each). Sweeping **`floraDensity`**
+(starting flora per passable tile — the food supply), survival is an order parameter:
+
+```
+floraDensity   survival   mean final population
+      0.0          0%            0.0      ┐
+    0.0075         0%            0.0      │  collapse phase (food can't sustain the town)
+     0.01          0%            0.0      ┘
+     0.02         67%            1.3      ← critical region (seed-dependent: finite-size effect)
+     0.04        100%           23.7      ┐
+     0.06        100%           32.3      ┘  survival phase → carrying capacity
+```
+
+**Located transition: `floraDensity ≈ 0.0175`** — below it the town starves to extinction;
+above it the population grows to its carrying-capacity equilibrium. The mean surviving
+population behaves like an order parameter, rising from 0 only above the critical density.
+The crossing is bracketed and linearly interpolated from the survival-rate = 0.5 level.
+
+A complementary sweep of **`hungerDecayPerDay`** (food *demand*) shows the dual: carrying
+capacity erodes smoothly (final pop 32 → 22 → 7 → 3 …) and then survival collapses past a
+critical decay rate (≈ 11/day). Near both boundaries different seeds disagree (e.g. 67% at
+one step) — expected finite-size fluctuation in a town of dozens, not noise in the method.
+
+Reproduce: `npm run sweep`.
+
+---
+
+## Reproducing these findings from a manifest
+
+A **run manifest** (`runs/*.manifest.json` from `npm run export`) is just `{ version, ticks,
+config }` — config includes the seed. Because the sim is deterministic, `runManifest` regenerates
+the run and its measurements exactly: `npm run export` re-runs the canonical seed-8 manifest and
+confirms **0 metrics changed (EXACT)**. So Finding 1 (the surname-Zipf regularity) ships with a
+one-file manifest that anyone can replay; the CSV (`runs/seed8.stats.csv`) is the world-health
+time-series for plotting. Finding 2 (the phase transition) is a sweep of manifests differing only
+in `floraDensity`. Run-diff (`diffRecords`) shows what moved between two runs (e.g. seed 8 vs 1).
+
+This closes the M7.7 DoD: ≥1 emergent regularity **and** ≥1 located phase transition, both
+**reproducible from an exported manifest**, with the metrics surfaced in-app.

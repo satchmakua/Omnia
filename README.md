@@ -1,0 +1,228 @@
+# Omnia — The Everything Simulator
+
+Omnia simulates a small living, breathing **town** of a few hundred unique agents who live and die, sleep, eat, work, earn and lose money, fall in love, marry, cheat, have children and grandchildren, get sick, get happy and sad, and — over generations — form families, companies, gangs, and small empires. The town is the stage; **the agents are the point.** The graphics are deliberately minimal, but the inspector and history UIs are rich.
+
+The setting is a weird, psychedelic, post-apocalyptic fantasy where humans are dominant but share the world with dwarves, orcs, giants, dragons, and stranger things — all of which are just different *flavors* of agent. Magic is real but rare; technology is its common cousin. Cultures and languages **evolve** across the generations.
+
+---
+
+# ▶ Run it yourself
+
+Follow these steps exactly. They take about a minute the first time.
+
+### 1. Make sure Node.js is installed
+
+You need **Node.js version 18 or newer** (it comes with `npm`). Check by opening a
+terminal and running:
+
+```
+node --version
+```
+
+If you see something like `v20.x` or `v24.x`, you're good. If you get a "command
+not found" error, install Node from <https://nodejs.org> (the "LTS" download), then
+close and reopen your terminal.
+
+### 2. Open a terminal in the project folder
+
+Any terminal works — **Windows PowerShell**, **Command Prompt**, or **Git Bash**.
+The one rule: you must be **inside the `Omnia` folder** (the folder that contains
+`package.json`), *not* its parent.
+
+Navigate into it with `cd`:
+
+- **PowerShell or Command Prompt:**
+  ```
+  cd C:\path\Omnia
+  ```
+- **Git Bash:**
+  ```
+  cd /c/path/Omnia
+  ```
+
+Confirm you're in the right place — this should list `package.json` among the files:
+
+- PowerShell / CMD: `dir`
+- Git Bash: `ls`
+
+> **If you see `npm error … Could not read package.json … ENOENT`**, you are in the
+> wrong folder (probably `C:\Users\path\Projects`, the parent). Run `cd Omnia`
+> first, then retry. That single mistake is the most common reason `npm` fails here.
+
+### 3. Install dependencies (first time only)
+
+```
+npm install
+```
+
+This downloads the libraries into a `node_modules` folder (~10–30 seconds). You only
+need to do this once (or after the dependencies change).
+
+### 4. Start the live view
+
+```
+npm run dev
+```
+
+You'll see output ending in a line like:
+
+```
+  ➜  Local:   http://localhost:5173/
+```
+
+Open **that exact URL** in your web browser (in most terminals you can Ctrl-click
+the link, or just copy-paste it). It's usually `http://localhost:5173`, but if that
+port is busy Vite will pick another (e.g. `5174`) — always use the URL it actually
+prints. You should see a colored grid with moving dots — the town.
+
+**To stop the server**, click back in the terminal and press **Ctrl+C**.
+
+---
+
+## Exploring the live view
+
+When the page loads you're looking at a small living world ticking in real time.
+
+**Controls**
+
+| Input | Effect |
+|-------|--------|
+| **Speed slider** (bottom of the screen) | Drag to set how fast time passes (ticks/second); the ▶/⏸ button pauses |
+| **Esc** | Open the **menu** (start screen → run; in-game → pause / restart / quit) |
+| **Space** | Pause / resume (easiest way to click a specific creature) |
+| **Scroll wheel** | Zoom in / out toward the cursor |
+| **Drag** (mouse) / **arrow keys** | Pan the map; **+ / −** also zoom |
+| **Click** anyone or anything | Open the **inspector** (right-side panel) for that thing |
+| **C** | Open / close the **Legends** view — the Chronicle (recent legends + compressed ages) and the town's world-health charts |
+| **E** | **Economy** dashboard — wealth distribution, employment, every business |
+| **F** | **Find** — searchable directory of every soul; click a row to inspect them and jump the camera there |
+| **T** | **Family** tree of the inspected person (click anyone first); click relatives to browse the line |
+| **G** | **Lineages** of tongues & cultures — the language/culture family trees (living vs lost), with a sample name in each tongue so you can hear the drift |
+| **Y** | **Ecology** — the wild herds & their hunters (grazers vs predators) and the flora that feeds them |
+| **V** | **Conversation** — what the town is saying: dialogue spoken aloud, plus dreams, resolutions, and settled beliefs |
+| **N** | **Language** — each living tongue's sounds, structure, and sample names, who speaks it, and how far bilingualism has spread |
+| **L** | Show / hide the **legend key** (what each map symbol means) |
+| **Panel headers** | Click a panel's title bar (legend, Town Happenings) to **minimize** it |
+| **Live feed** (lower-left) | The **Town Happenings** ticker — births, weddings, deaths, new jobs, spells, spent veins, as they happen |
+| **✕** (top-right of the inspector) | Close the inspector |
+
+> Things feel too fast? Drag the speed slider down, or pause with **Space** and
+> click at your leisure. The starting speed is intentionally gentle.
+
+**Running with a live model (optional).** By default the "soul" (reflection, dialogue,
+dreams, resolutions) runs on a **deterministic offline stub** — no model, no network,
+fully reproducible, and what CI uses. To have a real local model write those lines
+instead: install [Ollama](https://ollama.com), `ollama pull llama3.2`, make sure it's
+serving on `localhost:11434`, then open **Esc → Settings → AI soul: Live model (Ollama)**
+and restart. The model runs **off the hot path** (async, throttled, with an 8s timeout
+that falls back to the stub) so it never stalls the simulation, and every response is
+**recorded** so the run still replays exactly. With no Ollama running it simply falls
+back to the stub — nothing breaks.
+
+**What you're looking at**
+
+- **Biome regions** tint the map: ash-green *plains*, phosphor-green *fungal forest*,
+  amethyst *crystal flats*, ochre *irradiated wastes*, and deep-blue *drowned ruins*.
+  The blue water is **impassable** — nothing spawns or walks on it, and creatures
+  route around it.
+Each kind of thing has its own **silhouette**, so the world reads at a glance:
+
+- **Folk = little "pawns"** (a head over a body) — your townspeople. The **body
+  colour** is their species (warm sand = human, slate-blue = dwarf), the **outline
+  colour** is what they're doing (white = wandering, orange = seeking food, blue =
+  sleeping, gold = working, pink = socialising), and they're drawn **smaller as
+  children, larger as adults**. A small **violet pip** marks the rare **mage**.
+- **Triangles = fauna** (moth grazers, dust hoppers). Instinct-only — they graze
+  plants, breed when well-fed, and die if they starve.
+- **Sprouts (stem + leaf) = flora** (plants/fungi). They grow taller/brighter as
+  they ripen; folk and fauna forage them.
+- **Blocks = resource nodes** (timber, ore, reactive crystal); they dim as they're
+  worked down.
+- **Houses = businesses** — employers (laborer, farmer, miner, artisan, merchant,
+  and the rare hedge-witch), coloured by trade. Folk take jobs there.
+- **The HUD** (top bar) shows the day, a ☀/☾ that flips each half-day, live counts
+  of **Folk / Mages / Graves** and **Fauna / Flora**, and the town's **Gini**
+  (wealth inequality).
+- Folk **age, befriend each other, marry, have children, fall ill, and die** —
+  the dead leave a grave (the **Graves** count climbs over time). Click someone to
+  see their age, sex, social need, health, and family (partner + children).
+- The town **grows toward a cap and then holds steady** as births balance deaths,
+  sustaining itself across many lifetimes. Magic **runs in families** (a mage's
+  children are likelier to be gifted).
+- **Miners and labourers gather resources** — they walk out to ore and timber
+  nodes and work them down. A finite **ore vein eventually runs dry** (and the
+  block vanishes, noted in the feed); renewable timber regrows.
+- **Watch the lower-left feed** for the running story: who was born, who wed, who
+  died and of what, who took a job, who cast a spell.
+
+**Things worth trying**
+
+- Press **C** to read how this particular world ended and began — a different story
+  for every seed.
+- **Pause** (Space), then **click a moth grazer** (a triangle) and watch its hunger
+  bar. Click a **sprout** to see its maturity and food yield.
+- Watch the HUD **Fauna** count climb as animals breed, then settle as the land
+  reaches its carrying capacity.
+- **Click a person** to see their job, gold, and (if any) debt; click a **business**
+  to see its trade, staff, and balance. Watch the HUD **median wealth / Gini** —
+  the town stratifies into richer and poorer folk over the first few days.
+- **Find the mage.** The HUD shows how many **Mages** the town has (the default
+  seed has one — look for the violet pip). Click them to see their mana, and
+  watch it drain when they cast. No mage in your town? Magic is deliberately rare
+  — change `seed` in `src/sim/config.ts` for a different draw.
+- **Watch generations turn over.** Fast-forward with the speed slider: couples
+  pair off and have children (small dots), elders pass into **Graves**, and the
+  town refills itself. Click a long-lived elder and a child to see the family
+  links between them — the town sustains itself across many lifetimes.
+
+> Want a different world? Pick the seed, starting population, and map size on the
+> **start screen**, or edit the tunables in **`config/simulation.yaml`** (the live,
+> authoritative config loaded at startup) and restart. The same seed always produces
+> the same town, backstory, and run.
+
+## Other commands
+
+Run these the same way (inside the `Omnia` folder):
+
+```
+npm test               # run the full test suite (vitest)
+npm run test:coverage  # tests + a coverage report (gated 90%/85% in CI)
+npm run soak           # 10,000-tick headless run printing world-health metrics
+npm run lint           # TypeScript type-check (no output = all good)
+```
+
+**`npm run soak`** is a quick confidence check with no browser: it runs ~42 sim-years
+and ends with **`PASS`**. Watch `invalid=0` on every line (no impossible states),
+`folk` climbing to the population cap and holding (births balancing deaths),
+`born`/`graves`/`married` rising as generations turn over, and `nodes` dropping as
+finite ore veins are mined out.
+
+---
+
+## Tunable knobs
+
+`config/simulation.yaml` is the **authoritative** runtime config (world size, tick rate, need-decay, economy, life cycle, ecology, capability rarity, LLM/reflection settings) — loaded at startup (M9); edit a value and restart. It may be partial: anything omitted falls back to the typed defaults in `src/sim/config.ts` (`defaultConfig`), which documents every tunable and supplies the schema the loader validates against (unknown keys / non-numbers abort with a clear error).
+
+## Content
+
+`/content` holds the authored YAML that defines the world's flavor — species, creatures, biomes, flora, fauna, resources, buildings, professions, capabilities, cultures, languages. See `docs/CONTENT_AND_DATA.md`.
+
+## Legend (what's on screen)
+
+| On screen | Meaning |
+|-----------|---------|
+| Coloured tile | Biome (deep blue = impassable water) |
+| Pawn (head + body) | Sapient folk — body = species, outline = action, small = child |
+| Triangle | Fauna (animal, instinct-only) |
+| Sprout (stem + leaf) | Flora (plant; taller/brighter = riper) |
+| Block (square) | Resource node (timber / ore / crystal); dims as it's worked |
+| House | Business (employer; colour = profession) |
+| Violet pip on a pawn | Magic aptitude (rare — a mage) |
+| **Graves** (HUD count) | Folk who have died and left a tombstone record |
+
+## Stack at a glance
+
+- **Language:** TypeScript (simulation core *and* UI).
+- **Pattern:** Entity-Component-System (ECS); content as validated data.
+- **AI:** local LLM via Ollama, behind a swappable `AIProvider` interface.
+- **Tooling:** GitHub (Issues as backlog, Actions for CI).

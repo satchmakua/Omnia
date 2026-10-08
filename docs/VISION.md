@@ -1,0 +1,69 @@
+# VISION.md — What Omnia Is (and Isn't)
+
+## The one-sentence pitch
+
+A small town of a few hundred genuinely distinct people whose ordinary and extraordinary lives — love, work, money, vice, family, death, and the rise and fall of the groups they form — accumulate into a believable history you can watch unfold and dig through.
+
+## Pillars
+
+1. **Agents are the point.** Every agent is an individual with needs, a personality, relationships, memories, and a life arc. Believability of behavior beats graphical fidelity or raw population count.
+2. **A living, breathing world.** Things happen whether or not you're watching. Time passes, people age, businesses open and fail, feuds simmer. The world should feel like it has its own momentum.
+3. **History matters.** Generations stack up. The town remembers its legends — the founder of the first guild, the gang war of the third generation, the family that rose and fell. Most ordinary lives blur into the background, exactly as in real history. (How we keep this rich but cheap is the subject of `SIMULATION_MODEL.md`.)
+4. **Emergence over scripting.** Companies, gangs, dynasties, rivalries, and reputations should *emerge* from agents pursuing their needs and goals — not be hand-authored storylines.
+
+## The guiding thesis — close two loops *(added 2026-06-15)*
+
+The engine substrate is strong (determinism, ECS, validated content, bounded history, a real test bar); the **life on top must now become causal and legible.** Two loops to close — they fix the science and the art at once:
+
+1. **Cognition → consequence.** The inner life must *steer behaviour*, not merely narrate it. The **procedural** cognitive layers — a culture's value axes, and beliefs distilled to numbers — feed back into what agents *do*, deterministically, so seed-replay still holds. (LLM *generation* stays off the deterministic trajectory and recorded, per D19/D20; it is the procedural distillate that is causal — see **D26**.)
+2. **Mechanism → meaning.** The world's emergent patterns must be *measurable as findings* — distributions, social-network structure, phase transitions, exportable runs (**D29**) — and the verisimilitude machinery must be *visible to the player*: a real lens onto how language and culture evolve, not a buried family tree (**D27**). And the process that builds this is itself part of the artifact.
+
+Milestone 7 (culture & language) is the keystone — language is where a thought becomes a habit becomes a culture becomes history. The settled calls behind this direction are **D25–D30**.
+
+## The living-world arc — M8–M19 *(added 2026-06-16)*
+
+With the substrate proven (M0–M7.7), the arc from here turns Omnia from a believable town into a **living world with civilizations, conflict, knowledge, faith, and deep history.** The vision (D&D-style agents, tribes/factions/governments, markets, combat, crime, a science **and** magic tech tree climbing to a sci-fi ceiling, religion, events, legendary history, a 10–20× world, save/load, a real bestiary) is organized into **M8–M19** in `ROADMAP.md`. The leverage is a few reusable **engines** rather than hundreds of one-off features:
+
+- a unified **`Organization`** entity for tribes/factions/governments/gangs/companies/religions (**D33**),
+- one **`Heredity`** system (traits, ability scores, alignment-lean, magic aptitude all inherit),
+- a content-driven **`Event`** pipeline (seasons, disasters, the paranormal as data),
+- a **spatial index + A\*** for perception and movement, and **LOD brain tiers** so the world can grow without a full brain per distant agent (**D32**).
+
+Four calls shape it: **D32** (LOD scale, no artificial population caps — ecology limits growth), **D33** (the unified organization engine), **D34** (tech & magic as content trees climbed by research, up the full ladder, framed as re-ascending the fallen world's lost tech), and **D35** (legibility is a *gate*, behaviour stays procedural/causal, engineering quality is a standing bar). Built **foundation-first**: scale/perception/ecology and save/load before the deep social, economic, and combat systems.
+
+## Setting & flavor
+
+A weird, psychedelic, **post-apocalyptic fantasy**, lighter in tone than it sounds — closer to *Adventure Time* than grimdark. Something fell long ago; ruins and lost arts remain. The world is shared by many kinds of people:
+
+- **Humans are dominant**, but **dwarves, orcs, elves, giants, dragons** and stranger creatures live alongside them. All of these are **flavors of agent** — data archetypes over the same engine (see `CONTENT_AND_DATA.md`), not special-cased systems. There's a spectrum from sapient folk (full minds) through animals (instinct only) to flora and resources (no mind) — see `WORLD_AND_ENVIRONMENT.md`.
+- **Magic is real but rare**, and is the uncommon sibling of **technology** — both run on one underlying capability system, differing mainly in who can access them (`MAGIC_AND_TECHNOLOGY.md`).
+- **Cultures and languages evolve** across generations into families, dialects, and schisms (`CULTURE_AND_LANGUAGE.md`).
+
+Crucially, all of this flavor lives in **content** (YAML), so the world's texture can grow and change without re-engineering the simulation. The flavor is data; the engine is generic.
+
+## The experience we're aiming for
+
+You open Omnia and see a grid of moving icons. You click one: a panel reveals a person — their species, mood, job, who they love and hate, what they remember, their parents and children, whether they carry a rare spark of magic. You speed time up and watch them court, marry, struggle, prosper, scheme, fight, conquer, and die. You open the Legends view and read the town's history: who mattered, what they built, which arts were lost, how a culture split. You open the **lens onto language and culture** and watch the tongue itself drift — names turning archaic, a dialect diverging, a value shifting after a hard winter. It should give the unmistakable impression of a world that is alive, has a past, and is *visibly changing* — not just bounded behind the scenes.
+
+## Aesthetic direction (deferred — do not build before the simulation is deep)
+
+A **lo-fi, pastel** look — soft, muted color palette; calm, readable, unhurried. Eventually a **lo-fi ambient music** layer to match. This is *presentation*, the lowest priority: the interface stays minimal (icons + inspector) until the simulation has real depth. Captured here so the eventual UI work has direction; see the audio/aesthetic tasks in the final roadmap milestone.
+
+## Touchstones
+
+*The Sims* (needs and relationships), *Dwarf Fortress* (deep generational simulation and legends), *Cities: Skylines* (a world ticking on its own), Stanford's "Generative Agents" and Altera's "Project Sid" (believable LLM-driven social behavior), with an *Adventure Time* flavor coat.
+
+## Non-goals (read this twice — these prevent rabbit holes)
+
+We are explicitly **not** building, at least not now:
+
+- **Not photorealistic or even pretty graphics.** Simple icons on a grid plus rich inspector panels. Pastel/lo-fi styling and music are *deferred* polish, not early work.
+- **Not a massive-scale civilization — but bigger than a town now (D32, 2026-06-16).** The deliberate scale call was made: a **10–20× world with no artificial population caps**, kept affordable by **level-of-detail** brain tiers. Still **individually simulated agents**, never aggregate "Schrödinger's citizens" — distant folk are coarsely but really simulated, not faked as statistics. Thousands, not millions; growth is bounded by **ecology** (food/space/predation/economy), not a magic number.
+- **Not a multiplayer game or networked server.** Single-machine simulation.
+- **Not an authored narrative.** No *hand-written* quests, no scripted plot, no win condition. Stories come from emergence — including the **procedural** agent goals of M17 (recover an heirloom, hunt a monster, avenge kin), which arise from agents' own state, not an author's script.
+- **Not a chatbot.** The LLM gives agents a "soul" (dialogue, reflection, occasional big decisions); it is never a user-facing assistant and never on the hot path. The deterministic stub is the default; the **live local model (Ollama) is an opt-in mode** for richer text (D28), always recorded so replay stays exact.
+- **God-mode is an opt-in deterministic MODE, not the default — and not a fork (D54, 2026-06-27).** The **observatory remains the default experience** (the player observes). But the world is now deep enough (M0–M26) to clear D30's gate, so player agency (nudges, events, goals) is being built as **M27** — an opt-in "god mode" toggled off by default, where every intervention is a *recorded event in the deterministic log* (so replay stays exact and main stays green). The "fork" of D30 is realised as a **mode in `main`**, not a separate branch/build.
+- **Not a full generative grammar / linguistics engine.** Language evolution is deep but bounded (phonology, lexicon, light morphology) — full syntax evolution is out of scope (`CULTURE_AND_LANGUAGE.md`).
+- **Not modder-scriptable behavior (yet).** Content is data; new *behaviors* are code. Player/modder scripting is a far-future maybe.
+
+Anything that would cross one of these lines is a scope decision, not an implementation detail.
